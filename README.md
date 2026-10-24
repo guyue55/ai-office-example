@@ -40,3 +40,5 @@ GitHub 仓库与 CI／候选制品／镜像发布边界见 [自动化说明](doc
 ## 许可证与商用
 
 自有源码及文档采用 [Apache-2.0](LICENSE)，允许商用与修改。对外分发时保留许可证、适用的版权／归属声明与 NOTICE，修改过的文件需显著注明变更；可在产品文档的第三方声明中注明来源：[ai-office-example](https://github.com/guyue55/ai-office-example)。不强制界面展示 Logo 或广告，也不授予商标使用权。第三方依赖遵守其各自许可，具体边界见 [来源说明](docs/SOURCE.md) 和 [第三方声明](THIRD_PARTY_NOTICES.md)。
+
+常用开发、发版准备、安装升级与恢复操作见 [操作手册](docs/OPERATIONS.md)。
