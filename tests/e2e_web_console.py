@@ -19,8 +19,9 @@ BASE = SERVICE_URL
 
 def login(page, user: str, pw: str) -> None:
     """访问 /console，若被重定向到 Keycloak 则完成授权码 + PKCE 登录。"""
+    # 页面可用性以DOM及后续可见元素断言为准，不依赖浏览器全局网络空闲。
     page.goto(f"{BASE}/console")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_load_state("domcontentloaded")
     complete_login(page, user, pw)
 
 
@@ -31,7 +32,7 @@ def complete_login(page, user: str, pw: str) -> None:
             page.locator("#username").fill(user)
         page.locator("#password").fill(pw)
         page.locator("#kc-login").click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
 
 
 def save_links(page, selector):
@@ -60,14 +61,14 @@ def main() -> None:
                 assert all(start.status == 303 for start in starts)
                 for index in order:
                     pages[index].goto(starts[index].headers["location"])
-                    pages[index].wait_for_load_state("networkidle")
+                    pages[index].wait_for_load_state("domcontentloaded")
                     complete_login(pages[index], "operator", op_pw)
                     # 一页完成SSO后，Keycloak可能将另一旧表单标为过期；
                     # 使用身份产品原生“继续登录”链接，保留原事务，不重开应用登录。
                     continuation = pages[index].locator("a[href*='/login-actions/authenticate?']")
                     if continuation.count() == 1:
                         continuation.click()
-                        pages[index].wait_for_load_state("networkidle")
+                        pages[index].wait_for_load_state("domcontentloaded")
                     expect(pages[index].locator("main h2")).to_have_text("仪表盘")
             finally:
                 concurrent.close()
@@ -105,12 +106,12 @@ def main() -> None:
 
         # 3) 从人员管理页解析「授权角色」链接，进入授权关联页
         page.goto(f"{BASE}/console/employees")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
         page.screenshot(path=str(proof / "employees.png"), full_page=True)
         # 员工已超过一页，先按姓名筛选，避免依赖目标员工恰好出现在首页
         page.get_by_role("search").locator("input[name=q]").fill("本地测试员工")
         page.get_by_role("search").get_by_role("button", name="搜索", exact=True).click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
         # 选普通员工（非授权管理员），避免触发“必须保留可用授权管理员”保护
         employee_row = page.locator("tr").filter(has_text=re.compile("本地测试(员工|employee)"))
         role_link = employee_row.locator("a", has_text="授权角色")
@@ -270,7 +271,7 @@ def main() -> None:
         # 7) 退出登录 → 回到未认证
         page.locator("[data-account-menu] > summary").click()
         page.locator('form[action="/auth/logout"] button').click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
         expect(page.locator("body")).to_contain_text("已退出控制台")
         expect(page.locator("body")).to_contain_text("对应身份登录均已结束")
         # 保留浏览器全部 Cookie，验证退出确实结束 SSO，而非测试替用户清理。

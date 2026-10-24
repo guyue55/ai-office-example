@@ -39,15 +39,15 @@ def verify_session_policy(http, settings, target_port, browser_executable):
         raise RuntimeError("七天／三十天及Web分级策略未准确生效")
     # 按相同机制压缩测试时间；不声称等待了真实七天／三十天。
     short = {
-        "realm": {**desired["realm"], "ssoSessionIdleTimeout": 12, "ssoSessionMaxLifespan": 45},
+        "realm": {**desired["realm"], "ssoSessionIdleTimeout": 30, "ssoSessionMaxLifespan": 120},
         "clients": {
             PRODUCT["client_id"]: {
-                "client.session.idle.timeout": "12",
-                "client.session.max.lifespan": "35",
+                "client.session.idle.timeout": "30",
+                "client.session.max.lifespan": "90",
             },
             PRODUCT["web_client_id"]: {
-                "client.session.idle.timeout": "8",
-                "client.session.max.lifespan": "30",
+                "client.session.idle.timeout": "20",
+                "client.session.max.lifespan": "90",
             },
         },
     }
@@ -80,24 +80,15 @@ def verify_session_policy(http, settings, target_port, browser_executable):
         )
         return oauth, store, claims
 
-    _idle, idle_store, idle_claims = login(PRODUCT["client_id"])
-    idle_started = time.monotonic()
-    active, active_store, active_claims = login(PRODUCT["client_id"])
-    active_started = time.monotonic()
-    assert idle_claims["sid"] != active_claims["sid"]
-    web, web_store, _ = login(PRODUCT["web_client_id"])
-    print("SESSION_POLICY_LOGINS_READY", flush=True)
-    old_refresh = active_store.load()["refresh_token"]
-
+    # 浏览器启动耗时不能计入其他会话的短空闲窗口，各场景独立开始计时。
     def refresh(oauth, store):
         store.value["expires_at"] = 1
         return oauth.access_token()
 
-    refresh(active, active_store)
-    refresh(web, web_store)
-    web_active_at = time.monotonic()
     # 不把重放攻击施加到后续最长寿命测试的会话，使用独立会话。
-    replay, replay_store, _ = login(PRODUCT["client_id"])
+    independent, independent_store, independent_claims = login(PRODUCT["client_id"])
+    replay, replay_store, replay_claims = login(PRODUCT["client_id"])
+    assert independent_claims["sid"] != replay_claims["sid"]
     previous = replay_store.load()["refresh_token"]
     refresh(replay, replay_store)
     response = http.post(
@@ -110,12 +101,10 @@ def verify_session_policy(http, settings, target_port, browser_executable):
     )
     if response.status_code != 400 or response.json().get("error") != "invalid_grant":
         raise RuntimeError("旧刷新凭证未被轮换规则拒绝")
-    if old_refresh == active_store.load()["refresh_token"]:
+    if previous == replay_store.load()["refresh_token"]:
         raise RuntimeError("成功刷新没有更新凭证")
-    rounds = 0
-    idle_checked = web_checked = False
-    last_active = time.monotonic()
-    started = time.monotonic()
+    # 一台设备的旧刷新凭证被拒绝，不应让另一台独立设备无法刷新。
+    refresh(independent, independent_store)
 
     def expired_before_maximum(store, name, born, lower, upper):
         age = time.monotonic() - born
@@ -132,32 +121,39 @@ def verify_session_policy(http, settings, target_port, browser_executable):
         if response.status_code != 400 or response.json().get("error") != "invalid_grant":
             raise RuntimeError("闲置授权没有在最长寿命之前失效")
 
-    while time.monotonic() - started < 50:
+    _, idle_store, idle_claims = login(PRODUCT["client_id"])
+    idle_started = time.monotonic()
+    time.sleep(34)
+    expired_before_maximum(idle_store, PRODUCT["client_id"], idle_started, 34, 80)
+    print("SESSION_POLICY_CLI_IDLE_OK", flush=True)
+    web, web_store, _ = login(PRODUCT["web_client_id"])
+    refresh(web, web_store)
+    web_active_at = time.monotonic()
+    time.sleep(24)
+    expired_before_maximum(web_store, PRODUCT["web_client_id"], web_active_at, 24, 80)
+    print("SESSION_POLICY_WEB_IDLE_OK", flush=True)
+    active, active_store, active_claims = login(PRODUCT["client_id"])
+    active_started = time.monotonic()
+    assert idle_claims["sid"] != active_claims["sid"]
+    last_active = active_started
+    rounds = 0
+    while time.monotonic() - active_started < 110:
         time.sleep(3)
         rounds += 1
-        if not idle_checked and time.monotonic() - idle_started >= 16:
-            expired_before_maximum(idle_store, PRODUCT["client_id"], idle_started, 16, 30)
-            idle_checked = True
-        if not web_checked and time.monotonic() - web_active_at >= 12:
-            expired_before_maximum(web_store, PRODUCT["web_client_id"], web_active_at, 12, 23)
-            web_checked = True
-        active_store.value["expires_at"] = 1
         try:
-            active.access_token()
+            refresh(active, active_store)
             last_active = time.monotonic()
         except ClientError:
-            # 最近刷新不到6秒，排除12秒空闲失效；35秒客户端最长寿命前不能接受拒绝。
+            # 持续刷新排除30秒空闲失效；客户端90秒最长寿命前不能接受拒绝。
             if (
-                time.monotonic() - active_started < 33
-                or time.monotonic() - last_active >= 6
+                time.monotonic() - active_started < 88
+                or time.monotonic() - last_active >= 15
                 or active_store.load().get("refresh_outcome") != "invalid"
             ):
                 raise RuntimeError("最长寿命测试出现非预期失败") from None
             break
     else:
         raise RuntimeError("持续活动绕过了最长会话期限")
-    if not idle_checked or not web_checked:
-        raise RuntimeError("没有独立证明CLI与Web空闲失效")
     apply_policy(http, admin_headers(http), original)
     return {
         "configured_policy": True,
