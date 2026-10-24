@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}核对账号操作 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>核对账号操作</h2><p class="muted">请核对以下影响。提交时系统还会重新检查当前权限和数据版本。</p></div></header>
+<section class="card"><ul>{% for effect in preview.effects %}<li>{{ effect }}</li>{% endfor %}</ul>
+{% if preview.request.username %}<p>登录账号：<strong>{{ preview.request.username }}</strong></p>{% endif %}
+<form method="post" data-native-submit action="{{ '/console/accounts/operations/' ~ resume ~ '/resume' if resume else '/console/accounts/submit' }}">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="digest" value="{{ preview.confirmation_digest }}">
+{% if resume %}<input type="hidden" name="version" value="{{ operation_version }}">{% if preview.request.mode %}<input type="hidden" name="mode" value="{{ preview.request.mode }}">{% endif %}{% else %}<input type="hidden" name="request_json" value="{{ request_json }}"><input type="hidden" name="key" value="{{ key }}">{% endif %}
+<div class="actions"><button type="submit">确认并提交</button><a href="/console/employees" data-workspace-dismiss>取消</a></div></form></section>
+{% endblock %}

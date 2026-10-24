@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}审计 - {{ product.name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">操作与追溯</p>
+  <h2>审计记录</h2>
+  <p class="muted">每行代表一次已提交的业务变更；失败或被拒绝的请求请通过追踪号查询服务运行日志。时间为北京时间。</p>
+</div></header>
+<section class="card">
+  {% include '_search.html' %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+    <tr><th>时间</th><th>操作者</th><th>操作</th><th>对象</th><th>详情</th><th>追踪号</th></tr>
+    </thead>
+    <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.created_at|business_time if item.created_at }}</td>
+      <td>{{ item.actor_name or item.actor_id }}</td>
+      <td>{{ item.action_name or item.action }}</td>
+      <td>{{ item.resource_name or item.resource_id }}</td>
+      <td>{{ item.detail_summary }}<details class="raw-detail"><summary class="muted small">审计详情</summary>
+      <dl class="record-facts"><dt>操作者</dt><dd>{{ item.actor_name or item.actor_id }}</dd><dt>具体操作</dt><dd>{{ item.action_name or item.action }}</dd><dt>操作对象</dt><dd>{{ item.resource_name or item.resource_id }}</dd><dt>操作编码</dt><dd class="code">{{ item.action }}</dd><dt>完整追踪号</dt><dd class="code">{{ item.trace_id }}</dd></dl>
+      <p class="muted small">原始变更信息</p><pre class="code">{{ item.detail }}</pre></details></td>
+      <td><span class="muted small" tabindex="0" data-tooltip="{{ item.trace_id }}" aria-label="追踪号 {{ item.trace_id }}">{{ item.trace_id[:8] }}…</span></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="empty">没有符合条件的审计记录。可清除筛选后重试。</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% include "pagination.html" %}
+</section>
+{% endblock %}

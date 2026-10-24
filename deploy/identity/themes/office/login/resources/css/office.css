@@ -1,0 +1,35 @@
+/* 继承身份产品的无障碍表单与安全流程，只统一品牌色和背景。 */
+:root {
+  /* 中文优先使用系统字体，避免远程字体替换造成文字基线闪动。 */
+  --office-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --pf-v5-global--FontFamily--text: var(--office-font-family);
+  --pf-v5-global--FontFamily--heading: var(--office-font-family);
+  --pf-v5-global--primary-color--100: #087c80;
+  --pf-v5-global--primary-color--200: #065e63;
+}
+/* 与父主题选择器匹配，避免背景图延迟绘制时由浅色闪为深色。 */
+html.login-pf,
+.login-pf body {
+  background: #f4f7f9;
+  color-scheme: light;
+}
+.login-pf #kc-header-wrapper { color: #18343b !important; font-weight: 600; }
+.pf-v5-c-login__main { border-radius: 12px; }
+
+/* 页面高度变化时不重新垂直居中；长表单仍允许自然滚动。 */
+html.login-pf { scrollbar-gutter: stable; }
+.login-pf .pf-v5-c-login {
+  display: block;
+  box-sizing: border-box;
+  min-height: 100svh;
+  padding: clamp(24px, 18vh, 180px) 24px 32px;
+}
+.login-pf .pf-v5-c-login__container {
+  display: block;
+  width: min(34rem, 100%);
+  max-width: none;
+  margin-inline: auto;
+  padding: 0;
+}
+.login-pf .pf-v5-c-login__header { margin: 0 0 48px; }
+.login-pf .pf-v5-c-login__main { margin: 0; }

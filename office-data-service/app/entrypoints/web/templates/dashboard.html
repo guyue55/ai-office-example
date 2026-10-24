@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from '_permissions.html' import permission_table %}
+{% block title %}仪表盘 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header">
+<div>
+<p class="eyebrow">工作台概览</p>
+<h2>仪表盘</h2>
+<p class="muted">你好，{{ me.name }}。在这里查看当前账号可用的能力。</p>
+</div>
+<span class="badge on">账号已启用</span>
+</header>
+<div class="grid">
+<section class="card">
+<span class="muted">当前账号</span>
+<strong class="stat">{{ me.name }}</strong>
+<span class="muted">每次操作都会检查当前授权</span>
+</section>
+<section class="card">
+<span class="muted">已获授权</span>
+<strong class="stat">{{ permission_details|length }} <span class="muted">项能力</span>
+</strong>
+<a href="#my-permissions">查看权限说明 ↓</a>
+</section>
+<section class="card">
+<span class="muted">常用入口</span>{% if 'access.read' in me.permissions %}
+<ul class="subtle-list">
+<li>
+<a href="/console/employees">查看人员及角色</a>
+</li>
+<li>
+<a href="/console/permission-sets">检查权限集配置</a>
+</li>
+{% if 'audit.read' in me.permissions %}<li>
+<a href="/console/audit">查看操作记录</a>
+</li>{% endif %}
+</ul>{% else %}
+<p style="margin:12px 0">业务操作通过客户端技能使用</p>
+<p class="muted">需要新增能力时，请联系管理员。</p>{% endif %}
+</section>
+</div>
+{% if 'access.read' in me.permissions %}{% include '_access_flow.html' %}{% endif %}
+{% set my_roles = me.roles | default([], true) %}
+<section class="card" id="my-roles">
+<div class="section-head">
+<div>
+<h3>我的角色</h3>
+<p class="muted" style="margin:5px 0 0">角色是能力的来源。以下为当前账号已关联的角色，实际可用能力以“我的权限”为准。</p>
+</div>
+<span class="badge neutral">{{ my_roles|length }} 个</span>
+</div>{% if my_roles %}
+<div class="table-wrap">
+<table class="data-table">
+<thead>
+<tr>
+<th>角色名称</th>
+<th>配置能力</th>
+<th>类型</th>{% if 'access.read' in me.permissions %}
+<th>操作</th>{% endif %}
+</tr>
+</thead>
+<tbody>{% for role in my_roles %}
+<tr>
+<td>
+<span class="cell-title">{{ role.name }}</span>{% if role.builtin_key %} <span class="code">{{ role.builtin_key }}</span>{% endif %}
+</td>
+<td>{{ role.permission_count }} 项</td>
+<td>
+<span class="badge neutral">{{ '内置' if role.builtin_key else '自定义' }}</span>
+</td>{% if 'access.read' in me.permissions %}
+<td>
+<a href="/console/access/roles/{{ role.id }}">查看配置</a>
+</td>{% endif %}
+</tr>{% endfor %}
+</tbody>
+</table>
+</div>{% else %}
+<div class="empty">尚未关联角色。当前账号没有业务能力；需要使用相关功能时，请联系管理员分配。</div>{% endif %}
+<p class="muted small" style="margin:18px 0 0">管理员调整角色配置后，这里的数量与下方权限会同步变化；此处只显示本人角色。</p>
+</section>
+<section class="card" id="my-permissions">
+<div class="section-head">
+<div>
+<h3>我的权限</h3>
+<p class="muted" style="margin:5px 0 0">以下为当前已生效的权限。本人范围与全部范围分别列出。</p>
+</div>
+<span class="badge neutral">{{ permission_details|length }} 项</span>
+</div>{{ permission_table(permission_details) }}<p class="muted small" style="margin:18px 0 0">“确认项目数据”还需要相应的记录读取权限；权限调整后，后续操作使用最新配置。</p>
+</section>
+{% endblock %}

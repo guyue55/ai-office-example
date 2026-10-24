@@ -1,0 +1,20 @@
+<dialog id="workspace" class="workspace" aria-labelledby="workspace-title">
+  <header class="workspace-header">
+    <div><p class="eyebrow">人员与授权</p><h2 id="workspace-title" tabindex="-1">管理操作</h2></div>
+    <div class="actions">
+      <button type="button" class="secondary" data-workspace-back hidden>返回上一步</button>
+      <button type="button" class="secondary" data-workspace-reload hidden>刷新配置</button>
+      <a data-workspace-full class="small" href="/console/employees">完整页面 ↗</a>
+      <button type="button" class="secondary" data-workspace-close aria-label="关闭操作面板">关闭</button>
+    </div>
+  </header>
+  <div id="workspace-feedback" role="status" aria-live="polite"></div>
+  <div id="workspace-content"></div>
+</dialog>
+<dialog id="action-confirm" class="confirm-dialog" aria-labelledby="confirm-title">
+  <h2 id="confirm-title">确认操作</h2>
+  <p id="confirm-description"></p>
+  <div class="actions"><button type="button" class="secondary" data-confirm-cancel>取消</button><button type="button" data-confirm-accept>确认</button></div>
+</dialog>
+<script>{% include 'form-state.js' %}</script>
+<script>{% include 'workspace.js' %}</script>

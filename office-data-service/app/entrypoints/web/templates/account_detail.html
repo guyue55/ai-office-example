@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ detail.name }} · 账号详情{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>{{ detail.name }}</h2><p class="muted">业务访问与登录账号状态分别核实；所有安全动作均保留操作记录。</p></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
+<section class="card"><h3>基本资料</h3>
+<p>业务访问：<span class="badge {{ 'on' if detail.active and not detail.security_pending else 'off' }}">{{ '安全操作处理中' if detail.security_pending else ('已开通' if detail.active else '已停用') }}</span></p>
+{% if detail.account %}<p>登录账号：<strong>{{ detail.account.username }}</strong></p><p>工作邮箱：{{ detail.account.email or '未填写' }}</p><p>登录状态：{{ '启用' if detail.account.enabled else '停用' }}</p>{% endif %}
+{% if detail.notice %}<div class="hint">{{ detail.notice }}</div>{% endif %}
+<div class="actions"><a class="button secondary" href="/console/links/employees/{{ detail.employee_id }}/roles">管理角色与权限</a>
+{% if 'identity.update' in me.permissions and detail.available %}
+<details class="inline-edit" data-form-dialog><summary>编辑资料</summary><form class="form-stack" method="post" data-native-submit action="/console/accounts/employees/{{ detail.employee_id }}/preview"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ detail.version }}"><input type="hidden" name="kind" value="update"><label>姓名<input type="text" name="name" required maxlength="100" value="{{ detail.name }}"></label><label>工作邮箱<input name="email" type="email" maxlength="254" value="{{ detail.account.email if detail.account else '' }}"></label><button type="submit">核对修改</button></form></details>{% endif %}</div>
+</section>
+<section class="card"><h3>账号安全</h3><p class="muted">停用立即阻断业务访问；结束登录和重置会撤销旧访问。账号角色保留，重新启用不补回被撤销的角色。</p>
+<div class="actions">
+{% for kind,label,code in [('reset','重置密码','identity.credentials.manage'),('logout','结束全部登录','identity.sessions.revoke'),('disable' if detail.active else 'enable','停用账号' if detail.active else '启用账号','identity.update')] %}
+{% if code in me.permissions and detail.employee_id != me.id %}<form method="post" data-native-submit action="/console/accounts/employees/{{ detail.employee_id }}/preview"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ detail.version }}"><input type="hidden" name="kind" value="{{ kind }}"><button type="submit" class="secondary">{{ label }}</button></form>{% endif %}{% endfor %}
+</div></section>
+<section class="card"><h3>最近账号操作</h3><div class="table-wrap"><table><thead><tr><th>操作</th><th>结果说明</th><th>更新时间</th><th>详情</th></tr></thead><tbody>{% for item in history['items'] %}<tr><td>{{ account_actions.get(item.kind,item.kind) }}</td><td>{{ item.message }}</td><td>{{ item.updated_at|business_time }}</td><td><a data-workspace-full href="{{ item.next_url }}">查看进度</a></td></tr>{% else %}<tr><td colspan="4" class="empty">暂无账号操作记录</td></tr>{% endfor %}</tbody></table></div><a data-workspace-full href="/console/accounts/operations?identifier={{ detail.employee_id }}">查看全部操作</a></section>
+{% endblock %}

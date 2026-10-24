@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "template_version": "1.0.0",
+  "config_sha256": "f30f7e93d197fce7b888bbe9c118f57034881961259bdd391ec3e0df9b73a159",
+  "identity_namespace": "office",
+  "command": "office",
+  "generated_files": [
+    "clients/python/pyproject.toml",
+    "clients/python/src/office_client/product.json",
+    "contracts/openapi.json",
+    "deploy/identity/session-policy.json",
+    "deploy/identity/themes/office/login/messages/messages_en.properties",
+    "deploy/identity/themes/office/login/messages/messages_zh_CN.properties",
+    "deploy/identity/themes/office/login/resources/css/product.css",
+    "deploy/installer/product.json",
+    "installers/client/product.json",
+    "office-data-service/app/common/product.json"
+  ]
+}

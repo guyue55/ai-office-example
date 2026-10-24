@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}权限集 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header">
+<div>
+<p class="eyebrow">人员与授权</p>
+<h2>权限集</h2>
+<p class="muted">将经常一起使用的权限组合成可复用的集合，再关联到角色。</p>
+</div>
+{% if can_manage %}<a class="button" href="#set-create" data-open-form="set-create">新建权限集</a>{% endif %}
+</header>{% include '_access_flow.html' %}
+<section class="card">{% include '_search.html' %}
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>权限集名称</th>
+<th>具体权限</th>
+<th>使用情况</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>{% for item in items %}
+<tr>
+<td>
+<a class="permission-name" href="/console/access/permission-sets/{{ item.id }}">{{ item.name }}</a>
+</td>
+<td>{% if item.permission_count|default(0) %}{{ item.permission_count }} 项{% else %}
+<span class="badge neutral">待配置权限</span>{% endif %}
+</td>
+<td>{{ item.role_count|default(0) }} 个角色使用</td>
+<td>
+<div class="actions">
+<a href="/console/access/permission-sets/{{ item.id }}">查看内容与角色</a>
+<a href="/console/links/permission-sets/{{ item.id }}/permissions">{{ '配置权限' if can_manage else '查看权限' }}</a>
+</div>
+</td>
+</tr>{% else %}
+<tr>
+<td colspan="4" class="empty">没有符合条件的权限集。新建前请先检查是否可复用。</td>
+</tr>{% endfor %}
+</tbody>
+</table>
+</div>{% include 'pagination.html' %}
+</section>
+{% if can_manage %}
+<details class="card" data-form-dialog id="set-create">
+<summary>新建权限集</summary>
+<p class="muted">按用途命名，例如“项目数据查阅”。新建本身不会授予任何员工权限。</p>
+<form class="form-grid" method="post" action="/console/permission-sets/new">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<div class="field">
+<label for="set-name">权限集名称</label>
+<input id="set-name" type="text" name="name" required maxlength="100" placeholder="先搜索已有权限集">
+</div>
+<button type="submit">创建并选择权限</button>
+</form>
+</details>{% endif %}
+{% endblock %}

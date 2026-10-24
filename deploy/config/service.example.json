@@ -1,0 +1,25 @@
+{
+  "database_user": "office_app",
+  "database_password_file": "secrets/app_password",
+  "database_host": "postgres",
+  "database_port": 5432,
+  "database_name": "office",
+  "issuer": "https://identity.company.example/realms/office",
+  "audience": "https://office.company.example/mcp",
+  "public_url": "https://office.company.example",
+  "web_session_secret_file": "secrets/web_session_secret",
+  "web_authentication_max_age": 36000,
+  "database_runtime": {
+    "pool_size": 5,
+    "max_overflow": 5,
+    "pool_timeout": 3,
+    "statement_timeout_ms": 10000,
+    "lock_timeout_ms": 5000
+  },
+  "web_login_protection": {
+    "pending_per_source": 128,
+    "burst": 60,
+    "refill_per_second": 2,
+    "max_sources": 2048
+  }
+}

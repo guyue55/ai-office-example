@@ -1,0 +1,70 @@
+name: 需求与业务流程
+description: 登记经确认或待确认的业务流程、功能需求与验收边界
+title: "[需求] "
+labels:
+  - 需求
+body:
+  - type: markdown
+    attributes:
+      value: |
+        当前项目处于需求／方案沟通与 Demo 制作阶段。请区分已确认事实、待确认事项和建议方案，不要把推测写成客户已确认范围。
+  - type: dropdown
+    id: board
+    attributes:
+      label: 所属板块
+      options:
+        - 数据中心
+        - 资产包
+        - 运营中心
+        - 综合
+        - 招投标
+        - 跨板块或待确认
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 业务场景与当前流程
+      description: 说明谁在什么时间、从哪些来源、完成什么动作、产生什么结果。
+    validations:
+      required: true
+  - type: textarea
+    id: pain
+    attributes:
+      label: 当前问题与期望改善
+      description: 描述重复劳动、等待、差错或协作成本，不要先绑定具体技术实现。
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: 输入、数据来源与权限边界
+      description: 列出邮件、群消息、表格、API 等来源；不要粘贴真实凭证或敏感样本。
+  - type: textarea
+    id: output
+    attributes:
+      label: 期望输出与通知目标
+      description: 说明报表、文件、消息、页面或审批动作，以及需要发送到何处。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收口径
+      description: 写明数字口径、缺数处理、权限、时效、人工复核和成功标准。
+  - type: textarea
+    id: status
+    attributes:
+      label: 确认状态与待决事项
+      description: 标注已由谁确认、仍待谁确认，以及影响工期或范围的前置条件。
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: 提交检查
+      options:
+        - label: 本需求不含真实凭证、客户敏感数据或未经脱敏的个人信息。
+          required: true
+        - label: 我已区分客户确认事实、合理推断和待确认事项。
+          required: true

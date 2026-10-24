@@ -1,0 +1,44 @@
+# 服务层：PG18/Keycloak、TLS反代、初始化及备份先独立准备。
+name: office-service
+x-service: &service
+  image: ${OFFICE_IMAGE:?请指定已验收的镜像标签或摘要}
+  user: "${OFFICE_UID:-10001}:${OFFICE_GID:-10001}"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp:size=64m,mode=1777]
+  init: true
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: "3"}
+services:
+  service:
+    <<: *service
+    restart: unless-stopped
+    ports: ["127.0.0.1:${OFFICE_PORT:-8800}:8800"]
+    environment: {OFFICE_CONFIG: /etc/office/service.json}
+    volumes:
+      - type: bind
+        source: ${OFFICE_INSTANCE_DIR:?请指定实例目录}/service
+        target: /etc/office
+        read_only: true
+        bind: {create_host_path: false}
+  migrate:
+    <<: *service
+    profiles: [maintenance]
+    restart: "no"
+    environment: {OFFICE_CONFIG: /etc/office/owner.json}
+    volumes:
+      - type: bind
+        source: ${OFFICE_INSTANCE_DIR:?请指定实例目录}/maintenance
+        target: /etc/office
+        read_only: true
+        bind: {create_host_path: false}
+    healthcheck: {disable: true}
+    command: [python, -m, alembic, -c, /opt/office/alembic.ini, upgrade, head]
+
+networks:
+  default:
+    external: true
+    name: ${OFFICE_NETWORK:-office-backend}

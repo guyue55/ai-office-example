@@ -1,0 +1,21 @@
+{
+  "realm": {
+    "accessTokenLifespan": 300,
+    "ssoSessionIdleTimeout": 604800,
+    "ssoSessionMaxLifespan": 2592000,
+    "clientSessionIdleTimeout": 0,
+    "clientSessionMaxLifespan": 0,
+    "revokeRefreshToken": true,
+    "refreshTokenMaxReuse": 0
+  },
+  "clients": {
+    "office-cli": {
+      "client.session.idle.timeout": "604800",
+      "client.session.max.lifespan": "2592000"
+    },
+    "office-web": {
+      "client.session.idle.timeout": "1800",
+      "client.session.max.lifespan": "36000"
+    }
+  }
+}

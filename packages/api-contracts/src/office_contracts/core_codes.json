@@ -1,0 +1,594 @@
+[
+  {
+    "code": 400001,
+    "key": "invalid_request",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 400,
+    "allowed_http_statuses": [
+      400
+    ],
+    "message": "请求格式或主机无效",
+    "definition": "受控业务HTTP入口在协议检查阶段拒绝请求。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_request",
+        "status": 400
+      }
+    ]
+  },
+  {
+    "code": 400002,
+    "key": "invalid_json",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 400,
+    "allowed_http_statuses": [
+      400
+    ],
+    "message": "JSON请求格式无效",
+    "definition": "JSON语法、重复键或解析结构约束不满足；现v1为422，本提案改400。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_json",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 400099,
+    "key": "http_client_error",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 400,
+    "allowed_http_statuses": {
+      "min": 400,
+      "max": 499
+    },
+    "message": "HTTP请求未被接受",
+    "definition": "未细分的HTTPException 4xx；保留原HTTP状态并隐藏原始detail。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "http_error",
+        "status_class": "4xx"
+      }
+    ]
+  },
+  {
+    "code": 401001,
+    "key": "login_required",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 401,
+    "allowed_http_statuses": [
+      401
+    ],
+    "message": "请先登录授权",
+    "definition": "请求缺少有效登录凭证。",
+    "recovery_hint": "reauthenticate",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "login_required",
+        "status": 401
+      }
+    ]
+  },
+  {
+    "code": 401002,
+    "key": "invalid_token",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 401,
+    "allowed_http_statuses": [
+      401
+    ],
+    "message": "访问凭证无效或已过期",
+    "definition": "签名、受众、签发者或时效校验未通过。",
+    "recovery_hint": "reauthenticate",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_token",
+        "status": 401
+      }
+    ]
+  },
+  {
+    "code": 403001,
+    "key": "permission_denied",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 403,
+    "allowed_http_statuses": [
+      403
+    ],
+    "message": "缺少所需操作权限",
+    "definition": "当前主体缺少动作权限；不公开内部权限判断细节。",
+    "recovery_hint": "check_permissions",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "permission_denied",
+        "status": 403
+      }
+    ]
+  },
+  {
+    "code": 404001,
+    "key": "not_found",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 404,
+    "allowed_http_statuses": [
+      404
+    ],
+    "message": "资源不存在或不可访问",
+    "definition": "对象不存在或超出可见范围；不区分以避免存在性泄漏。",
+    "recovery_hint": "check_reference",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "not_found",
+        "status": 404
+      }
+    ]
+  },
+  {
+    "code": 405001,
+    "key": "method_not_allowed",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 405,
+    "allowed_http_statuses": [
+      405
+    ],
+    "message": "请求方法不受支持",
+    "definition": "路径可识别但HTTP方法不受支持；保留Allow。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "method_not_allowed",
+        "status": 405
+      }
+    ]
+  },
+  {
+    "code": 408001,
+    "key": "request_timeout",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 408,
+    "allowed_http_statuses": [
+      408
+    ],
+    "message": "接收请求超时",
+    "definition": "请求体未在接收期限内读完，不代表业务执行超时。",
+    "recovery_hint": "retry_submission",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "request_timeout",
+        "status": 408
+      }
+    ]
+  },
+  {
+    "code": 409001,
+    "key": "version_conflict",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "对象已变更，请刷新后重试",
+    "definition": "预期记录、项目或授权版本与当前版本不符。",
+    "recovery_hint": "refresh_and_correct",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "version_conflict",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409003,
+    "key": "idempotency_conflict",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "幂等键已用于其他内容",
+    "definition": "同一幂等作用域及键已绑定不同的规范化请求摘要。",
+    "recovery_hint": "check_original_submission",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "idempotency_conflict",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409011,
+    "key": "constraint_conflict",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "数据关系或唯一性约束冲突",
+    "definition": "数据库约束拒绝命令；不暴露SQL、表名、原始约束值。",
+    "recovery_hint": "refresh_and_correct",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "constraint_conflict",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409012,
+    "key": "cursor_invalidated",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "查询上下文已变更，请重新分页",
+    "definition": "游标绑定的查询、授权或快照上下文失效；不自动跳到下一页。",
+    "recovery_hint": "restart_query",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 409013,
+    "key": "batch_item_not_executed",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "该项尚未执行",
+    "definition": "按已声明停止／取消策略未执行，不能伪称成功或确定业务失败。",
+    "recovery_hint": "check_batch_state",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 413001,
+    "key": "request_too_large",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 413,
+    "allowed_http_statuses": [
+      413
+    ],
+    "message": "请求超过大小限制",
+    "definition": "请求字节数超过该入口公布的上限。",
+    "recovery_hint": "reduce_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "request_too_large",
+        "status": 413
+      }
+    ]
+  },
+  {
+    "code": 415001,
+    "key": "unsupported_media_type",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 415,
+    "allowed_http_statuses": [
+      415
+    ],
+    "message": "请求内容类型不受支持",
+    "definition": "受控JSON接口收到不支持的媒体类型。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "unsupported_media_type",
+        "status": 415
+      }
+    ]
+  },
+  {
+    "code": 422001,
+    "key": "invalid_input",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "请求字段、类型或参数不符合定义",
+    "definition": "共同输入模型校验失败，安全details按需定位字段。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_input",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422002,
+    "key": "query_complexity_exceeded",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "查询超过允许复杂度",
+    "definition": "条件树、维度、指标、批次数或执行计划超过已公布限制。",
+    "recovery_hint": "reduce_request",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 422006,
+    "key": "invalid_limit",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "每页数量不符合范围",
+    "definition": "分页limit不满足该入口公布的边界。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_limit",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422007,
+    "key": "invalid_pagination",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "分页参数无效",
+    "definition": "游标或分页组合不符合入口定义。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_pagination",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422008,
+    "key": "invalid_query",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "查询参数未定义或重复",
+    "definition": "URL参数未声明、重复或不符合查询模型；不得静默忽略。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_query",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422012,
+    "key": "unsupported_operation",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "当前尚未提供此能力",
+    "definition": "能力发现未开放或应用操作未登记；MCP未知工具外层仍遵循官方协议。",
+    "recovery_hint": "refresh_capabilities",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "unsupported_operation",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422013,
+    "key": "metric_incompatible",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "指标或维度口径不兼容",
+    "definition": "项目字段语义、单位、粒度或指标版本无法合法组合。",
+    "recovery_hint": "correct_query",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 422014,
+    "key": "required_data_missing",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "缺少完成操作所需的关键数据",
+    "definition": "缺关键数据时阻断，不能以警告发布完整结果。",
+    "recovery_hint": "supply_required_data",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 429001,
+    "key": "rate_limited",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 429,
+    "allowed_http_statuses": [
+      429
+    ],
+    "message": "请求过于频繁",
+    "definition": "实现了配额／频率控制且本次被拒绝；有依据时附Retry-After。",
+    "recovery_hint": "retry_later",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 500001,
+    "key": "internal_error",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 500,
+    "allowed_http_statuses": [
+      500
+    ],
+    "message": "服务内部错误，请联系管理员",
+    "definition": "未分类内部异常，拒绝输出异常文本、堆栈或业务输入。",
+    "recovery_hint": "query_operation",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "internal_error",
+        "status": 500
+      }
+    ]
+  },
+  {
+    "code": 500002,
+    "key": "invalid_response",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 500,
+    "allowed_http_statuses": [
+      500
+    ],
+    "message": "服务返回结构异常，请联系管理员",
+    "definition": "业务输出或响应包装违反声明的契约；写入可能已提交。",
+    "recovery_hint": "query_operation",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_response",
+        "status": 500
+      }
+    ]
+  },
+  {
+    "code": 500099,
+    "key": "http_server_error",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 500,
+    "allowed_http_statuses": {
+      "min": 500,
+      "max": 599
+    },
+    "message": "服务暂未完成请求",
+    "definition": "未细分的HTTPException 5xx；保留原HTTP状态并隐藏detail。",
+    "recovery_hint": "query_operation",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "http_error",
+        "status_class": "5xx"
+      }
+    ]
+  },
+  {
+    "code": 503001,
+    "key": "database_unavailable",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 503,
+    "allowed_http_statuses": [
+      503
+    ],
+    "message": "数据服务尚未就绪",
+    "definition": "数据库依赖不可访问或健康检查不能建立可用服务。",
+    "recovery_hint": "retry_later",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "database_unavailable",
+        "status": 503
+      }
+    ]
+  },
+  {
+    "code": 503002,
+    "key": "operation_timeout",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 503,
+    "allowed_http_statuses": [
+      503
+    ],
+    "message": "操作超过执行预算",
+    "definition": "操作达到服务端执行期限；提交边界不清时结果未知。",
+    "recovery_hint": "query_operation",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "operation_timeout",
+        "status": 503
+      }
+    ]
+  },
+  {
+    "code": 503003,
+    "key": "database_busy",
+    "owner": "core",
+    "severity": "error",
+    "http_status": 503,
+    "allowed_http_statuses": [
+      503
+    ],
+    "message": "数据服务暂时繁忙",
+    "definition": "连接池／数据库操作暂时不可用，不公开底层错误。",
+    "recovery_hint": "retry_later",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "database_busy",
+        "status": 503
+      }
+    ]
+  }
+]

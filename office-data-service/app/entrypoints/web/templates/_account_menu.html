@@ -1,0 +1,20 @@
+{# 全站账号入口：原生 details 保留无脚本操作；退出仍为带 CSRF 的 POST。 #}
+<div class="nav-bottom">
+<details class="account-menu" data-account-menu>
+<summary class="account-trigger" aria-label="账号菜单：{{ me.name }}" title="{{ me.name }}">
+<span class="account-avatar" aria-hidden="true">{{ me.name[:1] }}</span>
+<span class="account-identity"><span class="account-name">{{ me.name }}</span><span class="account-caption">当前账号</span></span>
+<svg class="account-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+</summary>
+<div class="account-panel" role="group" aria-label="账号操作">
+<div class="account-panel-heading"><span class="muted small">当前登录</span><strong>{{ me.name }}</strong></div>
+<a class="account-action" href="/console/dashboard#my-permissions">我的权限 <span aria-hidden="true">↗</span></a>
+<a class="account-action" href="/console/security">账号与安全 <span aria-hidden="true">↗</span></a>
+<a class="account-action" href="/console/client-authorizations">我的客户端授权 <span aria-hidden="true">↗</span></a>
+<form method="post" action="/auth/logout" class="account-signout">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<button class="account-action" type="submit"><span>退出登录</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 5H5v14h4m5-14 7 7-7 7m7-7H9"/></svg></button>
+</form>
+</div>
+</details>
+</div>

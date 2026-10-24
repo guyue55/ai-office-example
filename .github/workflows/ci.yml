@@ -1,0 +1,165 @@
+name: CI
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  source-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 校验工具摘要并扫描完整可达历史
+        shell: bash
+        run: |
+          set -euo pipefail
+          task_scan_dir=$(mktemp -d)
+          trap 'rm -rf "$task_scan_dir"' EXIT
+          curl --fail --silent --show-error --location --retry 3 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$task_scan_dir/gitleaks.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $task_scan_dir/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf "$task_scan_dir/gitleaks.tar.gz" -C "$task_scan_dir" gitleaks
+          "$task_scan_dir/gitleaks" git --redact=100 --no-banner --log-opts=--all .
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.13', '3.14']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.9.18'
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - run: uv sync --locked --python ${{ matrix.python }}
+      - run: uv run --frozen python scripts/configure_template.py --check
+      - run: uv run --frozen ruff check office-data-service clients/python scripts tests packages/api-contracts deploy/installer installers
+      - run: uv run --frozen ruff format --check office-data-service clients/python scripts tests packages/api-contracts deploy/installer installers
+      - run: uv run --frozen mypy office-data-service/app clients/python/src --check-untyped-defs
+      - run: uv run --frozen mypy packages/api-contracts/src packages/api-contracts/tests/typing --check-untyped-defs
+      - run: uv run --frozen python scripts/check_architecture.py
+      - run: uv run --frozen python scripts/check_capability_coverage.py
+      - run: uv run --frozen python scripts/check_skills.py
+      - run: uv run --frozen python scripts/export_contracts.py --check
+      - run: uv run --frozen python scripts/prepare_release.py --check
+      - name: 服务依赖漏洞审计
+        run: |
+          mkdir -p runtime/ci
+          uv export --locked --package office-data-service --no-dev --no-emit-project --no-emit-workspace --format requirements-txt --output-file runtime/ci/requirements.txt
+          uvx --python 3.13 pip-audit==2.9.0 --disable-pip --no-deps -r runtime/ci/requirements.txt
+      - name: 无外部实例测试（活体项显式另行验收）
+        run: uv run --frozen pytest -m 'not live' -q
+      - run: uv build --package office-api-contracts && uv build --package office-data-service && uv build --package office-client
+      - run: uv run --frozen python scripts/check_build.py
+      - run: uv run --frozen python scripts/package_skills.py
+      - name: 上传技能候选包
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: skill-suite-python-${{ matrix.python }}
+          path: |
+            dist/office-skills.zip
+            dist/office-skills.zip.sha256
+          retention-days: 7
+      - name: 上传轮包
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wheels-python-${{ matrix.python }}
+          path: |
+            dist/*.whl
+            dist/build-manifest.json
+          retention-days: 7
+  container:
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.9.18'
+          python-version: '3.13'
+      - run: uv sync --locked
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/Dockerfile
+          load: true
+          push: false
+          tags: office-data-service:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        env:
+          # 不再上传额外的构建记录；镜像／数据库验收仍由后续步骤执行。
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+      - run: docker pull pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
+      - name: 独立PG18受控聚合与撤权取消验收
+        run: OFFICE_QUERY_PG_TESTS=1 uv run --frozen pytest tests/test_query_postgres.py tests/test_postgres_readiness.py -q
+      - name: 全新临时数据库迁移与容器验收
+        run: uv run --frozen python scripts/docker_smoke.py --image office-data-service:ci
+  windows-client:
+    needs: quality
+    runs-on: windows-2025
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.13', '3.14']
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.9.18'
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - name: 客户端跨进程锁与认证边界
+        run: uv run --frozen pytest tests/test_credential_coordination.py tests/test_client_auth_workflow.py tests/test_client_authorizations.py tests/test_client_portability.py tests/test_build_info.py tests/test_client_pagination.py tests/test_skill_portability.py tests/test_cli_capability_alignment.py tests/test_cli_help.py tests/test_connection_check.py -q
+      - name: Windows技能参数与结构检查
+        run: uv run --frozen python scripts/check_skills.py
+      - name: Windows候选轮包独立安装验收
+        run: |
+          uv build --package office-api-contracts
+          uv build --package office-client
+          uv run --frozen python scripts/check_client_install.py
+  windows-installer:
+    # 员工安装不依赖服务端；单独验收，避免被无关矩阵任务阻塞。
+    runs-on: windows-2025
+    timeout-minutes: 10
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.9.18'
+          python-version: '3.13'
+      - run: uv sync --locked
+      - name: Windows完整员工交付包安装及重跑
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          uv build --package office-api-contracts
+          uv build --package office-client
+          uv build --package office-data-service
+          uv run --frozen python scripts/check_build.py
+          uv run --frozen python scripts/package_skills.py
+          New-Item -ItemType Directory -Force runtime | Out-Null
+          "OFFICE_PUBLIC_URL=http://192.168.1.10:8800`nOFFICE_DEPLOYMENT_MODE=lan-http-demo" | Set-Content -Encoding utf8 runtime/delivery.env
+          uv run --frozen python scripts/package_client_setup.py --config runtime/delivery.env --output runtime/pc-delivery
+          powershell -NoProfile -File ./runtime/pc-delivery/setup.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./runtime/pc-delivery/setup.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

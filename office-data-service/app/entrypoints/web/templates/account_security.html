@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block title %}账号与安全 · {{ product.short_name }}{% endblock %}
+{% block content %}<header class="page-header"><div><p class="eyebrow">本人账号</p><h2>账号与安全</h2><p class="muted">{{ me.name }}，安全操作需要验证本人身份。</p></div></header>
+<section class="card"><h3>登录密码</h3><p>通过企业安全登录页面修改密码，完成或取消后返回工作台。</p>{% if returned %}<div class="hint">已返回安全设置。请按安全页面的实际结果核对；本页面不将回跳视为密码已修改的证明。</div>{% endif %}<form method="post" data-native-submit action="/console/security/password"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit">修改本人密码</button></form></section>
+{% endblock %}

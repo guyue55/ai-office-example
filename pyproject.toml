@@ -1,0 +1,35 @@
+[project]
+name = "office-foundation"
+version = "1.0.0"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.13,<3.15"
+dependencies = ["office-data-service", "office-client", "office-api-contracts[fastapi,httpx,mcp]"]
+
+[tool.uv.workspace]
+members = ["office-data-service", "clients/python", "packages/api-contracts"]
+[tool.uv.sources]
+office-api-contracts = { workspace = true }
+office-data-service = { workspace = true }
+office-client = { workspace = true }
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.12,<1",
+    "playwright>=1.55,<2",
+    "mypy>=1.17,<2",
+    "pyyaml>=6,<7",
+]
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+[tool.mypy]
+python_version = "3.13"
+[[tool.mypy.overrides]]
+module = "casbin.*"
+# casbin 2.8 未随包发布 py.typed 且 PyPI 无官方存根；局部豁免，不影响其余模块全量类型检查。
+ignore_missing_imports = true
+[tool.pytest.ini_options]
+testpaths = ["tests", "packages/api-contracts/tests"]
+addopts = "-ra"
+markers = ["live: 需要独立本机PG/Keycloak及浏览器授权的活体验收"]

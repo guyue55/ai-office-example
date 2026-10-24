@@ -1,0 +1,945 @@
+{
+  "application_id": "office-ai-office",
+  "contract_version": "1",
+  "entries": [
+    {
+      "code": 100101,
+      "owner": "office.datacenter",
+      "key": "coverage_partial",
+      "message": "结果存在非关键数据缺口",
+      "statuses": [],
+      "severity": "warning",
+      "definition": "仅在操作明确允许降级时输出；覆盖范围必须明确。",
+      "availability": "planned"
+    },
+    {
+      "code": 100102,
+      "owner": "office.datacenter",
+      "key": "result_stale",
+      "message": "结果超出默认新鲜度",
+      "statuses": [],
+      "severity": "warning",
+      "definition": "仅在明确允许使用旧结果的策略下输出，不静默复用失效结果。",
+      "availability": "planned"
+    },
+    {
+      "code": 400001,
+      "owner": "core",
+      "key": "invalid_request",
+      "message": "请求格式或主机无效",
+      "statuses": [
+        400
+      ],
+      "severity": "error",
+      "definition": "受控业务HTTP入口在协议检查阶段拒绝请求。",
+      "availability": "current-source"
+    },
+    {
+      "code": 400002,
+      "owner": "core",
+      "key": "invalid_json",
+      "message": "JSON请求格式无效",
+      "statuses": [
+        400
+      ],
+      "severity": "error",
+      "definition": "JSON语法、重复键或解析结构约束不满足；现v1为422，本提案改400。",
+      "availability": "current-source"
+    },
+    {
+      "code": 400099,
+      "owner": "core",
+      "key": "http_client_error",
+      "message": "HTTP请求未被接受",
+      "statuses": [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447,
+        448,
+        449,
+        450,
+        451,
+        452,
+        453,
+        454,
+        455,
+        456,
+        457,
+        458,
+        459,
+        460,
+        461,
+        462,
+        463,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        494,
+        495,
+        496,
+        497,
+        498,
+        499
+      ],
+      "severity": "error",
+      "definition": "未细分的HTTPException 4xx；保留原HTTP状态并隐藏原始detail。",
+      "availability": "current-source"
+    },
+    {
+      "code": 401001,
+      "owner": "core",
+      "key": "login_required",
+      "message": "请先登录授权",
+      "statuses": [
+        401
+      ],
+      "severity": "error",
+      "definition": "请求缺少有效登录凭证。",
+      "availability": "current-source"
+    },
+    {
+      "code": 401002,
+      "owner": "core",
+      "key": "invalid_token",
+      "message": "访问凭证无效或已过期",
+      "statuses": [
+        401
+      ],
+      "severity": "error",
+      "definition": "签名、受众、签发者或时效校验未通过。",
+      "availability": "current-source"
+    },
+    {
+      "code": 403001,
+      "owner": "core",
+      "key": "permission_denied",
+      "message": "缺少所需操作权限",
+      "statuses": [
+        403
+      ],
+      "severity": "error",
+      "definition": "当前主体缺少动作权限；不公开内部权限判断细节。",
+      "availability": "current-source"
+    },
+    {
+      "code": 403002,
+      "owner": "office.access",
+      "key": "inactive_employee",
+      "message": "员工未开通或已停用",
+      "statuses": [
+        403
+      ],
+      "severity": "error",
+      "definition": "身份有效但本部署的员工映射不可使用。",
+      "availability": "current-source"
+    },
+    {
+      "code": 403003,
+      "owner": "office.web",
+      "key": "csrf_mismatch",
+      "message": "表单校验失败，请刷新页面重试",
+      "statuses": [
+        403
+      ],
+      "severity": "error",
+      "definition": "Web 写操作缺少当前会话的有效 CSRF 标记；拒绝进入业务写入。",
+      "availability": "current-source"
+    },
+    {
+      "code": 404001,
+      "owner": "core",
+      "key": "not_found",
+      "message": "资源不存在或不可访问",
+      "statuses": [
+        404
+      ],
+      "severity": "error",
+      "definition": "对象不存在或超出可见范围；不区分以避免存在性泄漏。",
+      "availability": "current-source"
+    },
+    {
+      "code": 404002,
+      "owner": "office.data",
+      "key": "not_confirmed",
+      "message": "记录尚无确认版本",
+      "statuses": [
+        404
+      ],
+      "severity": "error",
+      "definition": "获准读取的记录没有已确认快照。",
+      "availability": "current-source"
+    },
+    {
+      "code": 404003,
+      "owner": "office.data",
+      "key": "schema_missing",
+      "message": "指定字段定义不存在",
+      "statuses": [
+        404
+      ],
+      "severity": "error",
+      "definition": "读取接口找不到所请求的项目结构版本。",
+      "availability": "current-source"
+    },
+    {
+      "code": 405001,
+      "owner": "core",
+      "key": "method_not_allowed",
+      "message": "请求方法不受支持",
+      "statuses": [
+        405
+      ],
+      "severity": "error",
+      "definition": "路径可识别但HTTP方法不受支持；保留Allow。",
+      "availability": "current-source"
+    },
+    {
+      "code": 408001,
+      "owner": "core",
+      "key": "request_timeout",
+      "message": "接收请求超时",
+      "statuses": [
+        408
+      ],
+      "severity": "error",
+      "definition": "请求体未在接收期限内读完，不代表业务执行超时。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409001,
+      "owner": "core",
+      "key": "version_conflict",
+      "message": "对象已变更，请刷新后重试",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "预期记录、项目或授权版本与当前版本不符。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409002,
+      "owner": "office.data",
+      "key": "schema_conflict",
+      "message": "项目字段定义已变更",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "新建或发布所依据的项目结构修订与可接受修订冲突。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409003,
+      "owner": "core",
+      "key": "idempotency_conflict",
+      "message": "幂等键已用于其他内容",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "同一幂等作用域及键已绑定不同的规范化请求摘要。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409004,
+      "owner": "office.data",
+      "key": "record_frozen",
+      "message": "已确认记录不允许直接修改",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "工作版本已确认或有受保护确认快照，禁止绕过更正规则。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409005,
+      "owner": "office.data",
+      "key": "schema_unpublished",
+      "message": "项目字段定义尚未发布",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "写入命令缺少可用结构，须先完成字段发布。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409006,
+      "owner": "office.data",
+      "key": "project_archived",
+      "message": "项目已归档，当前操作不可用",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "归档状态不允许该类写入／确认／更正。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409007,
+      "owner": "office.data",
+      "key": "correction_pending",
+      "message": "当前工作版本尚未确认",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "不允许在尚未确认的工作版本上再次创建更正。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409008,
+      "owner": "office.data",
+      "key": "revision_exhausted",
+      "message": "修订号已达上限",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "框架整型修订空间耗尽，禁止溢出或覆盖历史。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409009,
+      "owner": "office.access",
+      "key": "last_administrator",
+      "message": "必须保留可用的授权管理员",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "变更会移除最后一名具备授权管理能力的在职员工。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409010,
+      "owner": "office.access",
+      "key": "already_initialized",
+      "message": "基础配置已经初始化",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "重复执行仅应首次完成的初始化操作。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409011,
+      "owner": "core",
+      "key": "constraint_conflict",
+      "message": "数据关系或唯一性约束冲突",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "数据库约束拒绝命令；不暴露SQL、表名、原始约束值。",
+      "availability": "current-source"
+    },
+    {
+      "code": 409012,
+      "owner": "core",
+      "key": "cursor_invalidated",
+      "message": "查询上下文已变更，请重新分页",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "游标绑定的查询、授权或快照上下文失效；不自动跳到下一页。",
+      "availability": "planned"
+    },
+    {
+      "code": 409013,
+      "owner": "core",
+      "key": "batch_item_not_executed",
+      "message": "该项尚未执行",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "按已声明停止／取消策略未执行，不能伪称成功或确定业务失败。",
+      "availability": "planned"
+    },
+    {
+      "code": 409014,
+      "owner": "office.execution",
+      "key": "run_not_cancellable",
+      "message": "任务当前不可取消",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "任务已终结或处于不可取消提交阶段。",
+      "availability": "planned"
+    },
+    {
+      "code": 409015,
+      "owner": "office.access",
+      "key": "identity_claimed",
+      "message": "该登录已被认领，请刷新后查看",
+      "statuses": [
+        409
+      ],
+      "severity": "error",
+      "definition": "待认领登录已被其他管理员绑定到人员。",
+      "availability": "current-source"
+    },
+    {
+      "code": 410001,
+      "owner": "office.execution",
+      "key": "result_expired",
+      "message": "结果已过保留期",
+      "statuses": [
+        410
+      ],
+      "severity": "error",
+      "definition": "已获准识别的产物已过期；撤权不借此泄露存在性。",
+      "availability": "planned"
+    },
+    {
+      "code": 413001,
+      "owner": "core",
+      "key": "request_too_large",
+      "message": "请求超过大小限制",
+      "statuses": [
+        413
+      ],
+      "severity": "error",
+      "definition": "请求字节数超过该入口公布的上限。",
+      "availability": "current-source"
+    },
+    {
+      "code": 413002,
+      "owner": "office.data",
+      "key": "result_too_large",
+      "message": "单条结果超过读取预算，请联系管理员",
+      "statuses": [
+        413
+      ],
+      "severity": "error",
+      "definition": "单个持久化对象已超过分页预算，不能通过拆页合法返回；需核验来源。",
+      "availability": "current-source"
+    },
+    {
+      "code": 415001,
+      "owner": "core",
+      "key": "unsupported_media_type",
+      "message": "请求内容类型不受支持",
+      "statuses": [
+        415
+      ],
+      "severity": "error",
+      "definition": "受控JSON接口收到不支持的媒体类型。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422001,
+      "owner": "core",
+      "key": "invalid_input",
+      "message": "请求字段、类型或参数不符合定义",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "共同输入模型校验失败，安全details按需定位字段。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422002,
+      "owner": "core",
+      "key": "query_complexity_exceeded",
+      "message": "查询超过允许复杂度",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "条件树、维度、指标、批次数或执行计划超过已公布限制。",
+      "availability": "planned"
+    },
+    {
+      "code": 422003,
+      "owner": "office.data",
+      "key": "invalid_field",
+      "message": "项目字段取值不符合定义",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "动态字段的值类型、范围或选项不满足已发布结构。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422004,
+      "owner": "office.data",
+      "key": "missing_field",
+      "message": "缺少项目必填字段",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "已发布为必填的动态字段缺失或为null。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422005,
+      "owner": "office.data",
+      "key": "unknown_field",
+      "message": "包含未定义的项目字段",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "values中出现当前结构未发布的字段。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422006,
+      "owner": "core",
+      "key": "invalid_limit",
+      "message": "每页数量不符合范围",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "分页limit不满足该入口公布的边界。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422007,
+      "owner": "core",
+      "key": "invalid_pagination",
+      "message": "分页参数无效",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "游标或分页组合不符合入口定义。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422008,
+      "owner": "core",
+      "key": "invalid_query",
+      "message": "查询参数未定义或重复",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "URL参数未声明、重复或不符合查询模型；不得静默忽略。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422009,
+      "owner": "office.access",
+      "key": "duplicate_links",
+      "message": "关联项不能重复",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "权限／角色关联替换请求存在重复项。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422010,
+      "owner": "office.access",
+      "key": "unknown_link",
+      "message": "关联项未登记",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "请求关联的权限或其他定义未登记。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422011,
+      "owner": "office.access",
+      "key": "issuer_mismatch",
+      "message": "身份来源不符合本实例配置",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "员工绑定的身份来源与部署信任配置不符。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422012,
+      "owner": "core",
+      "key": "unsupported_operation",
+      "message": "当前尚未提供此能力",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "能力发现未开放或应用操作未登记；MCP未知工具外层仍遵循官方协议。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422013,
+      "owner": "core",
+      "key": "metric_incompatible",
+      "message": "指标或维度口径不兼容",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "项目字段语义、单位、粒度或指标版本无法合法组合。",
+      "availability": "planned"
+    },
+    {
+      "code": 422014,
+      "owner": "core",
+      "key": "required_data_missing",
+      "message": "缺少完成操作所需的关键数据",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "缺关键数据时阻断，不能以警告发布完整结果。",
+      "availability": "planned"
+    },
+    {
+      "code": 422015,
+      "owner": "office.data",
+      "key": "confirmed_export_budget_exceeded",
+      "message": "确认数据超过导出预算，未返回部分数据；请联系管理员安排分段导出",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "单项目确认导出超过条数、内容字节或结构节点预算，拒绝返回截断数据。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422016,
+      "owner": "office.data",
+      "key": "invalid_query_operation",
+      "message": "查询操作与字段类型不兼容",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "仅执行显式允许且与已发布类型兼容的条件、分组及聚合，不猜测业务语义。",
+      "availability": "current-source"
+    },
+    {
+      "code": 422017,
+      "owner": "office.data",
+      "key": "query_budget_exceeded",
+      "message": "查询结果超过预算，未返回截断数据",
+      "statuses": [
+        422
+      ],
+      "severity": "error",
+      "definition": "分组数量或结果内容超过显式上限，整次查询失败，不将部分结果当完整总计。",
+      "availability": "current-source"
+    },
+    {
+      "code": 429001,
+      "owner": "core",
+      "key": "rate_limited",
+      "message": "请求过于频繁",
+      "statuses": [
+        429
+      ],
+      "severity": "error",
+      "definition": "实现了配额／频率控制且本次被拒绝；有依据时附Retry-After。",
+      "availability": "planned"
+    },
+    {
+      "code": 500001,
+      "owner": "core",
+      "key": "internal_error",
+      "message": "服务内部错误，请联系管理员",
+      "statuses": [
+        500
+      ],
+      "severity": "error",
+      "definition": "未分类内部异常，拒绝输出异常文本、堆栈或业务输入。",
+      "availability": "current-source"
+    },
+    {
+      "code": 500002,
+      "owner": "core",
+      "key": "invalid_response",
+      "message": "服务返回结构异常，请联系管理员",
+      "statuses": [
+        500
+      ],
+      "severity": "error",
+      "definition": "业务输出或响应包装违反声明的契约；写入可能已提交。",
+      "availability": "current-source"
+    },
+    {
+      "code": 500099,
+      "owner": "core",
+      "key": "http_server_error",
+      "message": "服务暂未完成请求",
+      "statuses": [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505,
+        506,
+        507,
+        508,
+        509,
+        510,
+        511,
+        512,
+        513,
+        514,
+        515,
+        516,
+        517,
+        518,
+        519,
+        520,
+        521,
+        522,
+        523,
+        524,
+        525,
+        526,
+        527,
+        528,
+        529,
+        530,
+        531,
+        532,
+        533,
+        534,
+        535,
+        536,
+        537,
+        538,
+        539,
+        540,
+        541,
+        542,
+        543,
+        544,
+        545,
+        546,
+        547,
+        548,
+        549,
+        550,
+        551,
+        552,
+        553,
+        554,
+        555,
+        556,
+        557,
+        558,
+        559,
+        560,
+        561,
+        562,
+        563,
+        564,
+        565,
+        566,
+        567,
+        568,
+        569,
+        570,
+        571,
+        572,
+        573,
+        574,
+        575,
+        576,
+        577,
+        578,
+        579,
+        580,
+        581,
+        582,
+        583,
+        584,
+        585,
+        586,
+        587,
+        588,
+        589,
+        590,
+        591,
+        592,
+        593,
+        594,
+        595,
+        596,
+        597,
+        598,
+        599
+      ],
+      "severity": "error",
+      "definition": "未细分的HTTPException 5xx；保留原HTTP状态并隐藏detail。",
+      "availability": "current-source"
+    },
+    {
+      "code": 503001,
+      "owner": "core",
+      "key": "database_unavailable",
+      "message": "数据服务尚未就绪",
+      "statuses": [
+        503
+      ],
+      "severity": "error",
+      "definition": "数据库依赖不可访问或健康检查不能建立可用服务。",
+      "availability": "current-source"
+    },
+    {
+      "code": 503002,
+      "owner": "core",
+      "key": "operation_timeout",
+      "message": "操作超过执行预算",
+      "statuses": [
+        503
+      ],
+      "severity": "error",
+      "definition": "操作达到服务端执行期限；提交边界不清时结果未知。",
+      "availability": "current-source"
+    },
+    {
+      "code": 503003,
+      "owner": "core",
+      "key": "database_busy",
+      "message": "数据服务暂时繁忙",
+      "statuses": [
+        503
+      ],
+      "severity": "error",
+      "definition": "连接池／数据库操作暂时不可用，不公开底层错误。",
+      "availability": "current-source"
+    },
+    {
+      "code": 503004,
+      "owner": "office.access",
+      "key": "identity_unavailable",
+      "message": "身份服务暂时不可用",
+      "statuses": [
+        503
+      ],
+      "severity": "error",
+      "definition": "身份验证所需服务或材料暂不可用。",
+      "availability": "current-source"
+    },
+    {
+      "code": 503005,
+      "owner": "office.access",
+      "key": "authentication_busy",
+      "message": "身份校验繁忙",
+      "statuses": [
+        503
+      ],
+      "severity": "error",
+      "definition": "身份验证并发预算不足，业务尚未进入执行。",
+      "availability": "current-source"
+    },
+    {
+      "code": 503006,
+      "owner": "office.access",
+      "key": "not_initialized",
+      "message": "基础权限尚未初始化",
+      "statuses": [
+        503
+      ],
+      "severity": "error",
+      "definition": "部署的授权基础尚未就绪。",
+      "availability": "current-source"
+    },
+    {
+      "code": 503007,
+      "owner": "office.execution",
+      "key": "execution_unavailable",
+      "message": "任务执行服务尚不可用",
+      "statuses": [
+        503
+      ],
+      "severity": "error",
+      "definition": "未具备持久受理／恢复能力或执行依赖不可用，不返回伪202。",
+      "availability": "planned"
+    }
+  ],
+  "revision": "2dfbae88534034b43d95aa6d9ca809c0cb0daca9c2333e18128fab6d7616fe67"
+}

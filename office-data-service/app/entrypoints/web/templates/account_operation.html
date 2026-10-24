@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}账号处理进度 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>账号处理进度</h2></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
+<section class="card" aria-live="polite">
+
+<span class="badge {{ 'on' if operation.status == 'succeeded' else 'neutral' }}">{{ account_statuses.get(operation.status, '需要核实') }}</span>
+{% if operation.username %}<p>登录账号：<strong>{{ operation.username }}</strong></p>{% endif %}
+<p>{{ operation.message }}</p><p class="muted">更新时间：{{ operation.updated_at|business_time }}。操作编号：{{ operation.id }}</p>
+{% if operation.status in ['pending','running'] %}<p class="muted">页面每3秒核对一次处理结果。请保留此页面，不要重新开户。</p><script>setTimeout(() => location.reload(), 3000);</script>{% endif %}
+<div class="actions"><a class="button secondary" href="{{ operation.next_url }}">刷新进度</a>{% if operation.employee_id %}<a href="/console/accounts/employees/{{ operation.employee_id }}">查看账号详情</a>{% endif %}</div>
+{% if operation.status == 'awaiting_user' %}
+<hr><h3>准备临时密码</h3><p>需要验证管理员本人身份。临时密码仅在安全响应中显示一次，不写入审计或模型输出；首次登录强制修改。</p>
+{% if recent %}<form method="post" data-native-submit action="{{ operation.next_url }}/credential"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ operation.version }}"><button type="submit">生成并显示一次</button></form>
+{% else %}<form method="post" data-native-submit action="{{ operation.next_url }}/verify"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit">验证本人身份</button></form>{% endif %}
+{% elif operation.status in ['needs_attention','needs_confirmation'] %}
+<form method="post" data-native-submit action="{{ operation.next_url }}/resume-preview"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ operation.version }}"><button type="submit">重新核对并继续</button></form>
+{% endif %}
+</section>{% endblock %}

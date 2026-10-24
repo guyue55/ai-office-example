@@ -1,0 +1,65 @@
+# 默认拒绝：构建上下文仅含服务端及其锁定依赖；不发送凭证、资料和本机状态。
+**
+!pyproject.toml
+!uv.lock
+!office-data-service/
+!office-data-service/**
+!packages/
+!packages/api-contracts/
+!packages/api-contracts/pyproject.toml
+!packages/api-contracts/README.md
+!packages/api-contracts/src/
+!packages/api-contracts/src/**
+!clients/
+!clients/python/
+!clients/python/pyproject.toml
+!deploy/
+!deploy/Dockerfile
+# 白名单内仍排除本机产物和秘密。
+**/__pycache__/**
+**/*.pyc
+**/.env*
+**/.venv/**
+**/.pytest_cache/**
+**/.mypy_cache/**
+**/.ruff_cache/**
+**/credentials/**
+**/secrets/**
+**/runtime/**
+**/*.egg-info/**
+
+# 品牌配置只读构建核验；均为公开生成物，不含实例.env。
+!VERSION
+!template.toml
+!template-state.json
+!scripts/
+!scripts/configure_template.py
+!deploy/installer/
+!deploy/installer/product.json
+!deploy/identity/
+!deploy/identity/**
+!installers/
+!installers/client/
+!installers/client/product.json
+!clients/python/src/
+!clients/python/src/office_client/
+!clients/python/src/office_client/product.json
+
+# 最终拒绝规则优先于上面的公开文件白名单。
+**/__pycache__/**
+**/*.pyc
+**/.env*
+**/.venv/**
+**/credentials/**
+**/secrets/**
+**/runtime/**
+
+!contracts/
+!contracts/openapi.json
+
+# 自有与第三方许可随容器交付。
+!LICENSE
+!NOTICE
+!THIRD_PARTY_NOTICES.md
+!packages/api-contracts/LICENSE
+!packages/api-contracts/NOTICE

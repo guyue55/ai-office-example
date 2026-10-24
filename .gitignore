@@ -1,0 +1,39 @@
+# 本机环境、秘密与缓存
+.DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.workbuddy/
+.claude/
+**/credentials/
+# 运行数据、构建与数据库持久卷
+**/runs/
+**/storage_data/
+**/logs/
+**/proposed/
+runtime/
+volumes/
+dist/
+build/
+*.egg-info/
+references/upstream/
+
+# 新框架工具缓存
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 客户实例、私钥与测试覆盖率产物
+**/instance/
+*.key
+*.pem
+.coverage
+coverage.xml
+htmlcov/
+
+# 人工交付配置不得提交
+deploy/.env

@@ -1,0 +1,249 @@
+{
+  "data.aggregate": {"mcp": "aggregate_data", "sdk": "aggregate", "cli": "aggregate", "mode": "direct"},
+  "me": {
+    "mcp": "whoami",
+    "sdk": "me",
+    "cli": "whoami",
+    "mode": "direct"
+  },
+  "capabilities": {
+    "mcp": "capabilities",
+    "sdk": "capabilities",
+    "cli": "capabilities",
+    "mode": "direct"
+  },
+  "session.list": {
+    "mcp": "list_client_authorizations",
+    "sdk": "client_authorizations",
+    "cli": "authorizations",
+    "mode": "direct"
+  },
+  "session.register": {
+    "mcp": "describe_client_device",
+    "sdk": "describe_device",
+    "cli": "describe-device",
+    "mode": "direct"
+  },
+  "session.change": {
+    "mcp": "change_client_authorization",
+    "sdk": "change_authorization",
+    "cli": "authorization-change",
+    "mode": "direct"
+  },
+  "account.history": {
+    "mcp": "account_operation_history",
+    "sdk": "account_history",
+    "cli": "account-history",
+    "mode": "direct"
+  },
+  "account.capabilities": {
+    "mcp": "account_capabilities",
+    "sdk": "account_capabilities",
+    "cli": "account-capabilities",
+    "mode": "direct"
+  },
+  "account.search": {
+    "mcp": "search_login_accounts",
+    "sdk": "search_accounts",
+    "cli": "account-search",
+    "mode": "direct"
+  },
+  "account.detail": {
+    "mcp": "employee_account",
+    "sdk": "employee_account",
+    "cli": "employee-account",
+    "mode": "direct"
+  },
+  "account.preview": {
+    "mcp": "preview_account_operation",
+    "sdk": "preview_account",
+    "cli": "account-preview",
+    "mode": "direct"
+  },
+  "account.submit": {
+    "mcp": "submit_account_operation",
+    "sdk": "submit_account",
+    "cli": "account-submit",
+    "mode": "direct"
+  },
+  "account.operation": {
+    "mcp": "account_operation",
+    "sdk": "account_operation",
+    "cli": "account-operation",
+    "mode": "direct"
+  },
+  "account.resume_preview": {
+    "mcp": "preview_account_resume",
+    "sdk": "preview_account_resume",
+    "cli": "account-resume-preview",
+    "mode": "direct"
+  },
+  "account.resume": {
+    "mcp": "resume_account_operation",
+    "sdk": "resume_account",
+    "cli": "account-resume",
+    "mode": "direct"
+  },
+  "access.list": {
+    "mcp": "list_access",
+    "sdk": "access_list",
+    "cli": "access-list",
+    "mode": "direct"
+  },
+  "access.detail": {
+    "mcp": "access_detail",
+    "sdk": "access_detail",
+    "cli": "access-detail",
+    "mode": "direct"
+  },
+  "access.links.get": {
+    "mcp": "access_links",
+    "sdk": "access_links",
+    "cli": "access-links",
+    "mode": "direct"
+  },
+  "access.identity.pending": {
+    "mcp": "pending_identities",
+    "sdk": "pending_identities",
+    "cli": "pending-identities",
+    "mode": "direct"
+  },
+  "access.change.preview": {
+    "mcp": "preview_access_change",
+    "sdk": "preview_access_change",
+    "cli": "access-preview",
+    "mode": "direct"
+  },
+  "access.change.apply": {
+    "mcp": "apply_access_change",
+    "sdk": "apply_access_change",
+    "cli": "access-apply",
+    "mode": "direct"
+  },
+  "data.change.preview": {
+    "mcp": "preview_data_change",
+    "sdk": "preview_data_change",
+    "cli": "data-preview",
+    "mode": "direct"
+  },
+  "data.change.apply": {
+    "mcp": "apply_data_change",
+    "sdk": "apply_data_change",
+    "cli": "data-apply",
+    "mode": "direct"
+  },
+  "record.export.confirmed": {
+    "mcp": "export_confirmed_records",
+    "sdk": "export_confirmed",
+    "cli": "export-confirmed",
+    "mode": "direct"
+  },
+  "project.list": {
+    "mcp": "list_projects",
+    "sdk": "projects",
+    "cli": "projects",
+    "mode": "direct"
+  },
+  "schema.get": {
+    "mcp": "project_schema",
+    "sdk": "schema",
+    "cli": "schema",
+    "mode": "direct"
+  },
+  "record.list": {
+    "mcp": "list_records",
+    "sdk": "records",
+    "cli": "records",
+    "mode": "direct"
+  },
+  "record.create": {
+    "mcp": "submit_record",
+    "sdk": "submit",
+    "cli": "submit",
+    "mode": "direct"
+  },
+  "record.get": {
+    "mcp": "get_record",
+    "sdk": "record",
+    "cli": "record",
+    "mode": "direct"
+  },
+  "record.confirm": {
+    "mcp": "confirm_record",
+    "sdk": "confirm",
+    "cli": "record-confirm",
+    "mode": "direct"
+  },
+  "record.correct": {
+    "mcp": "correct_record",
+    "sdk": "correct",
+    "cli": "record-correct",
+    "mode": "direct"
+  },
+  "record.confirmed": {
+    "mcp": "confirmed_record",
+    "sdk": "confirmed",
+    "cli": "record-confirmed",
+    "mode": "direct"
+  },
+  "record.history": {
+    "mcp": "record_history",
+    "sdk": "history",
+    "cli": "record-history",
+    "mode": "direct"
+  },
+  "access.create": {
+    "mcp": "apply_access_change",
+    "sdk": "apply_access_change",
+    "cli": "access-apply",
+    "mode": "preview-confirm"
+  },
+  "access.employee.update": {
+    "mcp": "apply_access_change",
+    "sdk": "apply_access_change",
+    "cli": "access-apply",
+    "mode": "preview-confirm"
+  },
+  "access.links.replace": {
+    "mcp": "apply_access_change",
+    "sdk": "apply_access_change",
+    "cli": "access-apply",
+    "mode": "preview-confirm"
+  },
+  "access.identity.claim": {
+    "mcp": "apply_access_change",
+    "sdk": "apply_access_change",
+    "cli": "access-apply",
+    "mode": "preview-confirm"
+  },
+  "project.create": {
+    "mcp": "apply_data_change",
+    "sdk": "apply_data_change",
+    "cli": "data-apply",
+    "mode": "preview-confirm"
+  },
+  "project.update": {
+    "mcp": "apply_data_change",
+    "sdk": "apply_data_change",
+    "cli": "data-apply",
+    "mode": "preview-confirm"
+  },
+  "schema.publish": {
+    "mcp": "apply_data_change",
+    "sdk": "apply_data_change",
+    "cli": "data-apply",
+    "mode": "preview-confirm"
+  },
+  "record.update": {
+    "mcp": "apply_data_change",
+    "sdk": "apply_data_change",
+    "cli": "data-apply",
+    "mode": "preview-confirm"
+  },
+  "record.archive": {
+    "mcp": "apply_data_change",
+    "sdk": "apply_data_change",
+    "cli": "data-apply",
+    "mode": "preview-confirm"
+  }
+}

@@ -1,0 +1,567 @@
+[
+  {
+    "code": 413002, "key": "result_too_large", "owner": "office.data",
+    "severity": "error", "http_status": 413, "allowed_http_statuses": [413],
+    "message": "单条结果超过读取预算，请联系管理员",
+    "definition": "单个持久化对象已超过分页预算，不能通过拆页合法返回；需核验来源。",
+    "recovery_hint": "contact_admin", "availability": "current-source",
+    "legacy_aliases": [{"symbol": "result_too_large", "status": 413}]
+  },
+  {
+    "code": 403003,
+    "key": "csrf_mismatch",
+    "owner": "office.web",
+    "severity": "error",
+    "http_status": 403,
+    "allowed_http_statuses": [403],
+    "message": "表单校验失败，请刷新页面重试",
+    "definition": "Web 写操作缺少当前会话的有效 CSRF 标记；拒绝进入业务写入。",
+    "recovery_hint": "refresh_form",
+    "availability": "current-source",
+    "legacy_aliases": [{"symbol": "csrf_mismatch", "status": 403}]
+  },
+  {
+    "code": 100101,
+    "key": "coverage_partial",
+    "owner": "office.datacenter",
+    "severity": "warning",
+    "http_status": null,
+    "allowed_http_statuses": [],
+    "message": "结果存在非关键数据缺口",
+    "definition": "仅在操作明确允许降级时输出；覆盖范围必须明确。",
+    "recovery_hint": "review_result",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 100102,
+    "key": "result_stale",
+    "owner": "office.datacenter",
+    "severity": "warning",
+    "http_status": null,
+    "allowed_http_statuses": [],
+    "message": "结果超出默认新鲜度",
+    "definition": "仅在明确允许使用旧结果的策略下输出，不静默复用失效结果。",
+    "recovery_hint": "review_result",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 403002,
+    "key": "inactive_employee",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 403,
+    "allowed_http_statuses": [
+      403
+    ],
+    "message": "员工未开通或已停用",
+    "definition": "身份有效但本部署的员工映射不可使用。",
+    "recovery_hint": "contact_admin",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "inactive_employee",
+        "status": 403
+      }
+    ]
+  },
+  {
+    "code": 404002,
+    "key": "not_confirmed",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 404,
+    "allowed_http_statuses": [
+      404
+    ],
+    "message": "记录尚无确认版本",
+    "definition": "获准读取的记录没有已确认快照。",
+    "recovery_hint": "check_record_state",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "not_confirmed",
+        "status": 404
+      }
+    ]
+  },
+  {
+    "code": 404003,
+    "key": "schema_missing",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 404,
+    "allowed_http_statuses": [
+      404
+    ],
+    "message": "指定字段定义不存在",
+    "definition": "读取接口找不到所请求的项目结构版本。",
+    "recovery_hint": "refresh_schema",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "schema_not_found",
+        "status": 404
+      }
+    ]
+  },
+  {
+    "code": 409002,
+    "key": "schema_conflict",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "项目字段定义已变更",
+    "definition": "新建或发布所依据的项目结构修订与可接受修订冲突。",
+    "recovery_hint": "refresh_schema",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "schema_conflict",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409004,
+    "key": "record_frozen",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "已确认记录不允许直接修改",
+    "definition": "工作版本已确认或有受保护确认快照，禁止绕过更正规则。",
+    "recovery_hint": "start_correction",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "record_frozen",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409005,
+    "key": "schema_unpublished",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "项目字段定义尚未发布",
+    "definition": "写入命令缺少可用结构，须先完成字段发布。",
+    "recovery_hint": "publish_schema",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "schema_not_found",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409006,
+    "key": "project_archived",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "项目已归档，当前操作不可用",
+    "definition": "归档状态不允许该类写入／确认／更正。",
+    "recovery_hint": "check_project_state",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "project_archived",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409007,
+    "key": "correction_pending",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "当前工作版本尚未确认",
+    "definition": "不允许在尚未确认的工作版本上再次创建更正。",
+    "recovery_hint": "check_record_state",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "correction_pending",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409008,
+    "key": "revision_exhausted",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "修订号已达上限",
+    "definition": "框架整型修订空间耗尽，禁止溢出或覆盖历史。",
+    "recovery_hint": "contact_admin",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "revision_exhausted",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409009,
+    "key": "last_administrator",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "必须保留可用的授权管理员",
+    "definition": "变更会移除最后一名具备授权管理能力的在职员工。",
+    "recovery_hint": "retain_administrator",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "last_administrator",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409010,
+    "key": "already_initialized",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "基础配置已经初始化",
+    "definition": "重复执行仅应首次完成的初始化操作。",
+    "recovery_hint": "contact_admin",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "already_initialized",
+        "status": 409
+      }
+    ]
+  },
+  {
+    "code": 409014,
+    "key": "run_not_cancellable",
+    "owner": "office.execution",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [
+      409
+    ],
+    "message": "任务当前不可取消",
+    "definition": "任务已终结或处于不可取消提交阶段。",
+    "recovery_hint": "query_operation",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 409015,
+    "key": "identity_claimed",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 409,
+    "allowed_http_statuses": [409],
+    "message": "该登录已被认领，请刷新后查看",
+    "definition": "待认领登录已被其他管理员绑定到人员。",
+    "recovery_hint": "query_operation",
+    "availability": "current-source",
+    "legacy_aliases": []
+  },
+  {
+    "code": 410001,
+    "key": "result_expired",
+    "owner": "office.execution",
+    "severity": "error",
+    "http_status": 410,
+    "allowed_http_statuses": [
+      410
+    ],
+    "message": "结果已过保留期",
+    "definition": "已获准识别的产物已过期；撤权不借此泄露存在性。",
+    "recovery_hint": "recompute",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+  {
+    "code": 422003,
+    "key": "invalid_field",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "项目字段取值不符合定义",
+    "definition": "动态字段的值类型、范围或选项不满足已发布结构。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "invalid_field",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422004,
+    "key": "missing_field",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "缺少项目必填字段",
+    "definition": "已发布为必填的动态字段缺失或为null。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "missing_field",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422005,
+    "key": "unknown_field",
+    "owner": "office.data",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "包含未定义的项目字段",
+    "definition": "values中出现当前结构未发布的字段。",
+    "recovery_hint": "refresh_schema",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "unknown_field",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422009,
+    "key": "duplicate_links",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "关联项不能重复",
+    "definition": "权限／角色关联替换请求存在重复项。",
+    "recovery_hint": "correct_request",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "duplicate_links",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422010,
+    "key": "unknown_link",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "关联项未登记",
+    "definition": "请求关联的权限或其他定义未登记。",
+    "recovery_hint": "check_reference",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "unknown_link",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 422011,
+    "key": "issuer_mismatch",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 422,
+    "allowed_http_statuses": [
+      422
+    ],
+    "message": "身份来源不符合本实例配置",
+    "definition": "员工绑定的身份来源与部署信任配置不符。",
+    "recovery_hint": "contact_admin",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "issuer_mismatch",
+        "status": 422
+      }
+    ]
+  },
+  {
+    "code": 503004,
+    "key": "identity_unavailable",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 503,
+    "allowed_http_statuses": [
+      503
+    ],
+    "message": "身份服务暂时不可用",
+    "definition": "身份验证所需服务或材料暂不可用。",
+    "recovery_hint": "retry_later",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "identity_unavailable",
+        "status": 503
+      }
+    ]
+  },
+  {
+    "code": 503005,
+    "key": "authentication_busy",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 503,
+    "allowed_http_statuses": [
+      503
+    ],
+    "message": "身份校验繁忙",
+    "definition": "身份验证并发预算不足，业务尚未进入执行。",
+    "recovery_hint": "retry_later",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "authentication_busy",
+        "status": 503
+      }
+    ]
+  },
+  {
+    "code": 503006,
+    "key": "not_initialized",
+    "owner": "office.access",
+    "severity": "error",
+    "http_status": 503,
+    "allowed_http_statuses": [
+      503
+    ],
+    "message": "基础权限尚未初始化",
+    "definition": "部署的授权基础尚未就绪。",
+    "recovery_hint": "contact_admin",
+    "availability": "current-source",
+    "legacy_aliases": [
+      {
+        "symbol": "not_initialized",
+        "status": 503
+      }
+    ]
+  },
+  {
+    "code": 503007,
+    "key": "execution_unavailable",
+    "owner": "office.execution",
+    "severity": "error",
+    "http_status": 503,
+    "allowed_http_statuses": [
+      503
+    ],
+    "message": "任务执行服务尚不可用",
+    "definition": "未具备持久受理／恢复能力或执行依赖不可用，不返回伪202。",
+    "recovery_hint": "retry_later",
+    "availability": "planned",
+    "legacy_aliases": []
+  },
+{
+  "code": 422015,
+  "key": "confirmed_export_budget_exceeded",
+  "owner": "office.data",
+  "severity": "error",
+  "http_status": 422,
+  "allowed_http_statuses": [
+    422
+  ],
+  "message": "确认数据超过导出预算，未返回部分数据；请联系管理员安排分段导出",
+  "definition": "单项目确认导出超过条数、内容字节或结构节点预算，拒绝返回截断数据。",
+  "recovery_hint": "contact_admin",
+  "availability": "current-source",
+  "legacy_aliases": [
+    {
+      "symbol": "confirmed_export_budget_exceeded",
+      "status": 422
+    }
+  ]
+},
+{
+  "code": 422016,
+  "key": "invalid_query_operation",
+  "owner": "office.data",
+  "severity": "error",
+  "http_status": 422,
+  "allowed_http_statuses": [
+    422
+  ],
+  "message": "查询操作与字段类型不兼容",
+  "definition": "仅执行显式允许且与已发布类型兼容的条件、分组及聚合，不猜测业务语义。",
+  "recovery_hint": "correct_request",
+  "availability": "current-source",
+  "legacy_aliases": [
+    {
+      "symbol": "invalid_query_operation",
+      "status": 422
+    }
+  ]
+},
+{
+  "code": 422017,
+  "key": "query_budget_exceeded",
+  "owner": "office.data",
+  "severity": "error",
+  "http_status": 422,
+  "allowed_http_statuses": [
+    422
+  ],
+  "message": "查询结果超过预算，未返回截断数据",
+  "definition": "分组数量或结果内容超过显式上限，整次查询失败，不将部分结果当完整总计。",
+  "recovery_hint": "correct_request",
+  "availability": "current-source",
+  "legacy_aliases": [
+    {
+      "symbol": "query_budget_exceeded",
+      "status": 422
+    }
+  ]
+}
+]

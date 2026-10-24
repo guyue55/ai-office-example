@@ -1,0 +1,42 @@
+# 仅本机开发：不对局域网或公网开放，数据卷不随停止删除。
+name: office-foundation
+services:
+  postgres:
+    pull_policy: never
+    image: pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
+    ports: ["127.0.0.1:55432:5432"]
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password, owner_password, app_password, identity_password]
+    volumes:
+      - database:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  identity:
+    pull_policy: never
+    image: quay.io/keycloak/keycloak:26.8.1
+    ports: ["127.0.0.1:8081:8080"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/office_identity
+      KC_DB_USERNAME: office_identity
+      KC_BOOTSTRAP_ADMIN_USERNAME: foundation-admin
+      KC_HTTP_ENABLED: "true"
+    secrets: [identity_password, admin_password]
+    entrypoint: ["/bin/bash", "/opt/office/start-identity.sh"]
+    volumes:
+      - "./start-identity.sh:/opt/office/start-identity.sh:ro"
+      - "./identity/themes/office:/opt/keycloak/themes/office:ro"
+    depends_on:
+      postgres: {condition: service_healthy}
+secrets:
+  postgres_password: {file: ../runtime/secrets/postgres_password}
+  owner_password: {file: ../runtime/secrets/owner_password}
+  app_password: {file: ../runtime/secrets/app_password}
+  identity_password: {file: ../runtime/secrets/identity_password}
+  admin_password: {file: ../runtime/secrets/admin_password}
+volumes:
+  database:

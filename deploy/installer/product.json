@@ -1,0 +1,13 @@
+{
+  "name": "企业智能办公平台",
+  "short_name": "智能办公",
+  "description": "企业数据治理与AI工具协作基座",
+  "organization": "示例企业",
+  "primary_color": "#2563EB",
+  "command": "office",
+  "cli_name": "企业办公 CLI",
+  "namespace": "office",
+  "client_id": "office-cli",
+  "web_client_id": "office-web",
+  "admin_client_id": "office-account-admin"
+}

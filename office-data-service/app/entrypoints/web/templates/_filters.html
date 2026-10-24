@@ -1,0 +1,32 @@
+{# 列表唯一筛选组件；原生表单/折叠，JS不可用仍可查询。 #}
+{% macro field(name,label,kind='text',options=[]) -%}
+<label class="filter-field"><span>{{ label }}</span>{% if kind == 'select' %}<select name="{{ name }}">{% for value,text in options %}<option value="{{ value }}" {% if request.query_params.get(name, '') == value %}selected{% endif %}>{{ text }}</option>{% endfor %}</select>{% else %}<input type="{{ kind }}" name="{{ name }}" value="{{ request.query_params.get(name,'') }}" {% if kind != 'date' %}maxlength="100"{% endif %}>{% endif %}</label>
+{%- endmacro %}
+<form class="list-filters search" method="get" role="search" aria-label="筛选列表">
+{% if request.query_params.get('identifier') %}<input type="hidden" name="identifier" value="{{ request.query_params.get('identifier') }}">{% endif %}
+{% if request.query_params.get('employee_id') %}<input type="hidden" name="employee_id" value="{{ request.query_params.get('employee_id') }}">{% endif %}
+<input type="hidden" name="limit" value="{{ listing.pagination.page_size if listing is defined and listing.pagination else request.query_params.get('limit','10') }}">
+<div class="filter-main">
+<label class="filter-search"><span class="sr-only">搜索</span><input type="search" name="q" value="{{ request.query_params.get('q', search|default('')) }}" maxlength="100" placeholder="{{ search_placeholder|default('搜索名称或编号') }}" aria-label="搜索"></label>
+{% if filter_mode == 'authorizations' %}
+{% set scopes = [('own','我的授权')] + ([('all','全部员工')] if 'session.read.all' in me.permissions else []) %}
+{{ field('scope','范围','select',scopes) }}
+{{ field('state','业务状态','select',[('','全部状态'),('active','未停用'),('disabled','已停用'),('revoked','已撤销')]) }}
+{% elif filter_mode == 'audit' %}
+{{ field('action','操作','select',[('','全部操作')] + audit_actions.items()|list) }}
+{% elif filter_mode == 'operations' %}
+{{ field('status','状态','select',[('','全部状态')] + account_statuses.items()|list) }}
+{% endif %}
+<button class="secondary" type="submit">{{ '查询' if filter_mode else '搜索' }}</button><a class="filter-reset" href="{{ request.url.path }}?limit={{ listing.pagination.page_size if listing is defined and listing.pagination else request.query_params.get('limit','10') }}{% for key in ['identifier','employee_id','scope'] if request.query_params.get(key) %}&{{ key }}={{ request.query_params.get(key)|urlencode }}{% endfor %}">重置</a>
+</div>
+{% if filter_mode %}
+{% set advanced = (['client_id','since','until','archived','date_field'] if filter_mode == 'authorizations' else ['actor','since','until'] if filter_mode == 'audit' else ['kind','since','until']) %}
+{% set applied = namespace(count=0) %}{% for key in advanced %}{% if request.query_params.get(key) and request.query_params.get(key) not in ['false','created_at'] %}{% set applied.count = applied.count + 1 %}{% endif %}{% endfor %}
+<details class="filter-advanced" {% if applied.count %}open{% endif %}><summary>更多筛选{% if applied.count %}<span class="badge neutral">已应用 {{ applied.count }} 项</span>{% endif %}</summary><div class="filter-extra">
+{% if filter_mode == 'authorizations' %}{{ field('client_id','客户端') }}{{ field('date_field','日期类型','select',[('created_at','登记时间'),('last_seen_at','最近访问')]) }}{{ field('archived','记录','select',[('false','未归档'),('true','已归档')]) }}
+{% elif filter_mode == 'audit' %}{{ field('actor','操作者') }}
+{% elif filter_mode == 'operations' %}{{ field('kind','操作','select',[('','全部操作')] + account_actions.items()|list) }}{% endif %}
+{{ field('since','开始日期','date') }}{{ field('until','结束日期','date') }}<span class="muted small">北京时间，包含结束日</span>
+</div></details>
+{% endif %}
+</form>

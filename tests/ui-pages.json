@@ -1,0 +1,156 @@
+{
+  "pages": [
+    {
+      "template": "access_detail.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "account_credential.html",
+      "coverage": "账号生命周期安全链路",
+      "tests": [
+        "e2e_accounts.py",
+        "test_account_web.py"
+      ]
+    },
+    {
+      "template": "account_detail.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "account_link.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "account_new.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "account_operation.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "account_operations.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "account_preview.html",
+      "coverage": "全页面核对预览及账号生命周期安全链路",
+      "tests": [
+        "e2e_page_review.py",
+        "e2e_accounts.py",
+        "test_account_web.py"
+      ]
+    },
+    {
+      "template": "account_security.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "audit.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "client_authorizations.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "dashboard.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "employees.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "error.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "links.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "permission_sets.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "permissions.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "roles.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    },
+    {
+      "template": "signed_out.html",
+      "coverage": "全页面浏览器巡视",
+      "tests": [
+        "e2e_page_review.py"
+      ]
+    }
+  ],
+  "components": [
+    "base.html",
+    "_account_menu.html",
+    "_filters.html",
+    "pagination.html",
+    "_permissions.html",
+    "_workspace.html",
+    "_interactions.html",
+    "_access_flow.html",
+    "_search.html",
+    "form-state.js",
+    "workspace.js",
+    "interactions.js",
+    "account-menu.js",
+    "styles.css"
+  ]
+}

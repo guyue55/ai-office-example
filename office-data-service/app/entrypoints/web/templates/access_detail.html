@@ -1,0 +1,72 @@
+{% extends 'base.html' %}{% from '_permissions.html' import permission_table %}
+{% block title %}{{ detail.name }} · 授权详情{% endblock %}
+{% block content %}{% set relation = 'roles' if kind == 'employees' else 'permission-sets' if kind == 'roles' else 'permissions' %}
+<div class="breadcrumb">
+<a href="/console/{{ kind }}">{{ access_labels[kind] }}列表</a>
+<span>/</span>
+<span>授权详情</span>
+</div>
+<header class="page-header">
+<div>
+<p class="eyebrow">{{ access_labels[kind] }}详情</p>
+<h2>{{ detail.name }}{% if detail.builtin_key %} <span class="badge neutral">内置角色</span>{% endif %}</h2>
+<p class="muted">查看授权内容、关联来源与使用情况。</p>
+</div>
+<a class="button {{ 'secondary' if not can_manage else '' }}" href="/console/links/{{ kind }}/{{ detail.id }}/{{ relation }}">{{ '配置' if can_manage else '查看' }}{{ access_labels[relation] }}</a>
+</header>
+{% if detail.active == false %}
+<div class="hint">此员工已停用，下列为保留的配置，不代表当前可访问任何业务功能。</div>{% endif %}
+{% if detail.builtin_key == 'employee' %}<div class="hint">新员工开通时默认关联此角色，可取消。这里修改权限集会影响已关联员工和之后新开通的员工；从员工处撤回角色后，登录或重新启用不会补回。</div>{% elif detail.builtin_key == 'access-admin' %}<div class="hint">此角色能管理人员与授权，包括调整自身权限；仅授予可信任的管理人员，不会自动分配。</div>{% endif %}
+{% include '_access_flow.html' %}
+<section class="card">
+<div class="section-head">
+<h3>已关联{{ access_labels[relation] }}</h3>
+<span class="badge neutral">{{ detail.links|length }} 项</span>
+</div>
+{% if detail.links %}
+<ul class="pill-list">{% for item in detail.links %}
+<li>{% if relation != 'permissions' %}
+<a href="/console/access/{{ relation }}/{{ item.id }}">{{ item.name }} ↗</a>{% else %}
+<span class="badge neutral">{{ item.name }}</span>{% endif %}
+</li>{% endfor %}
+</ul>{% else %}
+<p class="muted">尚未关联{{ access_labels[relation] }}，不会自动获得权限。请从上方配置入口继续。</p>{% endif %}
+</section>
+<section class="card">
+<div class="section-head">
+<h3>配置权限</h3>
+<span class="badge neutral">去重后 {{ detail.permissions|length }} 项</span>
+</div>
+<p class="muted">{% if kind == 'employees' %}来自已关联角色及其权限集；账号停用期间，这些配置权限不会生效。{% elif kind == 'roles' %}来自已关联权限集的合集；修改任一共享权限集会影响使用它的角色和员工。{% else %}本权限集包含的具体能力；修改会影响下方使用它的角色。{% endif %}
+</p>{{ permission_table(detail.permissions) }}</section>
+{% if kind != 'employees' %}{% set parent_kind = 'employees' if kind == 'roles' else 'roles' %}
+<section class="card">
+<h3>使用此{{ access_labels[kind] }}的{{ access_labels[parent_kind] }}</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>{% for item in detail.used_by['items'] %}
+<tr>
+<td>{{ item.name }}</td>
+<td>
+<a href="/console/access/{{ parent_kind }}/{{ item.id }}">查看{{ access_labels[parent_kind] }}授权详情</a>
+</td>
+</tr>{% else %}
+<tr>
+<td colspan="2" class="empty">当前没有关联的{{ access_labels[parent_kind] }}。</td>
+</tr>{% endfor %}
+</tbody>
+</table>
+</div>{% include 'pagination.html' %}
+</section>{% endif %}
+<details class="card">
+<summary>配置标识</summary>
+<p class="code">{{ detail.id }}</p>
+<span class="muted">配置版本 {{ detail.version }} · 修改时会检查版本，避免覆盖其他人的更新。</span>
+</details>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}{% block title %}客户端授权 · {{ product.short_name }}{% endblock %}
+{% block content %}
+{% macro authorization_action(item, action, label, message) %}
+<details class="inline-edit"><summary data-action-kind="{{ action }}">{{ label }}</summary>
+<form method="post" action="/console/client-authorizations/{{ item.id }}/change" class="form-stack" data-native-submit data-confirm-message="{{ message }}">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ item.version }}"><input type="hidden" name="action" value="{{ action }}">
+<p class="muted">{{ message }}</p>
+<label>原因<input type="text" name="reason" required minlength="2" maxlength="200" placeholder="填写原因，便于审计核对"></label>
+<button type="submit" class="secondary">{{ label }}</button>
+</form></details>
+{% endmacro %}
+{% set states = {'active':'未停用','disabled':'已停用','revoked':'已撤销'} %}
+{% set cleanups = {'not_requested':'无需清理','pending':'清理待完成','done':'身份登录已结束','failed':'清理需重试'} %}
+<header class="page-header"><div><p class="eyebrow">账号与安全</p><h2>客户端授权</h2><p class="muted">管理通过浏览器登录的 AI 工具和控制台访问。</p></div></header>
+<details class="list-help"><summary>授权与设备说明</summary><p>同次浏览器登录的客户端会一起失效。设备备注由客户端提供，不代表硬件认证；列表仅展示访问过本服务的授权。停用后需重新登录授权，旧凭证不能恢复；归档会隐藏记录并保留审计，“未停用”仅表示业务端没有禁用该授权，不代表身份登录仍未过期。</p></details>
+<section class="card">{% include '_filters.html' %}
+<div class="table-wrap"><table><thead><tr><th>人员与授权</th><th>客户端与设备</th><th>时间（北京时间）</th><th>业务授权状态</th><th>操作</th></tr></thead><tbody>
+{% for item in listing['items'] %}<tr><td><strong>{{ item.employee_name }}</strong>{% if item.current %}<span class="badge">当前登录</span>{% endif %}<div class="muted small">OAuth 浏览器授权</div><details><summary class="small">授权编号</summary><code>{{ item.id }}</code></details></td>
+<td>{% for client in item.clients %}<div>{{ client }}</div>{% endfor %}<div class="muted small">设备备注：{{ item.device_name or '未提供' }}<br>平台：{{ item.platform or '未提供' }}</div></td>
+<td class="small">登记 {{ item.created_at|business_time }}<br>最近访问 {{ item.last_seen_at|business_time }}<details><summary>更多时间</summary>身份认证 {{ item.authenticated_at|business_time }}<br>最近访问令牌到期 {{ item.token_expires_at|business_time }}<p class="muted">访问令牌到期不等于整个授权结束。</p>{% if item.ended_at %}结束 {{ item.ended_at|business_time }}{% endif %}</details></td>
+<td><span class="badge">{{ states[item.state] }}</span>{% if item.archived_at %}<div class="small">已归档</div>{% endif %}<div class="muted small">{{ cleanups[item.cleanup] }}</div></td>
+<td>{% if item.employee_id == me.id or 'session.manage.all' in me.permissions %}<div class="actions">
+{% if not item.archived_at %}
+{% if item.state == 'active' %}{{ authorization_action(item, 'disable', '停用授权', '确认停用此授权？旧凭证立即失效，同次浏览器登录的客户端会一起失效；当前登录被停用时会退出，使用时需要重新登录授权。') }}{% endif %}
+{{ authorization_action(item, 'archive', '归档记录', '确认归档此记录？有效授权会先停用，再从默认列表隐藏；同次登录的客户端会一起失效。记录与审计保留，可通过归档筛选查阅。') }}
+{% endif %}
+{% if item.cleanup in ['failed','pending'] %}{{ authorization_action(item, 'retry', '重试清理', '确认重试身份会话清理？此操作不会恢复已停用的授权。') }}{% endif %}
+</div>{% else %}<span class="muted small">仅可查看</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">没有符合条件的授权。新客户端首次访问业务服务后会自动登记。</td></tr>{% endfor %}
+</tbody></table></div>{% include 'pagination.html' %}</section>
+{% endblock %}

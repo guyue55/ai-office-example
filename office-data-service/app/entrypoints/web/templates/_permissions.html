@@ -1,0 +1,28 @@
+{% macro permission_table(entries, empty_message='暂无权限。需要使用相关功能时，请联系管理员配置角色。') -%}
+{% if entries %}
+<div class="table-wrap">
+<table class="data-table" role="table">
+<thead>
+<tr>
+<th>权限名称</th>
+<th>用途与范围</th>
+<th>类别</th>
+</tr>
+</thead>
+<tbody>
+{% for p in entries %}
+<tr>
+<td>
+<span class="cell-title">{{ p.name }}</span>
+<span class="code block-code">{{ p.code }}</span>
+</td>
+<td>{{ p.description }}</td>
+<td>
+<span class="badge neutral">{{ p.group }}</span>
+</td>
+</tr>{% endfor %}
+</tbody>
+</table>
+</div>{% else %}
+<div class="empty">{{ empty_message }}</div>{% endif %}
+{%- endmacro %}

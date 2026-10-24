@@ -1,0 +1,17 @@
+{# 数字分页/游标兼容统一出口；GET保留筛选，不依赖JS。 #}
+{% macro hidden_filters(exclude) %}{% for key,value in request.query_params.multi_items() if key not in exclude %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endmacro %}
+{% macro page_url(number) %}?{% for key,value in request.query_params.multi_items() if key not in ['after','page','limit'] %}{{ key|urlencode }}={{ value|urlencode }}&{% endfor %}limit={{ listing.pagination.page_size }}&page={{ number }}{% endmacro %}
+{% if listing.pagination %}{% set p = listing.pagination %}
+<nav class="pagination pagination-numbered" aria-label="分页">
+<span class="page-summary" title="总数为本次导航参考；读取期间数据变动可能影响条数">共 <strong>{{ p.total }}</strong> 条<span class="page-range"> · {{ p.start }}–{{ p.end }} 条</span></span>
+<form method="get" class="page-size" data-page-size-form>{{ hidden_filters(['after','page','limit']) }}<label>每页<select name="limit" aria-label="每页条数" data-current-size="{{ p.page_size }}">{% if p.page_size not in [10,20,50,100] %}<option value="{{ p.page_size }}" selected>{{ p.page_size }} 条</option>{% endif %}{% for size in [10,20,50,100] %}<option value="{{ size }}" {% if p.page_size == size %}selected{% endif %}>{{ size }} 条</option>{% endfor %}</select></label><button type="submit" class="secondary">应用</button></form>
+<div class="page-links">
+{% if p.page > 1 %}<a href="{{ page_url(p.page-1) }}" aria-label="上一页">‹</a>{% else %}<span aria-disabled="true" aria-label="上一页">‹</span>{% endif %}
+{% set gap = namespace(previous=0) %}{% for number in [1,p.page-1,p.page,p.page+1,p.pages]|unique|sort if number >= 1 and number <= p.pages %}{% if number > gap.previous+1 %}<span class="page-ellipsis">…</span>{% endif %}{% if number == p.page %}<span class="page-current" aria-current="page">{{ number }}</span>{% else %}<a href="{{ page_url(number) }}" aria-label="第 {{ number }} 页">{{ number }}</a>{% endif %}{% set gap.previous = number %}{% endfor %}
+{% if p.page < p.pages %}<a href="{{ page_url(p.page+1) }}" aria-label="下一页">›</a>{% else %}<span aria-disabled="true" aria-label="下一页">›</span>{% endif %}
+</div>
+<form method="get" class="page-jump">{{ hidden_filters(['after','page','limit']) }}<input type="hidden" name="limit" value="{{ p.page_size }}"><label>第 <input type="number" name="page" min="1" max="{{ p.pages }}" value="{{ p.page }}" aria-label="跳转页码"> / {{ p.pages }} 页</label><button class="secondary" type="submit">跳转</button></form>
+</nav>
+{% else %}
+<nav class="pagination" aria-label="分页"><span class="muted small">本页 {{ listing['items']|length }} 条 · 游标模式</span>{% set filters = namespace(query='') %}{% for key,value in request.query_params.multi_items() if key != 'after' %}{% set filters.query = filters.query ~ (key|urlencode) ~ '=' ~ (value|urlencode) ~ '&' %}{% endfor %}<a href="?{{ filters.query }}">返回首页</a>{% if listing.has_more|default(listing.next is not none) %}<a class="button secondary" href="?{{ filters.query }}after={{ listing.next|urlencode }}">下一页 →</a>{% else %}<span class="muted small">已到当前列表末尾</span>{% endif %}</nav>
+{% endif %}

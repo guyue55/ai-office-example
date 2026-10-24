@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% from '_permissions.html' import permission_table %}
+{% block title %}权限目录 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header">
+<div>
+<p class="eyebrow">人员与授权</p>
+<h2>权限目录</h2>
+<p class="muted">查看系统已经提供的具体能力和作用范围。权限编码由系统登记，不能手工新增。</p>
+</div>
+<a class="button secondary" href="/console/permission-sets">到权限集组合授权</a>
+</header>{% include '_access_flow.html' %}
+<section class="card">{% include '_search.html' %}{{ permission_table(items, '没有符合条件的权限。请调整关键词或重置筛选。') }}{% include 'pagination.html' %}
+</section>{% endblock %}
