@@ -1,43 +1,105 @@
 name: 手动构建发布服务镜像
-# 仅生成内网部署制品，不连接客户服务器；须管理员配置image-release环境审批。
+# 仅发布制品，不连接客户服务器；版本Tag与待发布提交必须一致。
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 已存在且指向当前main提交的版本Tag
+        required: true
+        default: v1.0.0
 permissions:
   contents: read
+concurrency:
+  group: image-release-${{ inputs.tag }}
+  cancel-in-progress: false
 jobs:
   checks:
     if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ci.yml
   publish:
     needs: checks
-    # 私有仓库套餐可能不支持环境审批；默认关闭发布，管理员确认后显式启用。
-    if: vars.ENABLE_IMAGE_RELEASE == 'true'
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_IMAGE_RELEASE == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     environment: image-release
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: 确定小写镜像路径
-        id: image
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 核对版本与Tag来源
+        id: release
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
         shell: bash
-        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}/data-service" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$RELEASE_TAG" = "v$(cat VERSION)"
+          test "$(git cat-file -t "refs/tags/$RELEASE_TAG")" = tag
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY'
+          import os, tomllib
+          from pathlib import Path
+          name = tomllib.loads(Path('template.toml').read_text())['product']['name']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+              stream.write('title=' + name + '\n')
+              stream.write('image=ghcr.io/' + os.environ['GITHUB_REPOSITORY'].lower() + '/data-service\n')
+          PY
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
         with:
           context: .
           file: deploy/Dockerfile
           push: true
-          tags: ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ steps.release.outputs.image }}:${{ steps.release.outputs.version }}
+            ${{ steps.release.outputs.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title=${{ steps.release.outputs.title }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.release.outputs.version }}
+            org.opencontainers.image.licenses=Apache-2.0
           sbom: true
           provenance: mode=min
-
         env:
           DOCKER_BUILD_RECORD_UPLOAD: "false"
+      - name: 保存公开镜像来源与摘要
+        env:
+          IMAGE_NAME: ${{ steps.release.outputs.image }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path('image-release.json').write_text(json.dumps({
+              'image': os.environ['IMAGE_NAME'],
+              'digest': os.environ['IMAGE_DIGEST'],
+              'tag': os.environ['RELEASE_TAG'],
+              'source_commit': os.environ['GITHUB_SHA'],
+              'platforms': ['linux/amd64', 'linux/arm64'],
+              'notice': '构建来源；公开可拉取性与运行验收须独立验证'
+          }, ensure_ascii=False, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-release-${{ github.run_id }}
+          path: image-release.json
+          if-no-files-found: error
+          retention-days: 30

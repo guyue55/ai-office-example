@@ -73,7 +73,7 @@ def main():
         page.locator(".filter-reset").click()
         expect(page.locator(".filter-advanced")).not_to_have_attribute("open")
         page.locator("select[name=limit]").select_option("20")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
         expect(page.locator("select[name=limit]")).to_have_value("20")
         page.locator("input[name=page]").fill("2")
         page.get_by_role("button", name="跳转", exact=True).click()

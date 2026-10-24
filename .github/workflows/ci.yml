@@ -52,7 +52,7 @@ jobs:
       - run: uv run --frozen python scripts/check_capability_coverage.py
       - run: uv run --frozen python scripts/check_skills.py
       - run: uv run --frozen python scripts/export_contracts.py --check
-      - run: uv run --frozen python scripts/prepare_release.py --check
+      - run: uv run --frozen python scripts/prepare_release.py --check --tag "v$(cat VERSION)"
       - name: 服务依赖漏洞审计
         run: |
           mkdir -p runtime/ci
