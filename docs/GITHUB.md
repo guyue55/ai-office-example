@@ -10,9 +10,9 @@
 
 ## 候选与发布
 
-release-candidate.yml 手动运行，先执行 CI，再构建并校验候选，上传短期 Artifact；不自动创建 Tag 或 Release。
+release-candidate.yml 手动运行，先执行 CI，再构建候选并用 verify_release.py 核验资产白名单、来源、摘要及归档边界，上传短期 Artifact；不自动创建 Tag 或 Release。
 
-image-release.yml 仅手动运行、仅 main。CI 通过后，还要求仓库变量 ENABLE_IMAGE_RELEASE 为 true；默认关闭。管理员需核验 image-release 环境审批和 GHCR 权限／可见性再启用；变量开关不等于人工审批。
+image-release.yml 仅手动运行、仅 main；输入已存在的附注版本 Tag，核对 Tag 与本轮提交一致。CI 通过后，还要求仓库变量 ENABLE_IMAGE_RELEASE 为 true；默认关闭。镜像支持 linux/amd64 与 linux/arm64，发布版本及 SHA 标签，附 OCI 来源、SBOM 和 provenance；公开可拉取性与实际运行须另行验收。管理员需核验 image-release 环境审批和 GHCR 权限／可见性再启用；变量开关不等于人工审批。
 
 本流程不连接客户服务器，不构成自动部署。生产部署、Tag、Release 和镜像发布需要各自明确授权。
 

@@ -11,7 +11,7 @@
 - Docker一键部署、数据库初始化及迁移；员工独立安装器，macOS／Linux与Windows入口。
 - 通用CLI／SDK和数据访问技能；统一接口契约、错误码与HTTP／MCP适配。
 
-PostgreSQL18＋pgvector镜像仅预装vector扩展，不默认启用向量表或模型。Keycloak负责身份，业务库负责实时权限。模板不包含日报、CRM、财务、资产包、招投标或企业知识库等业务成品。
+PostgreSQL18＋pgvector镜像仅预装vector扩展，不默认启用向量表或模型。Keycloak负责身份，业务库负责实时权限。模板不包含特定行业流程、指标口径、模型服务或成品业务应用。
 
 ## 为新企业生成项目
 

@@ -7,8 +7,7 @@ Dockerfile text eol=lf
 *.png binary
 *.jpg binary
 *.pdf binary
-# 源码发布归档不携带协作元数据、现场数据或参考克隆。
-.github/ export-ignore
+# 模板源码保留CI及开发验证入口；运行数据与参考克隆不进入归档。
 runtime/ export-ignore
 dist/ export-ignore
 references/upstream/ export-ignore

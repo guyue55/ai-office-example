@@ -15,7 +15,7 @@
 ```
 
 ```json
-{"operation":"schema.publish","payload":{"identifier":"<项目ID>","payload":{"expected_revision":0,"fields":[{"id":"amount","label":"回款","type":"decimal","required":true,"description":"必须经业务确认的口径和单位"}]}}}
+{"operation":"schema.publish","payload":{"identifier":"<项目ID>","payload":{"expected_revision":0,"fields":[{"id":"amount","label":"金额","type":"decimal","required":true,"description":"必须经业务确认的口径和单位"}]}}}
 ```
 
 ```json

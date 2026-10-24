@@ -14,6 +14,7 @@ from check_build import record, verify_artifacts
 from configure_template import configure, validate
 from package_client_setup import package as package_client
 from package_skills import package as package_skills
+from verify_release import verify as verify_release
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECTS = (".", "office-data-service", "clients/python", "packages/api-contracts")
@@ -147,6 +148,7 @@ def build(root, output, tag):
     (output / "SHA256SUMS").write_text(
         "".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in entries)
     )
+    verify_release(output, tag, manifest["source_commit"])
     print("RELEASE_CANDIDATE_OK " + str(output))
 
 

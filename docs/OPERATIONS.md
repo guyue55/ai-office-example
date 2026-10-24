@@ -50,6 +50,8 @@ uv run python scripts/check_client_install.py --wheel-dir "$task_candidate"
 
 候选目录必须是新的，不能覆盖旧制品。核对 release-manifest.json 与 build-manifest.json 的 source_commit 均为待发布 SHA；文件名、版本、源码与轮包内容及 SHA256SUMS 必须匹配。不要将 dist 下其他版本或额外交付配置混入资产。
 
+再用 `uv run python scripts/verify_release.py "$task_candidate" --tag "$task_tag" --commit "$(git rev-parse HEAD)"` 核对资产白名单、来源及归档边界；下载后也执行同样核验。
+
 在候选目录校验摘要：Linux 可用 `sha256sum --check SHA256SUMS`；macOS 可用 `shasum -a 256 --check SHA256SUMS`；Windows 用 Python hashlib 或对应的受验证校验工具。不能只验证文件存在。
 
 确认三个工作区发行包均齐全，其中契约库实际名为 `office-api-contracts`。源码包、员工包、技能包的用途不同，员工电脑不交付服务器秘密。许可证范围按本仓库来源和第三方声明核查。
@@ -70,7 +72,7 @@ uv run python scripts/check_client_install.py --wheel-dir "$task_candidate"
 4. 核对草稿 Tag、目标提交、说明、资产及仓库可见性。授权已覆盖正式发布时转为正式 Release，否则保留草稿。
 5. 从实际 Release 下载到新目录，重新核验摘要、清单来源与安装入口。上传成功不等于下载验收已通过。
 
-当前工作流不以 Tag push 自动发布；不必为了跑候选提前打 Tag。镜像发布是独立的 image-release.yml：仅 main 手动运行，先复用 CI，镜像采用提交 SHA 标识；没有自动创建同名产品版本镜像标签的承诺。发布镜像还需显式启用 ENABLE_IMAGE_RELEASE=true，并核验 image-release 环境审批；默认关闭。
+当前工作流不以 Tag push 自动发布；不必为了跑候选提前打 Tag。镜像发布是独立的 image-release.yml：仅 main 手动运行，须传入指向当前提交的已存在附注 Tag。先复用 CI，再构建 linux/amd64 和 linux/arm64，发布产品版本及提交 SHA 两个镜像标签，附 OCI 来源、SBOM 和 provenance。首次发布还需核实 GHCR 包已公开，完成匿名拉取及真实隔离容器运行后才能宣告镜像验收完成。发布镜像还需显式启用 ENABLE_IMAGE_RELEASE=true，并核验 image-release 环境审批；默认关闭。
 
 Release、GHCR 镜像和企业服务升级彼此独立。发布制品不会自动更新员工电脑或企业服务器；不把 CI 通过写成 CD 已执行。
 

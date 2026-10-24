@@ -30,6 +30,10 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: uv run --frozen python scripts/prepare_release.py --tag "$RELEASE_TAG" --output dist/release-candidate
+      - name: 核对资产白名单、归档边界与来源
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: uv run --frozen python scripts/verify_release.py dist/release-candidate --tag "$RELEASE_TAG" --commit "$GITHUB_SHA"
       - name: 核对所有制品摘要
         working-directory: dist/release-candidate
         run: sha256sum --check SHA256SUMS

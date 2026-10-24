@@ -147,7 +147,7 @@ def project(live):
             "fields": [
                 {
                     "id": "amount",
-                    "label": "测试回款",
+                    "label": "测试金额",
                     "type": "decimal",
                     "required": True,
                     "description": "仅构造数据验证十进制存储",
