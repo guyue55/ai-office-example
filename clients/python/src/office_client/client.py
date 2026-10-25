@@ -213,6 +213,39 @@ class OfficeClient:
     def capabilities(self):
         return self.request("GET", "/api/v2/capabilities")
 
+    def assistant_capabilities(self):
+        return self.request("GET", "/api/v2/agent/capabilities")
+
+    def assistant_start(self, prompt, request_key):
+        """启动服务器模型任务；request_key重试须不变，受理不等于完成。"""
+        return self.request(
+            "POST", "/api/v2/agent/runs", json={"prompt": prompt, "request_key": request_key}
+        )
+
+    def assistant_runs(self, **params):
+        return self.request("GET", "/api/v2/agent/runs", params=params)
+
+    def assistant_run(self, identifier):
+        return self.request("GET", f"/api/v2/agent/runs/{quote(identifier, safe='')}")
+
+    def assistant_decide(self, identifier, version, proposal_id, approve):
+        """真人核对服务器预览后决定；不允许替换参数或提交模型历史。"""
+        return self.request(
+            "POST",
+            "/api/v2/agent/runs/decision",
+            json={
+                "identifier": identifier,
+                "version": version,
+                "proposal_id": proposal_id,
+                "approve": approve,
+            },
+        )
+
+    def assistant_cancel(self, identifier, version):
+        return self.request(
+            "POST", "/api/v2/agent/runs/cancel", json={"identifier": identifier, "version": version}
+        )
+
     def access_list(self, kind, **params):
         return self.request("GET", f"/api/v2/access/{quote(kind, safe='')}", params=params)
 

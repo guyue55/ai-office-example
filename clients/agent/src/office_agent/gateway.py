@@ -60,7 +60,7 @@ def validate_arguments(spec, arguments, limit):
 class Gateway:
     def __init__(self, bridge: ToolBridge, limits: Limits):
         self.bridge, self.limits = bridge, limits
-        self.identity: tuple[str, int] | None = None
+        self.identity: tuple[str, tuple[str, ...]] | None = None
         self.proposals: dict[str, Proposal] = {}
         self.used: set[str] = set()
         self.pages = 0
@@ -89,20 +89,23 @@ class Gateway:
 
     async def start(self):
         identity = await self._call("me")
+        self.identity = self.identity_key(identity)
+
+    @staticmethod
+    def identity_key(identity):
         if (
             not isinstance(identity, dict)
-            or not identity.get("id")
-            or "access_revision" not in identity
+            or not isinstance(identity.get("id"), str)
+            or not identity["id"]
+            or not isinstance(identity.get("permissions"), list)
+            or not all(isinstance(item, str) for item in identity["permissions"])
         ):
             raise AgentError("服务未返回有效的员工身份")
-        self.identity = identity["id"], identity["access_revision"]
+        return identity["id"], tuple(sorted(set(identity["permissions"])))
 
     async def ensure_identity(self):
         current = await self._call("me")
-        if (
-            self.identity is None
-            or (current.get("id"), current.get("access_revision")) != self.identity
-        ):
+        if self.identity is None or self.identity_key(current) != self.identity:
             raise AgentError("当前身份或权限已经变化，请重新开始任务")
 
     async def read(self, operation: str, arguments: dict):

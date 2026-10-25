@@ -16,6 +16,7 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 <div class="brand">{{ product.short_name }}<small>{{ product.organization }} · 管理工作台</small>
 </div>
 <a href="/console/dashboard" {% if request.url.path == '/console/dashboard' %}class="active" aria-current="page"{% endif %}>仪表盘</a>
+{% if me and 'agent.run' in me.permissions %}<a href="/console/assistant" {% if '/assistant' in request.url.path %}class="active" aria-current="page"{% endif %}>智能助手</a>{% endif %}
 {% if me and 'access.read' in me.permissions %}
 <div class="nav-label">人员与授权</div>
 <a href="/console/employees" {% if '/employees' in request.url.path or request.url.path in ['/console/accounts/new','/console/accounts/link'] %}class="active" aria-current="page"{% endif %}>人员管理</a>

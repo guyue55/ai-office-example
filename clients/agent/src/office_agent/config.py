@@ -28,7 +28,8 @@ class AgentConfig(BaseModel):
     service_url: str
     model: str = Field(min_length=1, max_length=200)
     model_url: str
-    api_key_env: str
+    api_key_env: str = "OFFICE_MODEL_API_KEY"
+    api_key_file: str | None = Field(default=None, min_length=1, max_length=4096)
     # 配置者应先确认企业数据政策；不将开关解释成自动脱敏或法律合规证明。
     approved_model_data: bool = False
     allow_lan_http_demo: bool = False
@@ -61,7 +62,12 @@ class AgentConfig(BaseModel):
             source = Path(path)
             if source.is_symlink() or source.stat().st_size > 16000:
                 raise ValueError("配置文件无效")
-            return cls.model_validate(tomllib.loads(source.read_text(encoding="utf-8-sig")))
+            data = tomllib.loads(source.read_text(encoding="utf-8-sig"))
+            if isinstance(data.get("api_key_file"), str):
+                secret = Path(data["api_key_file"])
+                if not secret.is_absolute():
+                    data["api_key_file"] = str(source.absolute().parent / secret)
+            return cls.model_validate(data)
         except (OSError, ValueError):
             # Pydantic异常包含输入值，不能原样展示。
             raise AgentError(

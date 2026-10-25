@@ -17,6 +17,7 @@ from pydantic import ValidationError
 
 from app.common.errors import DomainError, log_rejection, validation_error
 from app.entrypoints.web.accounts import register_accounts
+from app.entrypoints.web.assistant import register_assistant
 from app.entrypoints.web.authentication import WebAuthentication, bind_identity
 from app.entrypoints.web.client_sessions import register_client_sessions
 from app.entrypoints.web.login_gate import LoginGate
@@ -139,7 +140,13 @@ def web_router(application):
             principal = await principal_of(request)
         except LoginRequired:
             raise DomainError(401, "login_required", "请先登录") from None
-        return await application.call(principal, operation, payload or {}, request.state.trace_id)
+        options = {}
+        if operation.startswith("agent."):
+            cookie = request.cookies.get(COOKIE)
+            options["authenticate"] = lambda: authentication.principal(cookie)
+        return await application.call(
+            principal, operation, payload or {}, request.state.trace_id, **options
+        )
 
     def require_csrf(request: Request, form: dict):
         supplied = str(form.get("csrf", ""))
@@ -575,6 +582,7 @@ def web_router(application):
             },
         )
 
+    register_assistant(router, operate, render, require_csrf, form_version, notify)
     register_client_sessions(router, operate, render, require_csrf, form_version, notify, store)
     register_accounts(
         router,

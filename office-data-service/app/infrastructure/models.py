@@ -249,3 +249,31 @@ class ClientAuthorization(Entity):
     cleanup: Mapped[str] = mapped_column(
         String(20), default="not_requested", server_default="not_requested"
     )
+
+
+class AgentRun(Entity):
+    """服务端任务权威记录；不保存模型密钥、OAuth或可重放模型历史。"""
+
+    __tablename__ = "agent_run"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "request_key", name="uq_agent_run_request"),
+        CheckConstraint(
+            "status IN ('queued','running','awaiting_confirmation','completed','failed',"
+            "'cancelled','interrupted','outcome_unknown')",
+            name="ck_agent_run_status",
+        ),
+        Index("ix_agent_run_owner_created", "owner_id", "created_at", "id"),
+    )
+    owner_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    request_key: Mapped[str] = mapped_column(String(100))
+    request_digest: Mapped[str] = mapped_column(String(64))
+    prompt: Mapped[str] = mapped_column(String(16000))
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    pending: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    write_inflight: Mapped[bool] = mapped_column(Boolean, default=False)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    trace_id: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

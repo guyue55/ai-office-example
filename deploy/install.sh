@@ -34,7 +34,7 @@ if [[ "$(uname -s)" == Darwin ]]; then
   ENDPOINT="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
   [[ "$ENDPOINT" == unix://* && -z "${DOCKER_HOST:-}" ]] || { echo 'macOS安装要求本机Docker Desktop上下文' >&2; exit 2; }
   exec docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$REPO_ROOT:$REPO_ROOT" \
-    -w "$REPO_ROOT" -e "OFFICE_IMAGE=${OFFICE_IMAGE:-}" docker:28-cli \
+    -w "$REPO_ROOT" -e "OFFICE_IMAGE=${OFFICE_IMAGE:-}" -e "OFFICE_AGENT=${OFFICE_AGENT:-0}" docker:28-cli \
     sh -c 'apk add --no-cache bash coreutils util-linux >/dev/null && exec bash deploy/install.sh "$@"' office-install "$@"
 fi
 [[ "$(uname -s)" == Linux && "$EUID" -eq 0 ]] || { echo "Linux服务器请使用sudo；macOS需Docker Desktop" >&2; exit 2; }
@@ -47,7 +47,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_PATH="$(realpath "${1:-$REPO_ROOT/deploy/.env}")"
 IMAGE="${OFFICE_IMAGE:-office-data-service:installer-local}"
 if [[ -z "${OFFICE_IMAGE:-}" ]]; then
-  docker build --provenance=false -f "$REPO_ROOT/deploy/Dockerfile" -t "$IMAGE" "$REPO_ROOT"
+  [[ "${OFFICE_AGENT:-0}" == 0 || "${OFFICE_AGENT:-0}" == 1 ]] || { echo 'OFFICE_AGENT须为0或1' >&2; exit 2; }
+  docker build --provenance=false --build-arg "OFFICE_AGENT=${OFFICE_AGENT:-0}" -f "$REPO_ROOT/deploy/Dockerfile" -t "$IMAGE" "$REPO_ROOT"
 fi
 IMAGE_ID="$(docker image inspect "$IMAGE" --format '{{.Id}}')"
 # 后续固定实际镜像ID，避免安装中标签被更换。

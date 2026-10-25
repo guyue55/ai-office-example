@@ -17,6 +17,7 @@ TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 TEMPLATES.env.globals["product"] = PRODUCT
 TEMPLATES.env.trim_blocks = True
 TEMPLATES.env.lstrip_blocks = True
+TEMPLATES.env.policies["json.dumps_kwargs"] = {"sort_keys": True, "ensure_ascii": False}
 
 
 def business_time(value: datetime) -> str:

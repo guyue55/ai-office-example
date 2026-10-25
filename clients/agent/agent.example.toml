@@ -3,6 +3,8 @@ service_url = "https://office.company.example"
 model_url = "https://model.company.example/v1"
 model = "your-tool-capable-model"
 api_key_env = "OFFICE_MODEL_API_KEY"
+# 也可显式指定受限文件；指定后不回退环境变量，路径相对本配置。
+# api_key_file = "secrets/model_key"
 approved_model_data = false
 allow_lan_http_demo = false
 

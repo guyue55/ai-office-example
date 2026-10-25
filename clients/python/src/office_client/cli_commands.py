@@ -5,6 +5,8 @@ import hmac
 import json
 
 from .auth import ClientError, trusted_url
+from .cli_assistant import configure as configure_assistant
+from .cli_assistant import execute as execute_assistant
 from .local_io import read_json_file
 
 
@@ -21,6 +23,7 @@ def dates(parser):
 
 
 def configure(sub):
+    configure_assistant(sub)
     aggregate = sub.add_parser("aggregate", help="按已发布结构执行只读聚合，返回覆盖信息")
     aggregate.add_argument("identifier")
     aggregate.add_argument("--revision", type=int, required=True)
@@ -90,6 +93,9 @@ def file_digest(service, payload):
 
 def execute(client, args):
     """返回(是否处理, 结果)，不将未匹配命令降级为任意请求。"""
+    handled, result = execute_assistant(client, args)
+    if handled:
+        return True, result
     action = args.action
     if action == "aggregate":
         query = read_json_file(args.file)

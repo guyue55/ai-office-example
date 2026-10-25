@@ -21,6 +21,7 @@ from app.modules.access.authentication import Principal
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import EmployeeUpdate, GrantUpdate, Links, Named, NewEmployee
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
+from app.modules.agent.schemas import RunCancel, RunDecision, RunList, RunStart
 from app.modules.data.change_contracts import DataApplyInput, DataPreviewInput
 from app.modules.data.schemas import (
     ConfirmInput,
@@ -38,6 +39,12 @@ class SessionQuery(SessionList):
     # URL查询参数天然为文本；仅传输适配允许转换，应用层仍严格验证。
     model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
     limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 20
+    page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
+
+
+class AgentQuery(RunList):
+    model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
+    limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 10
     page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
 
 
@@ -76,6 +83,7 @@ def router(application, *, registry, prefix="/api/v2"):
 
     async def invoke(request, principal, operation, payload=None):
         allowed = {
+            "agent.list": set(RunList.model_fields),
             "session.list": set(SessionList.model_fields),
             "access.list": {"after", "limit", "q", "page", "actor", "action", "since", "until"},
             "account.search": {"q"},
@@ -111,9 +119,46 @@ def router(application, *, registry, prefix="/api/v2"):
                 registry=registry,
             )
 
+        options = {}
+        if operation.startswith("agent."):
+            raw_token = request.headers.get("authorization", "").partition(" ")[2]
+            options["authenticate"] = lambda: application.verifier.verify_async(raw_token)
         return await application.call(
-            principal, operation, payload or {}, request.state.trace_id, presenter=present
+            principal,
+            operation,
+            payload or {},
+            request.state.trace_id,
+            presenter=present,
+            **options,
         )
+
+    agent = group(tags=["智能助手"])
+
+    @agent.get("/agent/capabilities", response_model=OPERATION_OUTPUTS["agent.capabilities"])
+    async def assistant_capabilities(request: Request, principal: Actor):
+        return await invoke(request, principal, "agent.capabilities")
+
+    @agent.post("/agent/runs", status_code=202, response_model=OPERATION_OUTPUTS["agent.start"])
+    async def assistant_start(request: Request, args: RunStart, principal: Actor):
+        return await invoke(request, principal, "agent.start", args.model_dump())
+
+    @agent.get("/agent/runs", response_model=OPERATION_OUTPUTS["agent.list"])
+    async def assistant_runs(
+        request: Request, principal: Actor, args: Annotated[AgentQuery, Query()]
+    ):
+        return await invoke(request, principal, "agent.list", args.model_dump())
+
+    @agent.get("/agent/runs/{identifier}", response_model=OPERATION_OUTPUTS["agent.get"])
+    async def assistant_run(request: Request, identifier: str, principal: Actor):
+        return await invoke(request, principal, "agent.get", {"identifier": identifier})
+
+    @agent.post("/agent/runs/decision", response_model=OPERATION_OUTPUTS["agent.decide"])
+    async def assistant_decide(request: Request, args: RunDecision, principal: Actor):
+        return await invoke(request, principal, "agent.decide", args.model_dump())
+
+    @agent.post("/agent/runs/cancel", response_model=OPERATION_OUTPUTS["agent.cancel"])
+    async def assistant_cancel(request: Request, args: RunCancel, principal: Actor):
+        return await invoke(request, principal, "agent.cancel", args.model_dump())
 
     @data.post("/data/aggregate", response_model=OPERATION_OUTPUTS["data.aggregate"])
     async def aggregate(body: AggregateRequest, request: Request, *, principal: Actor):
@@ -529,6 +574,7 @@ def router(application, *, registry, prefix="/api/v2"):
         )
 
     api.include_router(identity)
+    api.include_router(agent)
     api.include_router(access)
     api.include_router(data)
     return api

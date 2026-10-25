@@ -46,7 +46,11 @@ def local_server():
             observations["service"].append(self.path)
             assert self.headers["Authorization"] == "Bearer enterprise-sentinel"
             if self.path == "/api/v2/me":
-                value = {"id": "test-employee", "access_revision": 1}
+                value = {
+                    "id": "test-employee",
+                    "access_revision": 1,
+                    "permissions": ["project.read"],
+                }
             else:
                 assert self.path == "/api/v2/projects?limit=10"
                 value = {"items": [{"id": "p1", "name": "测试项目"}], "next": "page2"}
@@ -127,5 +131,11 @@ def test_model_http_to_real_sdk_contract_and_back(monkeypatch):
         assert result.status == "completed", result.explanation
         assert result.usage["requests"] == 2
         assert result.receipts[0]["result"]["next"] == "page2"
-        assert observed["service"] == ["/api/v2/me", "/api/v2/me", "/api/v2/projects?limit=10"]
+        assert observed["service"] == [
+            "/api/v2/me",
+            "/api/v2/me",
+            "/api/v2/me",
+            "/api/v2/projects?limit=10",
+            "/api/v2/me",
+        ]
         assert "enterprise-sentinel" not in json.dumps(result.as_dict())

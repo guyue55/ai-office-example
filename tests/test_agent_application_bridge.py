@@ -18,6 +18,7 @@ from office_agent.policy import ToolFailure
 class Output(BaseModel):
     id: str = "test-employee"
     access_revision: int = 1
+    permissions: list[str] = ["project.read"]
 
 
 class Application:
@@ -104,5 +105,29 @@ def test_shared_gateway_accepts_native_async_bridge():
         await gateway.start()
         await gateway.read("projects", {})
         assert [row[1] for row in app.calls] == ["me", "me", "project.list"]
+
+    asyncio.run(scenario())
+
+
+def test_definitive_domain_rejection_clears_write_observation():
+    class Denied:
+        async def call(self, *args):
+            raise DomainError(403, "permission_denied", "private-message")
+
+    async def scenario():
+        events = []
+
+        async def authenticate():
+            return "principal"
+
+        async def observe(method, phase, result):
+            events.append((method, phase, result))
+
+        bridge = ApplicationToolBridge(Denied(), authenticate, observer=observe)
+        with pytest.raises(ToolFailure) as failure:
+            await bridge.call("confirm", record_id="r", version=1)
+        assert not failure.value.outcome_unknown
+        assert [phase for _, phase, _ in events] == ["before", "rejected"]
+        assert events[-1][2] == {"status": 403, "code": "permission_denied"}
 
     asyncio.run(scenario())

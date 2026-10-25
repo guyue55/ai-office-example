@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.common.errors import require
-from app.common.security_context import actor_context
+from app.common.security_context import actor_context, agent_run_context
 from app.infrastructure.models import (
     AccessRevision,
     Audit,
@@ -159,12 +159,15 @@ class Access:
         require(self.allows(code), 403, "permission_denied", "缺少操作权限：" + code)
 
     def audit(self, action: str, resource: str, detail: dict | None = None):
+        detail = dict(detail or {})
+        if run_id := agent_run_context.get():
+            detail["agent_run_id"] = run_id
         self.db.add(
             Audit(
                 actor_id=self.actor.id,
                 action=action,
                 resource_id=resource,
-                detail=detail or {},
+                detail=detail,
                 trace_id=self.trace_id,
             )
         )

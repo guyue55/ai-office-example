@@ -366,6 +366,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -419,6 +429,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -427,7 +438,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -589,6 +601,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -647,6 +669,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -655,7 +678,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -817,6 +841,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -875,6 +909,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -883,7 +918,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -1035,6 +1071,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -1093,6 +1139,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1101,7 +1148,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -1253,6 +1301,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -1311,6 +1369,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1319,7 +1378,1531 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/capabilities": {
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Capabilities",
+        "operationId": "assistant_capabilities_api_v2_agent_capabilities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_AgentCapability_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Start",
+        "operationId": "assistant_start_api_v2_agent_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      },
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Runs",
+        "operationId": "assistant_runs_api_v2_agent_runs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 40,
+              "default": "",
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 40,
+              "default": "",
+              "title": "Until"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2147483647,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "awaiting_confirmation",
+                    "completed",
+                    "failed",
+                    "cancelled",
+                    "interrupted",
+                    "outcome_unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "const": "",
+                  "type": "string"
+                }
+              ],
+              "default": "",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_AccessPage_RunSummary__"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs/{identifier}": {
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Run",
+        "operationId": "assistant_run_api_v2_agent_runs__identifier__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs/decision": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Decide",
+        "operationId": "assistant_decide_api_v2_agent_runs_decision_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs/cancel": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Cancel",
+        "operationId": "assistant_cancel_api_v2_agent_runs_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCancel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
         ]
       }
     },
@@ -1583,6 +3166,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -1636,6 +3229,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1644,7 +3238,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -1809,6 +3404,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -1862,6 +3467,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1870,7 +3476,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2022,6 +3629,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -2080,6 +3697,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2088,7 +3706,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2258,6 +3877,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -2311,6 +3940,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2319,7 +3949,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2487,6 +4118,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -2540,6 +4181,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2548,7 +4190,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2710,6 +4353,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -2768,6 +4421,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2776,7 +4430,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2944,6 +4599,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -2997,6 +4662,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3005,7 +4671,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -3183,6 +4850,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -3236,6 +4913,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3244,7 +4922,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -3422,6 +5101,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -3475,6 +5164,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3483,7 +5173,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -3748,6 +5439,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -3801,6 +5502,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3809,7 +5511,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -3998,6 +5701,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -4061,6 +5774,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4069,7 +5783,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4221,6 +5936,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -4279,6 +6004,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4287,7 +6013,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4449,6 +6176,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -4507,6 +6244,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4515,7 +6253,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4677,6 +6416,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -4735,6 +6484,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4743,7 +6493,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4964,6 +6715,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5017,6 +6778,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5025,7 +6787,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -5203,6 +6966,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5256,6 +7029,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5264,7 +7038,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -5455,6 +7230,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5508,6 +7293,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5516,7 +7302,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "put": {
@@ -5723,6 +7510,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5776,6 +7573,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5784,7 +7582,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -5946,6 +7745,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -6004,6 +7813,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6012,7 +7822,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6192,6 +8003,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -6245,6 +8066,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6253,7 +8075,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6415,6 +8238,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -6473,6 +8306,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6481,7 +8315,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6643,6 +8478,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -6701,6 +8546,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6709,7 +8555,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6890,6 +8737,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -6943,6 +8800,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6951,7 +8809,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -7116,6 +8975,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7179,6 +9048,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7187,7 +9057,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -7365,6 +9236,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7418,6 +9299,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7426,7 +9308,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -7610,6 +9493,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7663,6 +9556,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7671,7 +9565,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -7847,6 +9742,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7910,6 +9815,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7918,7 +9824,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -8115,6 +10022,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8168,6 +10085,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8176,7 +10094,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -8341,6 +10260,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8404,6 +10333,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8412,7 +10342,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -8580,6 +10511,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8633,6 +10574,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8641,7 +10583,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "patch": {
@@ -8817,6 +10760,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8870,6 +10823,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8878,7 +10832,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "delete": {
@@ -9053,6 +11008,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9106,6 +11071,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9114,7 +11080,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -9292,6 +11259,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9345,6 +11322,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9353,7 +11331,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -9531,6 +11510,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9584,6 +11573,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9592,7 +11582,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -9760,6 +11751,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9813,6 +11814,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9821,7 +11823,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -10011,6 +12014,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -10064,6 +12077,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -10072,7 +12086,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     }
@@ -10419,6 +12434,50 @@
           "has_more"
         ],
         "title": "AccessPage[RoleOutput]"
+      },
+      "AccessPage_RunSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RunSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pagination"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "next",
+          "has_more"
+        ],
+        "title": "AccessPage[RunSummary]"
       },
       "AccessReference": {
         "properties": {
@@ -11145,6 +13204,35 @@
           "name"
         ],
         "title": "AccountUpdate"
+      },
+      "AgentCapability": {
+        "properties": {
+          "installed": {
+            "type": "boolean",
+            "title": "Installed"
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "installed",
+          "configured",
+          "ready",
+          "message"
+        ],
+        "title": "AgentCapability"
       },
       "AggregateOutput": {
         "properties": {
@@ -13638,6 +15726,229 @@
         ],
         "title": "RoleOutput"
       },
+      "RunCancel": {
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Identifier"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "version"
+        ],
+        "title": "RunCancel"
+      },
+      "RunDecision": {
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Identifier"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "proposal_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Proposal Id"
+          },
+          "approve": {
+            "type": "boolean",
+            "title": "Approve"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "version",
+          "proposal_id",
+          "approve"
+        ],
+        "title": "RunDecision"
+      },
+      "RunStart": {
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "maxLength": 16000,
+            "minLength": 1,
+            "title": "Prompt"
+          },
+          "request_key": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 8,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Request Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "prompt",
+          "request_key"
+        ],
+        "title": "RunStart"
+      },
+      "RunSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "awaiting_confirmation",
+              "completed",
+              "failed",
+              "cancelled",
+              "interrupted",
+              "outcome_unknown"
+            ],
+            "title": "Status"
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "prompt",
+          "status",
+          "cancel_requested",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RunSummary"
+      },
+      "RunView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "awaiting_confirmation",
+              "completed",
+              "failed",
+              "cancelled",
+              "interrupted",
+              "outcome_unknown"
+            ],
+            "title": "Status"
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "write_inflight": {
+            "type": "boolean",
+            "title": "Write Inflight"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "prompt",
+          "status",
+          "cancel_requested",
+          "created_at",
+          "updated_at",
+          "pending",
+          "result",
+          "write_inflight"
+        ],
+        "title": "RunView"
+      },
       "SchemaChange": {
         "properties": {
           "operation": {
@@ -14027,6 +16338,38 @@
         ],
         "title": "Success[AccessDetail]"
       },
+      "Success_AccessPage_RunSummary__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AccessPage_RunSummary_"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[AccessPage[RunSummary]]"
+      },
       "Success_AccountCapability_": {
         "properties": {
           "code": {
@@ -14218,6 +16561,38 @@
           "message"
         ],
         "title": "Success[AccountSearchResult]"
+      },
+      "Success_AgentCapability_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgentCapability"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[AgentCapability]"
       },
       "Success_AggregateOutput_": {
         "properties": {
@@ -14794,6 +17169,38 @@
           "message"
         ],
         "title": "Success[RecordOutput]"
+      },
+      "Success_RunView_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RunView"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[RunView]"
       },
       "Success_SchemaOutput_": {
         "properties": {

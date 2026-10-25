@@ -1,6 +1,7 @@
 """已实现动作的中文目录；初始化与各入口展示共用，不提供角色授权捷径。"""
 
 DEFINITIONS = {
+    "agent.run": ("使用智能助手", "使用已启用的AI能力，仍受本人业务权限与预算限制", "智能助手"),
     "audit.read": ("查看业务与安全审计", "查阅全企业业务审计与已识别人员的权限拒绝事件", "审计"),
     "employee.update": (
         "维护人员姓名",
@@ -28,6 +29,10 @@ DEFINITIONS = {
 PERMISSIONS = {code: definition[1] for code, definition in DEFINITIONS.items()}
 
 AUDIT_ACTIONS = {
+    "agent.created": "创建智能助手任务",
+    "agent.decided": "确认或拒绝助手操作",
+    "agent.cancelled": "请求停止助手任务",
+    "agent.finished": "智能助手任务结束",
     "security.denied": "权限检查拒绝",
     "session.created": "建立客户端授权",
     "session.device": "更新授权设备备注",

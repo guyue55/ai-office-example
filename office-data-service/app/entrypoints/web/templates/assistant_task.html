@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block title %}任务详情 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">我的工作 · 智能助手</p><h2>任务详情</h2><p class="muted">{{ statuses[task.status] }} · 更新于 {{ task.updated_at|business_time }}</p></div><div><a href="/console/assistant">返回任务列表</a> <a class="button secondary" href="/console/assistant/{{ task.id }}">刷新进度</a></div></header>
+<section class="card"><h3>任务要求</h3><p class="assistant-text">{{ task.prompt }}</p><p class="muted small">任务编号：{{ task.id }}</p></section>
+{% if task.status in ['interrupted','outcome_unknown'] %}<p class="hint" role="alert">任务未自动恢复。请核对已有回执和数据实际状态，避免重复写入；如需继续，请在确认后发起新的任务。</p>{% endif %}
+{% if task.pending %}<section class="card"><h3>需要您确认的操作</h3><p>操作：{{ operations.get(task.pending.operation, task.pending.operation) }}</p><p class="hint">以下为服务器保存的完整预览。批准仅适用于本次操作，后续写入仍需分别确认。</p>
+<pre class="assistant-json">{{ task.pending.preview|tojson(indent=2) }}</pre><details><summary>查看操作参数</summary><pre class="assistant-json">{{ task.pending.arguments|tojson(indent=2) }}</pre></details>
+{% if 'decision' not in task.pending and not task.cancel_requested %}
+<form method="post" action="/console/assistant/{{ task.id }}/decision" class="form-stack" data-native-submit data-confirm-message="请再次核对完整预览，确认提交本次决定。">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ task.version }}"><input type="hidden" name="proposal_id" value="{{ task.pending.ticket }}">
+<label>您的决定 <select name="decision" required><option value="">请选择</option><option value="deny">拒绝本次操作</option><option value="approve">批准本次操作</option></select></label><div><button type="submit">提交决定</button></div></form>
+{% else %}<p role="status">决定已记录或停止请求已提交，等待执行器处理。</p>{% endif %}</section>{% endif %}
+{% if task.result %}<section class="card"><h3>处理结果与实际回执</h3>{% if task.result.explanation %}<p class="assistant-text">{{ task.result.explanation }}</p>{% endif %}<p class="hint">模型说明仅作辅助，操作是否成功请以实际回执为准。</p><details open><summary>完整结果</summary><pre class="assistant-json">{{ task.result|tojson(indent=2) }}</pre></details></section>{% endif %}
+{% if task.status in ['queued','running','awaiting_confirmation'] and not task.cancel_requested %}<section class="card"><form method="post" action="/console/assistant/{{ task.id }}/cancel" data-native-submit data-confirm-message="停止后不会撤回已完成的操作，是否继续？"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ task.version }}"><button class="secondary" type="submit">停止任务</button></form></section>{% endif %}
+{% endblock %}

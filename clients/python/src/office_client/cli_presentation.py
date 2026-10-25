@@ -7,6 +7,17 @@ import unicodedata
 # 与实际解析器核对完整性，新增命令必须同时给出所属分组和中文说明。
 COMMAND_GROUPS = (
     (
+        "服务器智能助手",
+        (
+            ("assistant-capabilities", "查看服务器AI配置与可用状态"),
+            ("assistant-start", "启动一次服务器任务，保留原请求标识"),
+            ("assistant-runs", "查询本人任务历史与执行状态"),
+            ("assistant-run", "核对任务回执及待批预览"),
+            ("assistant-decide", "人工核对后批准或拒绝固定提案"),
+            ("assistant-cancel", "请求停止任务，已有写入不撤回"),
+        ),
+    ),
+    (
         "开始与诊断",
         (
             ("connection-check", "匿名检查服务和身份入口，不读取凭证"),

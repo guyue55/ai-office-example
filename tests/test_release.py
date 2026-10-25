@@ -35,6 +35,9 @@ def source(tmp_path):
         "releases/v1.0.0.md",
         "office-data-service/pyproject.toml",
         "clients/python/pyproject.toml",
+        "clients/agent/pyproject.toml",
+        "clients/agent/uv.lock",
+        "clients/agent/src/office_agent/__init__.py",
         "packages/api-contracts/pyproject.toml",
     ]
     for relative in paths:
@@ -52,6 +55,13 @@ def test_release_requires_matching_version_tag_and_packages(release, source):
     project.write_text(project.read_text().replace('version = "1.0.0"', 'version = "1.0.1"'))
     with pytest.raises(ValueError, match="工作区版本"):
         release.validate_versions(source, "v1.0.0")
+
+
+def test_release_rejects_stale_independent_agent_version(release, source):
+    path = source / "clients/agent/src/office_agent/__init__.py"
+    path.write_text(path.read_text().replace('"1.0.0"', '"0.9.0"'))
+    with pytest.raises(ValueError, match="Agent模块版本"):
+        release.validate_versions(source)
 
 
 def test_release_rejects_stale_lock_and_contract(release, source):

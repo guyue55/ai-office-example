@@ -38,12 +38,18 @@ def create_app(settings: Settings | None = None):
     async def lifespan(app):
         try:
             await application.account_service().runner.start()
+            if settings.agent_config_file is not None:
+                await application.agent_service().start()
             async with server.session_manager.run():
                 yield
         finally:
             # MCP 启动失败、请求异常或取消退出也必须释放连接池。
             try:
-                await application.account_service().runner.close()
+                try:
+                    if application._agent is not None:
+                        await application._agent.close()
+                finally:
+                    await application.account_service().runner.close()
             finally:
                 try:
                     await application.verifier.aclose()

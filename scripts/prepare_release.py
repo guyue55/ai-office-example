@@ -17,7 +17,7 @@ from package_skills import package as package_skills
 from verify_release import verify as verify_release
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJECTS = (".", "office-data-service", "clients/python", "packages/api-contracts")
+PROJECTS = (".", "office-data-service", "clients/python", "packages/api-contracts", "clients/agent")
 
 
 def validate_versions(root, tag=None):
@@ -37,9 +37,18 @@ def validate_versions(root, tag=None):
         "office-data-service",
         "office-client",
         "office-api-contracts",
+        "office-agent",
     ):
         if versions.get(name) != version:
             raise ValueError("锁文件版本不一致：" + name)
+    agent_lock = tomllib.loads((root / "clients/agent/uv.lock").read_text())
+    agent_versions = {item["name"]: item["version"] for item in agent_lock["package"]}
+    for name in ("office-agent", "office-client", "office-api-contracts"):
+        if agent_versions.get(name) != version:
+            raise ValueError("Agent独立锁文件版本不一致：" + name)
+    agent_module = (root / "clients/agent/src/office_agent/__init__.py").read_text()
+    if not re.search(r'__version__\s*=\s*"' + re.escape(version) + r'"', agent_module):
+        raise ValueError("Agent模块版本不一致")
     schema = json.loads((root / "contracts/openapi.json").read_text())
     if schema["info"]["version"] != version:
         raise ValueError("OpenAPI版本未同步")

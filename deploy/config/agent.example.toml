@@ -1,0 +1,14 @@
+# 可选内部助手配置；仅由企业管理员设置，不能由模型或员工请求更改。
+# 安装Agent镜像后放置于实例service/agent.toml；相对秘密路径以本文件为基准。
+service_url = "https://office.example"
+model_url = "https://model.company.example/v1"
+model = "your-tool-capable-model"
+api_key_file = "secrets/model_key"
+# 确认模型端点获准处理企业资料后才改true；这不代表自动PII脱敏。
+approved_model_data = false
+
+[limits]
+requests = 8
+tools = 20
+seconds = 120
+tokens = 32000

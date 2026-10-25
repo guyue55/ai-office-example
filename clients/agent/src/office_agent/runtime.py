@@ -7,6 +7,7 @@ from typing import Any
 from uuid import uuid4
 
 from pydantic_ai import Agent, DeferredToolRequests, DeferredToolResults, ToolApproved, ToolDenied
+from pydantic_ai.capabilities import Hooks
 from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.tools import Tool
 from pydantic_ai.usage import RunUsage, UsageLimits
@@ -87,11 +88,16 @@ async def run_with_gateway(
                 """执行此前固定的意图；须由运行时外的真人批准，模型不能提供批准参数。"""
                 return await gateway.execute(ticket)
 
+            async def guard_model(_ctx, request_context):
+                await gateway.ensure_identity()
+                return request_context
+
             agent = Agent(
                 model,
                 output_type=[str, DeferredToolRequests],
                 instructions=INSTRUCTIONS,
                 retries=0,
+                capabilities=[Hooks(before_model_request=guard_model)],
                 model_settings={
                     "max_tokens": min(limits.tokens, 4096),
                     "parallel_tool_calls": False,

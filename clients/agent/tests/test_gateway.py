@@ -14,7 +14,7 @@ from office_agent.policy import AgentError
 class Client:
     def __init__(self):
         self.calls = []
-        self.identity = {"id": "employee", "access_revision": 1}
+        self.identity = {"id": "employee", "access_revision": 1, "permissions": ["record.create"]}
         self.closed = False
         self.fail_write = False
 
@@ -68,7 +68,7 @@ def test_identity_or_permissions_change_invalidates_ticket():
             gateway = Gateway(bridge, Limits())
             await gateway.start()
             ticket = await gateway.prepare("data", {"change": {"operation": "project.create"}})
-            client.identity["access_revision"] = 2
+            client.identity["permissions"] = []
             with pytest.raises(AgentError, match="身份或权限"):
                 await gateway.execute(ticket)
             assert not client.calls
@@ -138,5 +138,17 @@ def test_paging_and_proposal_budgets_are_enforced():
             await gateway.prepare("data", {"change": {"operation": "project.create"}})
             with pytest.raises(AgentError, match="上限"):
                 await gateway.prepare("data", {"change": {"operation": "project.create"}})
+
+    asyncio.run(scenario())
+
+
+def test_unrelated_global_revision_does_not_interrupt_own_reads():
+    async def scenario():
+        client = Client()
+        async with SDKBridge(lambda: client) as bridge:
+            gateway = Gateway(bridge, Limits())
+            await gateway.start()
+            client.identity["access_revision"] += 1
+            assert (await gateway.read("projects", {}))["next"] == "more"
 
     asyncio.run(scenario())

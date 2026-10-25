@@ -66,6 +66,9 @@ class Settings(BaseModel):
     request_body_timeout: float = Field(default=10, gt=0, le=120)
     operation_timeout: float = Field(default=15, gt=0, le=120)
     auth_workers: int = Field(default=8, ge=1, le=64)
+    agent_config_file: Path | None = None
+    agent_max_running: int = Field(default=8, ge=1, le=64)
+    agent_max_per_user: int = Field(default=2, ge=1, le=8)
     client_id: str = PRODUCT["client_id"]
     redirect_uri: str = "http://127.0.0.1:8765/callback"
     web_session_secret_file: Path | None = None
@@ -125,7 +128,7 @@ class Settings(BaseModel):
         config_file = Path(path).expanduser().resolve()
         data = json.loads(config_file.read_text())
         if isinstance(data, dict):
-            for name in ("database_password_file", "web_session_secret_file"):
+            for name in ("database_password_file", "web_session_secret_file", "agent_config_file"):
                 value = data.get(name)
                 if isinstance(value, str):
                     reference = Path(value).expanduser()

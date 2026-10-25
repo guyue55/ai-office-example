@@ -56,3 +56,47 @@ def test_nested_secret_fields_and_bearer_are_hidden():
         {"x": [{"access_token": "secret", "Set-Cookie": "secret2"}], "notice": "Bearer secret3"}
     )
     assert "secret" not in json.dumps(value)
+
+
+def test_model_file_reference_is_relative_safe_and_takes_precedence(tmp_path, monkeypatch):
+    from office_agent.providers import model_key
+
+    secret = tmp_path / "model-key"
+    secret.write_text("isolated-file-key")
+    secret.chmod(0o600)
+    source = tmp_path / "agent.toml"
+    source.write_text(
+        'service_url="https://office.example"\nmodel_url="https://model.example/v1"\n'
+        'model="fixture"\napi_key_file="model-key"\napproved_model_data=true\n'
+    )
+    config = AgentConfig.load(str(source))
+    monkeypatch.setenv("OFFICE_MODEL_API_KEY", "wrong-env-key")
+    assert model_key(config) == "isolated-file-key"
+    assert config.api_key_file == str(secret)
+    secret.write_text("line1\nline2")
+    with pytest.raises(AgentError):
+        model_key(config)
+    secret.unlink()
+    with pytest.raises(AgentError):
+        model_key(config)  # 指定文件失败不能回退到另一个模型凭证。
+
+
+def test_model_key_file_rejects_world_readable_and_symlink(tmp_path):
+    import os
+
+    from office_agent.providers import model_key
+
+    if os.name == "nt":
+        pytest.skip("Windows ACL由部署者设置，POSIX位与O_NOFOLLOW仅在对应系统核对")
+    secret = tmp_path / "key"
+    secret.write_text("isolated-key")
+    secret.chmod(0o644)
+    config = AgentConfig.model_validate(configured(api_key_file=str(secret)))
+    with pytest.raises(AgentError):
+        model_key(config)
+    secret.chmod(0o600)
+    link = tmp_path / "link"
+    link.symlink_to(secret)
+    config.api_key_file = str(link)
+    with pytest.raises(AgentError):
+        model_key(config)

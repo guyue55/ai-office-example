@@ -883,3 +883,6 @@ button:disabled { opacity:.55; cursor:wait; }
 .record-facts dt { color:var(--muted); }
 .record-facts dd { margin:0; overflow-wrap:anywhere; }
 .record-dialog pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+/* 助手内容保持原始换行，长回执不撑开工作台。 */
+.assistant-text{white-space:pre-wrap;overflow-wrap:anywhere}.assistant-json{white-space:pre-wrap;overflow-wrap:anywhere;max-height:32rem;overflow:auto;padding:1rem;background:var(--surface-soft,#f4f6f8);border-radius:8px}

@@ -119,6 +119,33 @@ def test_loop_is_bounded():
     assert result.usage["requests"] == 2
 
 
+def test_revocation_stops_next_model_request():
+    client = Client()
+    requests = []
+
+    def model(messages, info):
+        requests.append(True)
+        return ModelResponse(
+            parts=[
+                ToolCallPart(
+                    "read_office", {"operation": "projects", "arguments": {}}, tool_call_id="read"
+                )
+            ]
+        )
+
+    original = client.projects
+
+    def revoke(**params):
+        result = original(**params)
+        client.identity["permissions"] = []
+        return result
+
+    client.projects = revoke
+    result = asyncio.run(run_task(FunctionModel(model), lambda: client, "列出项目"))
+    assert result.status == "failed" and "权限" in result.explanation
+    assert len(requests) == 1  # 撤权后不再发送下一轮模型请求。
+
+
 def test_bad_tool_and_raw_exception_do_not_leak():
     def malicious(messages, info):
         return ModelResponse(

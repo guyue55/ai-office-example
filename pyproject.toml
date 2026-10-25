@@ -16,7 +16,7 @@ exclude = ["clients/agent"]
 office-api-contracts = { workspace = true }
 office-data-service = { workspace = true }
 office-client = { workspace = true }
-office-agent = { path = "clients/agent" }
+office-agent = { path = "clients/agent", editable = true }
 [dependency-groups]
 dev = [
     "pytest>=8,<10",

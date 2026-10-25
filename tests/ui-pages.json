@@ -135,6 +135,20 @@
       "tests": [
         "e2e_page_review.py"
       ]
+    },
+    {
+      "template": "assistant.html",
+      "coverage": "本人助手受理、预览与决定页面",
+      "tests": [
+        "test_agent_web.py"
+      ]
+    },
+    {
+      "template": "assistant_task.html",
+      "coverage": "本人助手受理、预览与决定页面",
+      "tests": [
+        "test_agent_web.py"
+      ]
     }
   ],
   "components": [

@@ -195,7 +195,7 @@ def test_all_business_http_routes_publish_output_models():
         for method, operation in path.items()
         if method in {"get", "post", "patch", "put", "delete"}
     ]
-    assert len(operations) == 41
+    assert len(operations) == 47
     assert "post" in schema["paths"]["/api/v2/data/aggregate"]
     assert all(
         operation["responses"][

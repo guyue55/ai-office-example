@@ -11,7 +11,7 @@ uv run --project clients/agent python -m office_agent --help
 uv run --project clients/agent pytest clients/agent/tests -q
 ```
 
-将`agent.example.toml`复制到本机受控目录，填写企业地址、获准的模型端点、模型名和模型密钥的环境变量名。
+将`agent.example.toml`复制到本机受控目录，填写企业地址、获准的模型端点、模型名和模型密钥引用（环境变量名或api_key_file）。
 确认企业数据政策后，才将`approved_model_data`设为true。配置文件不保存密钥；不要把企业OAuth令牌放进模型变量。
 先通过原客户端的浏览器登录授权，再执行：
 
@@ -32,3 +32,5 @@ uv run --project clients/agent python -m office_agent --config /path/to/agent.to
 模型出口必须经企业批准；不默认复用其他AI工具的订阅或凭证。
 
 完整设计与验收边界见根目录`docs/AGENT_DESIGN.md`、`docs/AGENT_PLAN.md`。
+
+同一共享引擎可在服务器通过原异步应用运行，任务和审批由服务器保存；部署与客户端区别见[运行指南](../../docs/AGENT_OPERATIONS.md)。

@@ -28,6 +28,7 @@ from app.modules.access.change_contracts import Change
 from app.modules.access.outputs import (
     AccessDetail,
     AccessListing,
+    AccessPage,
     CapabilitiesOutput,
     ChangePreview,
     ChangeResult,
@@ -35,6 +36,7 @@ from app.modules.access.outputs import (
     PendingIdentityPage,
 )
 from app.modules.access.session_schemas import SessionPage, SessionView
+from app.modules.agent.outputs import AgentCapability, RunSummary, RunView
 from app.modules.data.change_contracts import DataChange, DataPreview, DataResult
 from app.modules.data.outputs import (
     ConfirmationOutput,
@@ -93,8 +95,11 @@ def build_mcp(application):
         # 每次工具调用重新校验令牌时效及业务权限，不信任 MCP 会话的旧授权。
         try:
             principal = await application.verifier.verify_async(token.token)
+            options = {}
+            if operation.startswith("agent."):
+                options["authenticate"] = lambda: application.verifier.verify_async(token.token)
             return await application.call(
-                principal, operation, payload or {}, trace_context.get() or str(uuid4())
+                principal, operation, payload or {}, trace_context.get() or str(uuid4()), **options
             )
         except DomainError as error:
             raise ContractToolError(tool_error_text(error, trace_context.get())) from None
@@ -444,6 +449,65 @@ def build_mcp(application):
             "record.history",
             {"identifier": record_id, "after_revision": after_revision, "limit": limit},
         )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def assistant_capabilities() -> AgentCapability:
+        """核对服务器智能助手是否配置就绪；不代表模型真实调用已验收。"""
+        return await call("agent.capabilities")
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def start_assistant_run(prompt: str, request_key: str) -> RunView:
+        """受理本人任务；重试保留request_key。受理不等于执行成功。"""
+        return await call("agent.start", {"prompt": prompt, "request_key": request_key})
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def list_assistant_runs(
+        after: str = "",
+        limit: int = 10,
+        page: int | None = None,
+        q: str = "",
+        status: str = "",
+        since: str = "",
+        until: str = "",
+    ) -> AccessPage[RunSummary]:
+        """分页查询本人任务；不读取其他员工的模型输入或结果。"""
+        return await call(
+            "agent.list",
+            {
+                "after": after,
+                "limit": limit,
+                "page": page,
+                "q": q,
+                "status": status,
+                "since": since,
+                "until": until,
+            },
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def get_assistant_run(identifier: str) -> RunView:
+        """查看本人任务的待确认预览与实际操作回执。"""
+        return await call("agent.get", {"identifier": identifier})
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=True))
+    async def decide_assistant_run(
+        identifier: str, version: int, proposal_id: str, approve: bool
+    ) -> RunView:
+        """仅在真人核对完整预览后提交决定；不能从模型建议推断用户已同意。"""
+        return await call(
+            "agent.decide",
+            {
+                "identifier": identifier,
+                "version": version,
+                "proposal_id": proposal_id,
+                "approve": approve,
+            },
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def cancel_assistant_run(identifier: str, version: int) -> RunView:
+        """请求停止本人任务；已完成的操作保留，不承诺事务回滚。"""
+        return await call("agent.cancel", {"identifier": identifier, "version": version})
 
     subapp = server.streamable_http_app(
         streamable_http_path="/mcp", stateless_http=True, json_response=True

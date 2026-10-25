@@ -5,7 +5,7 @@ description: 企业办公基座通用技能入口；登录授权、项目容器�
 
 # 企业办公基座技能套件
 
-先读[统一规则](RULES.md)，再读取[data-access](datacenter/data-access/SKILL.md)。
+先读[统一规则](RULES.md)，再读取[data-access](datacenter/data-access/SKILL.md)。涉及独立运行或服务器助手任务时，读取[助手使用边界](references/assistant.md)。
 
 客户端和模型不直连数据库。Agent分支支持逐步启用独立运行时及服务端AI，但不能把安装包或设计文档当成已运行能力。使用安装结果中的CLI路径和连接配置，不猜测企业地址，不自动切换身份。写入先预览，由用户确认后执行。凭证只由系统安全后端管理，不进入提示词。
 
