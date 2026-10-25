@@ -7,6 +7,7 @@ import re
 import stat
 import tarfile
 import zipfile
+from email.parser import BytesParser
 from pathlib import Path, PurePosixPath
 
 PACKAGES = ("office_api_contracts", "office_data_service", "office_client")
@@ -84,6 +85,56 @@ def check_archive(path: Path, client: bool = False) -> None:
                     raise ValueError("源码分发包含特殊文件或超过预算")
 
 
+def verify_agent_content(directory: Path, source: str, version: str) -> None:
+    """可选包不在原三包指纹内，另与同候选Git源码归档逐字节核对。"""
+
+    def metadata(data):
+        parsed = BytesParser().parsebytes(data)
+        if parsed.get("Name") != "office-agent" or parsed.get("Version") != version:
+            raise ValueError("Agent分发元数据与声明不一致")
+
+    with zipfile.ZipFile(directory / source) as archive:
+        original = {}
+        for name in archive.namelist():
+            relative = name.partition("/")[2]
+            prefix = "clients/agent/src/"
+            if relative.startswith(prefix + "office_agent/") and not name.endswith("/"):
+                original[relative[len(prefix) :]] = archive.read(name)
+    if (
+        not {"office_agent/__init__.py", "office_agent/runtime.py", "office_agent/py.typed"}
+        <= original.keys()
+    ):
+        raise ValueError("源码归档缺少Agent运行模块")
+    with zipfile.ZipFile(directory / f"office_agent-{version}-py3-none-any.whl") as archive:
+        records = [n for n in archive.namelist() if n.endswith(".dist-info/METADATA")]
+        if len(records) != 1:
+            raise ValueError("Agent轮包元数据不唯一")
+        metadata(archive.read(records[0]))
+        module = {
+            n: archive.read(n)
+            for n in archive.namelist()
+            if n.startswith("office_agent/") and not n.endswith("/")
+        }
+        if module != original:
+            raise ValueError("Agent轮包与候选源码内容不一致")
+    with tarfile.open(directory / f"office_agent-{version}.tar.gz", "r:gz") as archive:
+        root = f"office_agent-{version}/"
+        info = archive.extractfile(root + "PKG-INFO")
+        if info is None:
+            raise ValueError("Agent源码分发缺少元数据")
+        metadata(info.read())
+        module = {}
+        for member in archive:
+            prefix = root + "src/"
+            if member.isfile() and member.name.startswith(prefix + "office_agent/"):
+                stream = archive.extractfile(member)
+                if stream is None:
+                    raise ValueError("Agent源码分发文件无效")
+                module[member.name[len(prefix) :]] = stream.read()
+        if module != original:
+            raise ValueError("Agent源码分发与候选源码内容不一致")
+
+
 def verify(directory: Path, tag: str | None = None, commit: str | None = None) -> dict:
     manifest = json.loads((directory / "release-manifest.json").read_text())
     version = manifest["version"]
@@ -149,6 +200,8 @@ def verify(directory: Path, tag: str | None = None, commit: str | None = None) -
     build = json.loads((directory / "build-manifest.json").read_text())
     if build["source_commit"] != sha:
         raise ValueError("构建来源不一致")
+    if agent:
+        verify_agent_content(directory, source[0], version)
     return {"tag": manifest["tag"], "source_commit": sha, "assets": len(expected)}
 
 

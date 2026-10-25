@@ -82,3 +82,7 @@ flowchart LR
 提交b2cba35增加package_client_setup的--with-agent选项；从同一提交重新构建完整候选，分别产出Agent与普通员工交付目录，并实际运行各自setup_client安装。两者均仅写自己的.office虚拟环境，不升级全局工具或修改AI宿主。Agent包安装后CLI agent --help成功、运行时可导入、36个运行依赖一致；普通包实测未安装office_agent。安装器及部署入口64项回归通过，Ruff与源码秘密扫描通过。
 
 两种验收均使用https://fixture.invalid，结果正确标记installed、connection_verified=false、identity_verified=false及confirm_service_address，不能称为真实服务或真实身份已验收。模型配置和调用仍待明确获准来源；已向用户请求选择本地模型、企业获准API或暂不提供模型，不索取对话中的秘密。
+
+## Agent制品内容一致性补充（2026-10-25）
+
+审查发现可选Agent未包含在原三包源码指纹范围，单凭资产名和摘要不能拒绝改名轮包。verify_release现额外检查Agent wheel／sdist内部Name、Version，并将office_agent模块与同批Git源码归档逐字节比较，要求__init__.py、runtime.py和py.typed存在。伪装包负向测试与发布相关17项回归通过；更严格校验真实复核b2cba35来源的17份候选成功。Ruff与源码秘密扫描通过。此校验不代替GitHub签名／来源认证或真实模型效果验收。
