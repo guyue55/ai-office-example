@@ -72,6 +72,37 @@ def test_exact_candidate_passes(verifier, candidate):
     assert verifier.verify(candidate, "v1.0.0", "a" * 40)["assets"] == 15
 
 
+def test_agent_assets_require_explicit_marker_and_complete_pair(verifier, candidate):
+    import shutil
+
+    shutil.copyfile(
+        candidate / "office_client-1.0.0-py3-none-any.whl",
+        candidate / "office_agent-1.0.0-py3-none-any.whl",
+    )
+    shutil.copyfile(
+        candidate / "office_client-1.0.0.tar.gz", candidate / "office_agent-1.0.0.tar.gz"
+    )
+    seal(candidate)
+    with pytest.raises(ValueError, match="白名单"):
+        verifier.verify(candidate)
+    manifest = candidate / "release-manifest.json"
+    data = json.loads(manifest.read_text())
+    data["agent_runtime"] = True
+    manifest.write_text(json.dumps(data))
+    checksums = candidate / "SHA256SUMS"
+    checksums.write_text(
+        "".join(
+            hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n"
+            for p in sorted(candidate.iterdir())
+            if p.name != "SHA256SUMS"
+        )
+    )
+    assert verifier.verify(candidate)["assets"] == 17
+    (candidate / "office_agent-1.0.0.tar.gz").unlink()
+    with pytest.raises(ValueError):
+        verifier.verify(candidate)
+
+
 def test_extra_file_and_resealed_extra_file_are_rejected(verifier, candidate):
     (candidate / "private.txt").write_text("synthetic")
     with pytest.raises(ValueError, match="额外文件"):

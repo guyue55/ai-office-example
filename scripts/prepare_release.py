@@ -84,6 +84,12 @@ def build(root, output, tag):
         subprocess.run(
             ["uv", "build", "--package", name, "--out-dir", str(output)], cwd=root, check=True
         )
+    # 独立项目不是uv工作区成员，必须显式构建；普通员工安装包仍只取原SDK依赖。
+    subprocess.run(
+        ["uv", "build", "--project", "clients/agent", "--out-dir", str(output)],
+        cwd=root,
+        check=True,
+    )
     # uv build会创建本地忽略文件，它不是可下载发布资产。
     (output / ".gitignore").unlink(missing_ok=True)
     manifest = record(root, output)
@@ -145,6 +151,7 @@ def build(root, output, tag):
                 "version": version,
                 "tag": tag,
                 "source_commit": manifest["source_commit"],
+                "agent_runtime": True,
                 "artifacts": files,
                 "notice": "构建来源记录；实际发布状态以GitHub Release为准",
             },

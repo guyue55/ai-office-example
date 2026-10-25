@@ -110,6 +110,14 @@ def verify(directory: Path, tag: str | None = None, commit: str | None = None) -
     }
     for name in PACKAGES:
         allowed.update({f"{name}-{version}-py3-none-any.whl", f"{name}-{version}.tar.gz"})
+    # 原v1.0.0没有Agent资产；显式能力标记兼容历史，不允许只带一半可选制品。
+    agent = manifest.get("agent_runtime", False)
+    if type(agent) is not bool:
+        raise ValueError("Agent制品标记无效")
+    if agent:
+        allowed.update(
+            {f"office_agent-{version}-py3-none-any.whl", f"office_agent-{version}.tar.gz"}
+        )
     if set(artifacts) != allowed:
         raise ValueError("发布资产不符合白名单")
     expected = allowed | {"release-manifest.json", "SHA256SUMS"}
