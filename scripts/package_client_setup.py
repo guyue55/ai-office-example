@@ -13,11 +13,14 @@ from check_build import verify_artifacts
 from delivery_config import read_env
 from office_client.auth import trusted_url
 from package_skills import verify_archive
+from verify_release import verify as verify_release
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def package(root, output, service, *, allow_lan_http_demo=False, artifact_dir=None):
+def package(
+    root, output, service, *, allow_lan_http_demo=False, artifact_dir=None, with_agent=False
+):
     artifacts = artifact_dir if artifact_dir is not None else root / "dist"
     trusted_url(service, loopback_http=False, allow_lan_http_demo=allow_lan_http_demo)
     url = urlsplit(service)
@@ -35,11 +38,39 @@ def package(root, output, service, *, allow_lan_http_demo=False, artifact_dir=No
         raise ValueError("输出目录已存在，请选择新的交付目录")
     manifest = json.loads((artifacts / "build-manifest.json").read_text(encoding="utf-8"))
     verify_artifacts(manifest, artifacts)
+    if (
+        subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        != manifest["source_commit"]
+    ):
+        raise ValueError("交付脚本与轮包来源不同，请从同一提交重新构建")
+    if subprocess.check_output(["git", "diff", "HEAD", "--"], cwd=root):
+        raise ValueError("交付源码未提交，拒绝生成不实来源声明")
+    agent_wheel = None
+    if with_agent:
+        release = json.loads((artifacts / "release-manifest.json").read_text())
+        verify_release(artifacts, commit=manifest["source_commit"])
+        if release.get("agent_runtime") is not True:
+            raise ValueError("候选未声明独立Agent制品")
+        agent_wheel = artifacts / f"office_agent-{release['version']}-py3-none-any.whl"
     suite = verify_archive(artifacts / "office-skills.zip")
     if suite["source_commit"] != manifest["source_commit"]:
         raise ValueError("技能与轮包来源提交不同，须重新构建")
-    requirements = subprocess.check_output(
+    export = (
         [
+            "uv",
+            "export",
+            "--project",
+            "clients/agent",
+            "--locked",
+            "--no-dev",
+            "--no-emit-workspace",
+            "--no-emit-package",
+            "office-client",
+            "--no-emit-package",
+            "office-api-contracts",
+        ]
+        if with_agent
+        else [
             "uv",
             "export",
             "--locked",
@@ -47,7 +78,10 @@ def package(root, output, service, *, allow_lan_http_demo=False, artifact_dir=No
             "office-client",
             "--no-dev",
             "--no-emit-workspace",
-        ],
+        ]
+    )
+    requirements = subprocess.check_output(
+        export,
         cwd=root,
         text=True,
         encoding="utf-8",
@@ -60,6 +94,11 @@ def package(root, output, service, *, allow_lan_http_demo=False, artifact_dir=No
         for item in manifest["artifacts"]:
             if item["name"] in ("office-client", "office-api-contracts"):
                 shutil.copyfile(artifacts / item["file"], output / "wheels" / item["file"])
+        if agent_wheel is not None:
+            shutil.copyfile(agent_wheel, output / "wheels" / agent_wheel.name)
+            shutil.copyfile(
+                root / "clients/agent/agent.example.toml", output / "agent.example.toml"
+            )
         for path in (root / "installers/client").iterdir():
             if path.is_file() and path.suffix in (".py", ".ps1", ".sh", ".md", ".json"):
                 if path.suffix == ".ps1":
@@ -88,6 +127,7 @@ def package(root, output, service, *, allow_lan_http_demo=False, artifact_dir=No
             json.dumps(
                 {
                     "format": 1,
+                    "agent_runtime": with_agent,
                     "connection_config": ".env",
                     "service": service.rstrip("/"),
                     "source_commit": manifest["source_commit"],
@@ -112,6 +152,7 @@ def main():
     parser.add_argument("--config", type=Path, help="读取服务端同一份交付.env")
     parser.add_argument("--lan-http-demo", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--with-agent", action="store_true", help="明确交付可选本机模型运行时")
     args = parser.parse_args()
     service, demo = args.service, args.lan_http_demo
     if args.config:
@@ -131,6 +172,7 @@ def main():
             service,
             allow_lan_http_demo=demo,
             artifact_dir=args.artifact_dir.resolve() if args.artifact_dir else None,
+            with_agent=args.with_agent,
         )
     )
 

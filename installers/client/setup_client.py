@@ -58,6 +58,8 @@ def ensure_connection(root, *, interactive=None, input_fn=None):
 
 def load_bundle(root):
     manifest = json.loads((root / "bundle.json").read_text(encoding="utf-8"))
+    if type(manifest.get("agent_runtime", False)) is not bool:
+        raise ValueError("Agent安装标记必须为布尔值")
     if manifest.get("connection_config") == ".env" and not (root / ".env").is_file():
         raise ValueError("缺少服务连接.env，请通过AI询问企业地址后生成配置，不会使用隐藏默认地址")
     if (root / ".env").exists():
@@ -204,8 +206,8 @@ def install(root, uv):
     if not python.exists():
         subprocess.run([uv, "venv", "--python", "3.13", str(environment)], check=True)
     wheels = [root / name for name in manifest["files"] if name.endswith(".whl")]
-    if len(wheels) != 2:
-        raise ValueError("需要客户端和契约库两份本地轮包")
+    if len(wheels) != (3 if manifest.get("agent_runtime", False) else 2):
+        raise ValueError("本地轮包数量与声明的客户端／Agent安装模式不一致")
     requirements = (root / "requirements.txt").read_text(encoding="utf-8")
     for path in wheels:
         requirements += (
@@ -221,6 +223,8 @@ def install(root, uv):
         [uv, "pip", "sync", "--require-hashes", "--python", str(python), str(resolved)],
         check=True,
     )
+    if manifest.get("agent_runtime", False):
+        subprocess.run([str(python), "-I", "-c", "import office_agent.runtime"], check=True)
     connection = state / "connection.json"
     connection.write_text(
         json.dumps(
@@ -259,6 +263,7 @@ def install(root, uv):
         if manifest.get("allow_lan_http_demo")
         else "HTTPS",
         "host_global_registration": False,
+        "agent_runtime": manifest.get("agent_runtime", False),
     }
     with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=state, delete=False) as stream:
         temporary = Path(stream.name)

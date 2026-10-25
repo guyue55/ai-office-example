@@ -77,3 +77,13 @@ docker build --build-arg OFFICE_AGENT=1 -f deploy/Dockerfile -t office-agent:loc
 ## 发布资产补充
 
 Agent分支的候选构建会额外生成office-agent的wheel及sdist，并在release-manifest中声明agent_runtime。原三个包和普通员工安装包保持独立，只有选择独立模型运行时才安装Agent依赖。校验器兼容没有该标记的历史发布；有标记时要求两份Agent制品齐全并核对摘要，不接受半套文件。这里是候选构建能力，不覆盖已发布v1.0.0资产，也不自动创建Tag或发布。
+
+## 可选员工Agent交付包
+
+从干净、已提交且与候选同源的源码运行：
+
+```sh
+uv run python scripts/package_client_setup.py --artifact-dir /path/to/candidate --service https://office.company.example --with-agent --output /path/to/new-agent-client
+```
+
+不加--with-agent保持普通员工包；添加时验证完整候选的Agent声明、来源及摘要，按独立Agent锁文件导出带哈希依赖，带入第三份轮包与agent.example.toml。服务器助手使用者无需安装本机模型运行时。员工按原setup.sh／setup.ps1安装，只写本交付目录的虚拟环境；安装结果agent_runtime记录本地能力，实际模型配置和用户登录另行完成。普通包和Agent包使用不同目录，不能原地静默切换。

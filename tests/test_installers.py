@@ -102,6 +102,14 @@ def test_pc_bundle_rejects_tamper(tmp_path):
         setup.load_bundle(tmp_path)
 
 
+@pytest.mark.parametrize("value", ["true", 1, None])
+def test_pc_bundle_rejects_ambiguous_agent_mode(tmp_path, value):
+    setup = module("installers/client/setup_client.py")
+    (tmp_path / "bundle.json").write_text(json.dumps({"agent_runtime": value}))
+    with pytest.raises(ValueError, match="Agent安装标记"):
+        setup.load_bundle(tmp_path)
+
+
 def test_pc_scripts_preserve_global_environment():
     source = (ROOT / "installers/client/setup.ps1").read_text()
     assert "Get-FileHash" in source and "0.9.18" in source
