@@ -1,0 +1,13 @@
+# 复制后填写；不要把实际环境、秘密或业务资料提交到模板。
+service_url = "https://office.company.example"
+model_url = "https://model.company.example/v1"
+model = "your-tool-capable-model"
+api_key_env = "OFFICE_MODEL_API_KEY"
+approved_model_data = false
+allow_lan_http_demo = false
+
+[limits]
+requests = 8
+tools = 20
+seconds = 120
+tokens = 32000

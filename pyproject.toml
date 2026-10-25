@@ -6,12 +6,17 @@ license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.13,<3.15"
 dependencies = ["office-data-service", "office-client", "office-api-contracts[fastapi,httpx,mcp]"]
 
+[project.optional-dependencies]
+agent = ["office-data-service[agent]"]
+
 [tool.uv.workspace]
 members = ["office-data-service", "clients/python", "packages/api-contracts"]
+exclude = ["clients/agent"]
 [tool.uv.sources]
 office-api-contracts = { workspace = true }
 office-data-service = { workspace = true }
 office-client = { workspace = true }
+office-agent = { path = "clients/agent" }
 [dependency-groups]
 dev = [
     "pytest>=8,<10",

@@ -110,6 +110,7 @@ def inspect(root: Path):
                 problems.add(f"{path.relative_to(root)}:{line}: {name} 不得依赖 {dependency}")
     for package, prefixes in [
         ("clients/python/src/office_client", ("app", "sqlalchemy", "psycopg")),
+        ("clients/agent/src/office_agent", ("app", "sqlalchemy", "psycopg", "fastapi")),
         ("packages/api-contracts/src/office_contracts", ("app", "office_client")),
     ]:
         for path in (root / package).rglob("*.py"):

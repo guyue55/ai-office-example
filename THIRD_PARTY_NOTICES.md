@@ -12,6 +12,8 @@
 - certifi 声明 MPL-2.0；开发依赖 pathspec 也声明 MPL。文件级许可义务不能用根许可证覆盖。
 - cryptography、packaging 等含备选或组合许可；具体文本以所交付版本的 dist-info/licenses 等上游材料为准。
 
+Agent分支新增的可选运行依赖单独核对：Pydantic AI slim／graph 2.61.0、genai-prices及logfire-api声明MIT，OpenAI Python SDK声明Apache-2.0，HTTPX2声明BSD-3-Clause，griffelib声明ISC。版本分别见根和clients/agent的锁文件；没有复制上述框架或本地参考项目的源码，也没有默认启用外部遥测。基础镜像不安装模型运行时，可选Agent镜像和独立轮包仍须保留实际依赖的许可材料。原许可快照不作为新增依赖已经被逐项记录的证明。
+
 该清单不是每个 wheel 内嵌本地库的完整清单。尤其 psycopg-binary 的内嵌库，及其他本地扩展、浏览器和操作系统组件，需要在实际制品层保留上游许可文件并核查适用义务。
 
 ## 独立服务与构建工具

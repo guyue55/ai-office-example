@@ -1,6 +1,6 @@
 # Agent 运行时设计草案
 
-版本0.1，2026-10-25。状态：已具备隔离实验依据，**员工端／独立服务运行位置待确认**，不是已实现能力。实现计划见[AGENT_PLAN](AGENT_PLAN.md)，来源见[AGENT_RESEARCH](AGENT_RESEARCH.md)。本文只适用于Agent分支，不修改main及既有v1.0.0部署的承诺。
+版本0.1，2026-10-25。本文保留员工端原型的详细设计。用户随后明确要求服务端和客户端都支持AI；最新总体范围、内部／外部形态与方案见[智能体基座总体方案](AGENT_PLATFORM_DESIGN.md)。实现计划见[AGENT_PLAN](AGENT_PLAN.md)，来源见[AGENT_RESEARCH](AGENT_RESEARCH.md)。本文只适用于Agent分支，不修改main及既有v1.0.0部署的承诺。
 
 ## 1. 交付目标与非目标
 

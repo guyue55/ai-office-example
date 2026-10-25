@@ -1,6 +1,6 @@
 # 企业 AI 办公基座模板
 
-将企业AI工具与内部数据／管理服务连接起来的独立部署基座。员工通过安装技能的AI工具使用CLI／SDK，服务端提供受控接口、身份权限、审计和管理控制台。服务端和Web不调用模型、不运行Agent，客户端不直连数据库。
+将企业AI工具与内部数据／管理服务连接起来的独立部署基座。员工可通过AI工具、技能及CLI／SDK访问受控服务。`codex/agent`分支正升级为员工端与服务端均支持AI的智能体基座：已实现独立任务运行原型和内部异步工具适配，服务端任务与Web助手仍在开发。客户端和模型不直连数据库。
 
 ## 具备的能力
 
@@ -43,4 +43,4 @@ GitHub 仓库与 CI／候选制品／镜像发布边界见 [自动化说明](doc
 
 常用开发、发版准备、安装升级与恢复操作见 [操作手册](docs/OPERATIONS.md)。
 
-`codex/agent` 分支正在研究独立 Agent 能力：[调研](docs/AGENT_RESEARCH.md) · [设计草案](docs/AGENT_DESIGN.md) · [分阶段计划](docs/AGENT_PLAN.md)。运行位置尚待确认，文档不代表运行时已经实现；当前服务端无 AI 的边界仍有效。
+Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGENT_RESEARCH.md) · [员工端运行设计](docs/AGENT_DESIGN.md) · [执行计划](docs/AGENT_PLAN.md) · [可选运行时安装](clients/agent/README.md)。当前原型不等于服务端或真实供应商已经验收；原v1.0.0交付不因分支开发而自动升级。
