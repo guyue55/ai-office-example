@@ -76,3 +76,9 @@ flowchart LR
 复核发现原发布脚本只构建三个工作区包，未包含独立office-agent，故重新打开P5并修复。提交8191902开始构建Agent wheel／sdist，manifest显式标记agent_runtime，校验器兼容旧版15份资产并要求新候选17份资产完整。发布相关17项回归通过。
 
 以8191902933dbdd467b1fe5e53dce5220453d482d为来源实际运行prepare_release和verify_release成功，候选位于忽略目录runtime/agent-release-acceptance；从该候选提取三份运行轮包到独立临时目录重新安装，31项测试及依赖一致性通过。没有重打既有Tag或发布v1.0.0；这个版本参数仅用于现有源码版本的一致性验收，正式新增版本须另走版本／main／发布流程。后续文档提交不改变该候选记录的来源SHA。
+
+## 员工交付安装补充（2026-10-25）
+
+提交b2cba35增加package_client_setup的--with-agent选项；从同一提交重新构建完整候选，分别产出Agent与普通员工交付目录，并实际运行各自setup_client安装。两者均仅写自己的.office虚拟环境，不升级全局工具或修改AI宿主。Agent包安装后CLI agent --help成功、运行时可导入、36个运行依赖一致；普通包实测未安装office_agent。安装器及部署入口64项回归通过，Ruff与源码秘密扫描通过。
+
+两种验收均使用https://fixture.invalid，结果正确标记installed、connection_verified=false、identity_verified=false及confirm_service_address，不能称为真实服务或真实身份已验收。模型配置和调用仍待明确获准来源；已向用户请求选择本地模型、企业获准API或暂不提供模型，不索取对话中的秘密。
