@@ -3,6 +3,7 @@
 import re
 import tomllib
 from pathlib import Path
+from typing import Literal
 
 from office_client.auth import ClientError, trusted_url
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -28,6 +29,11 @@ class AgentConfig(BaseModel):
     service_url: str
     model: str = Field(min_length=1, max_length=200)
     model_url: str
+    api: Literal["openai-completions", "openai-responses", "anthropic-messages"] = (
+        "openai-completions"
+    )
+    anthropic_auth: Literal["bearer", "x-api-key"] = "bearer"
+    request_timeout: float = Field(default=30, gt=0, le=300)
     api_key_env: str = "OFFICE_MODEL_API_KEY"
     api_key_file: str | None = Field(default=None, min_length=1, max_length=4096)
     # 配置者应先确认企业数据政策；不将开关解释成自动脱敏或法律合规证明。
@@ -44,6 +50,8 @@ class AgentConfig(BaseModel):
 
     @model_validator(mode="after")
     def addresses(self):
+        if self.api != "anthropic-messages" and self.anthropic_auth != "bearer":
+            raise ValueError("旧Anthropic鉴权头仅适用于Messages协议")
         try:
             self.service_url = trusted_url(
                 self.service_url, allow_lan_http_demo=self.allow_lan_http_demo
@@ -71,5 +79,5 @@ class AgentConfig(BaseModel):
         except (OSError, ValueError):
             # Pydantic异常包含输入值，不能原样展示。
             raise AgentError(
-                "Agent配置无效：请核对服务、模型端点、密钥引用、数据许可和预算"
+                "Agent配置无效：请核对服务、API协议、模型端点、密钥引用、数据许可和预算"
             ) from None

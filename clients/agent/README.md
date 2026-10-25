@@ -27,7 +27,7 @@ uv run --project clients/agent python -m office_agent --config /path/to/agent.to
 超时或取消不能撤回已经发出的HTTP请求；SDK线程会等待在途请求收尾并关闭，程序退出可能略晚于任务时限。
 身份或权限变化后旧提案无效。所有操作仍由服务端实时授权和审计。
 
-首个适配器支持OpenAI Chat Completions协议端点，模型须支持工具调用。协议兼容不代表所有供应商已验收。
+支持显式配置OpenAI Chat Completions、OpenAI Responses和Anthropic Messages；模型须支持工具调用，协议兼容不代表所有供应商已验收。完整字段、三种示例和网关鉴权见[模型配置](../../docs/AGENT_MODEL_CONFIGURATION.md)。
 不配置外部trace exporter，不保存prompt／工具全文；已知秘密字段被屏蔽，但不承诺自动识别所有敏感业务信息。
 模型出口必须经企业批准；不默认复用其他AI工具的订阅或凭证。
 

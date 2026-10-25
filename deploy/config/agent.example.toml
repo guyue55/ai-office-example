@@ -1,6 +1,9 @@
 # 可选内部助手配置；仅由企业管理员设置，不能由模型或员工请求更改。
 # 安装Agent镜像后放置于实例service/agent.toml；相对秘密路径以本文件为基准。
 service_url = "https://office.example"
+api = "openai-completions" # 或openai-responses、anthropic-messages
+# Anthropic官方base URL为https://api.anthropic.com；旧网关可设anthropic_auth="x-api-key"
+request_timeout = 30
 model_url = "https://model.company.example/v1"
 model = "your-tool-capable-model"
 api_key_file = "secrets/model_key"

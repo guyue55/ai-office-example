@@ -76,3 +76,7 @@
 本轮实验补充：Python3.13.7隔离安装`pydantic-ai-slim[openai]==2.61.0`，解析26个包，`uv pip check`通过，`pip-audit==2.9.0`对实际固定依赖扫描未发现已知漏洞。已验证暂停不写、拒绝不写、批准执行一次和请求上限。未验证Python3.14、Windows、真实provider或企业实例。当前版本不再接受旧示例中的`Agent(instrument=False)`；实验使用实际签名，不配置遥测exporter。无已知漏洞只代表本轮审计数据库覆盖，不能保证不存在漏洞。
 
 部分文档旧路径经web读取不可达；已用官方重定向后的文档及Context7固定v2.0.0示例辅助核对。该示例不能冒充v2.61.0运行验证，采用前必须核对实际安装版本源码。
+
+## 自定义协议补充（2026-10-26）
+
+用户要求支持OpenAI Chat／Responses及Anthropic配置。本轮核对Pydantic AI官方模型与兼容API文档、固定2.61.0实际类签名、本地BeefTV的agent-host/canvas-turn.mjs，以及Anthropic官方2026-10-21鉴权迁移说明，采用三种显式api而不自动猜测／失败切换。具体来源、取舍、配置与验收边界统一见[模型配置](AGENT_MODEL_CONFIGURATION.md)。新增Anthropic2.3.0与docstring-parser0.18.0；未调用真实供应商或读取宿主凭证。

@@ -19,4 +19,6 @@
 
 这是可选模型运行包，原CLI不必包含它。只有本人明确希望在本机运行并已有获准的模型配置时，使用`agent --agent-config <配置> --prompt <任务>`。缺少依赖时给出安装提示，安装／全局升级仍遵守统一规则，不能自动借用AI工具的模型密钥。
 
+调用独立Agent时仅使用安装结果的绝对cli，不叠加常规cli_args、--config或--service：独立TOML已包含service_url。先核对它与获准企业地址一致；不能为了运行模型而静默更换企业。API协议可明确选择openai-completions、openai-responses、anthropic-messages，不按模型名猜测。
+
 独立运行的终端确认与服务端任务审批是两条不同路径，不上传本机暂停历史伪装为服务器提案。不提供自动批准或免确认选项；非交互终端写入默认拒绝。

@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from pydantic_ai import Agent, DeferredToolRequests, DeferredToolResults, ToolApproved, ToolDenied
 from pydantic_ai.capabilities import Hooks
-from pydantic_ai.exceptions import UsageLimitExceeded
+from pydantic_ai.exceptions import ModelAPIError, UsageLimitExceeded
 from pydantic_ai.tools import Tool
 from pydantic_ai.usage import RunUsage, UsageLimits
 
@@ -144,6 +144,28 @@ async def run_with_gateway(
         status, explanation = "timeout", "任务超时；请先核对已返回回执，勿重复提交"
     except UsageLimitExceeded:
         status, explanation = "budget_exceeded", "任务达到模型请求、工具或Token预算"
+    except ModelAPIError as error:
+        # 框架可能把未知3xx归入通用API／服务器错误；优先保留SDK实际响应状态，
+        # 只取合法数字，绝不回显body、headers、模型名或异常字符串。
+        http_status = getattr(error.__cause__, "status_code", None)
+        if type(http_status) is not int or not 100 <= http_status <= 599:
+            http_status = getattr(error, "status_code", None)
+        if type(http_status) is not int or not 100 <= http_status <= 599:
+            http_status = None
+        advice = {
+            307: "请核对最终模型地址；未跟随重定向",
+            401: "请核对模型密钥及端点",
+            403: "请核对模型访问授权",
+            429: "请核对模型额度或限流状态",
+            400: "请核对模型与所选协议的兼容性",
+            422: "请核对模型与所选协议的兼容性",
+        }.get(http_status or 0, "请核对模型服务状态")
+        label = (
+            f"（HTTP {http_status}）"
+            if type(http_status) is int and 100 <= http_status <= 599
+            else ""
+        )
+        explanation = f"模型请求未完成{label}；{advice}，未自动重试"
     except AgentError as error:
         explanation = str(error)
     except asyncio.CancelledError:

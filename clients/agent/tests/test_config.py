@@ -30,6 +30,12 @@ def configured(**kwargs):
         {"limits": {"requests": 0}},
         {"limits": {"requests": True}},
         {"unknown": "secret"},
+        {"api": "guess-automatically"},
+        {"api": "openai-completions", "anthropic_auth": "x-api-key"},
+        {"api": "anthropic-messages", "anthropic_auth": "guess"},
+        {"request_timeout": 0},
+        {"request_timeout": 301},
+        {"request_timeout": "30"},
     ],
 )
 def test_config_refuses_unsafe_values(updates):
