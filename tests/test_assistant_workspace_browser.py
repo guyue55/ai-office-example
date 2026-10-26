@@ -262,6 +262,45 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 expect(page.locator("#assistant-panel")).to_be_visible()
                 page.get_by_role("button", name="更多会话操作", exact=True).focus()
                 expect(page.get_by_role("tooltip")).to_have_text("更多会话操作")
+                page.keyboard.press("Escape")
+                expect(page.get_by_role("tooltip")).to_be_hidden()
+                page.evaluate(
+                    "dispatchEvent(new Event('scroll'));dispatchEvent(new Event('resize'))"
+                )
+                page.wait_for_timeout(220)  # 超过提示150ms延迟，证明事件不会让提示复活。
+                expect(page.get_by_role("tooltip")).to_be_hidden()
+                menu_trigger = page.get_by_role("button", name="更多会话操作", exact=True)
+                menu_trigger.press("Enter")
+                width_picker = page.get_by_label("侧栏宽度", exact=True)
+                expect(width_picker).to_be_focused()
+                expect(page.get_by_role("button", name="重命名会话", exact=True)).to_be_disabled()
+                width_picker.press("Home")
+                width_picker.press("ArrowDown")
+                expect(width_picker).to_have_value("420")
+                page.keyboard.press("Tab")
+                expect(page.get_by_role("link", name="展开工作区", exact=True)).to_be_focused()
+                page.keyboard.press("Shift+Tab")
+                expect(width_picker).to_be_focused()
+                page.keyboard.press("Escape")
+                expect(page.locator("#assistant-options-panel")).to_be_hidden()
+                expect(menu_trigger).to_be_focused()
+                expect(page.get_by_role("tooltip")).to_have_text("更多会话操作")
+                page.keyboard.press("Escape")
+                # 共享组件的无有效控件／无效初始目标回退，不依赖助手具体菜单。
+                page.evaluate("""() => {
+                    const trigger=document.createElement('button');trigger.id='focus-probe-trigger';trigger.textContent='测试浮层';
+                    const panel=document.createElement('section');panel.id='focus-probe-panel';panel.setAttribute('popover','manual');
+                    const hidden=document.createElement('button');hidden.hidden=true;
+                    const disabled=document.createElement('button');disabled.disabled=true;panel.append(hidden,disabled);
+                    document.body.append(trigger,panel);
+                    window.focusProbe=OfficeUI.floating(trigger,panel,{initialFocus:()=>trigger});focusProbe.show();
+                }""")
+                expect(page.locator("#focus-probe-panel")).to_be_focused()
+                page.keyboard.press("Escape")
+                expect(page.locator("#focus-probe-trigger")).to_be_focused()
+                page.evaluate(
+                    "document.querySelector('#focus-probe-panel').remove();document.querySelector('#focus-probe-trigger').remove()"
+                )
                 # 在常用侧栏尺寸中正文保留至少65%，紧凑头部不挤占阅读区。
                 page.set_viewport_size({"width": 1440, "height": 900})
                 assert (

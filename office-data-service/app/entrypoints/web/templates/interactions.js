@@ -8,6 +8,7 @@
   if (!dialog?.showModal) return;
   document.documentElement.classList.add('ui-enhanced');
   let local, tipTarget, tipTimer, tipHideTimer, lastFocusKey, confirmationPending = false;
+  let dismissedTip = null, pendingTip = null;
   const icons = {
     account: ['M3 5h18v14H3Z','M7 9h3v3H7Z','M14 9h4M14 13h4M7 16h11'],
     eye: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12','M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6'],
@@ -119,6 +120,7 @@
   }
   function hideTip() {
     clearTimeout(tipTimer); clearTimeout(tipHideTimer);
+    pendingTip = null;
     if (tipTarget) {
       const ids = (tipTarget.getAttribute('aria-describedby') || '').split(' ').filter(id => id && id !== tip.id);
       if (ids.length) tipTarget.setAttribute('aria-describedby', ids.join(' ')); else tipTarget.removeAttribute('aria-describedby');
@@ -128,9 +130,11 @@
   }
   function showTip(target, keyboard = false) {
     // 触屏不依赖悬停；接入键盘时仍须展示聚焦提示。
-    if (!target?.dataset.tooltip || target.disabled || (!keyboard && matchMedia('(hover: none)').matches)) return;
+    if (!target?.dataset.tooltip || target===dismissedTip || target.disabled || (!keyboard && matchMedia('(hover: none)').matches)) return;
     hideTip();
+    pendingTip = target;
     tipTimer = setTimeout(() => {
+      pendingTip = null;
       if (!target.isConnected || target.disabled) return;
       tipTarget = target; tip.textContent = target.dataset.tooltip;
       if(target.getAttribute('aria-label')!==target.dataset.tooltip)target.setAttribute('aria-describedby', [target.getAttribute('aria-describedby'), tip.id].filter(Boolean).join(' '));
@@ -143,7 +147,7 @@
   }
   document.addEventListener('pointerover', event => {
     const target = event.target.closest('[data-tooltip]');
-    if (target && !target.contains(event.relatedTarget)) showTip(target);
+    if (target && !target.contains(event.relatedTarget)) {dismissedTip=null;showTip(target);}
   });
   document.addEventListener('pointerout', event => {
     const target = event.target.closest('[data-tooltip]');
@@ -153,7 +157,7 @@
   });
   tip.addEventListener('pointerenter', () => clearTimeout(tipHideTimer));
   tip.addEventListener('pointerleave', () => {if (!document.activeElement?.matches('[data-tooltip]')) hideTip();});
-  document.addEventListener('focusin', event => showTip(event.target.closest('[data-tooltip]'), true));
+  document.addEventListener('focusin', event => {dismissedTip=null;showTip(event.target.closest('[data-tooltip]'), true);});
   document.addEventListener('focusout', hideTip);
   function repositionTip() {
     const focused = document.activeElement?.closest('[data-tooltip]');
@@ -165,7 +169,7 @@
     }
   }
   window.addEventListener('scroll', repositionTip, true); window.addEventListener('resize', repositionTip);
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && tipTarget) { hideTip(); event.preventDefault(); event.stopPropagation(); } }, true);
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && (tipTarget||pendingTip)) { dismissedTip=tipTarget||pendingTip;hideTip(); event.preventDefault(); event.stopPropagation(); } }, true);
   // 所有站内确认复用同一组件；重复点击不替换仍未完成的确认。
   function confirm(message, options = {}) {
     const box = document.getElementById('action-confirm');

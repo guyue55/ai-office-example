@@ -13,6 +13,15 @@
   }
   function closePopovers(){opened?.close();}
   function floating(trigger,panel,{initialFocus,onOpen}={}) {
+    const focusable=node=>node instanceof HTMLElement&&panel.contains(node)&&!node.matches(':disabled')&&!node.closest('[hidden],[inert]')&&visible(node)&&getComputedStyle(node).visibility!=='hidden';
+    function focusPanel(){
+      const requested=initialFocus?.();
+      const candidates=Array.from(panel.querySelectorAll('input:not([type="hidden"]),button,select,textarea,a[href],[tabindex]')).filter(node=>focusable(node)&&node.tabIndex>=0);
+      // 显式初始目标也需验证；跳过禁用／隐藏控件，不能把焦点留在浮层外。
+      const target=focusable(requested)&&(requested.tabIndex>=0||requested.hasAttribute('tabindex'))?requested:candidates[0]||panel;
+      if(target===panel&&!panel.hasAttribute('tabindex'))panel.tabIndex=-1;
+      target.focus({preventScroll:true});
+    }
     trigger.setAttribute('aria-haspopup','dialog');trigger.setAttribute('aria-controls',panel.id);trigger.setAttribute('aria-expanded','false');
     const native=typeof panel.showPopover==='function';
     const control={
@@ -27,7 +36,7 @@
         if(document.querySelector('dialog[open]')||trigger.disabled)return;
         opened?.close(false);opened=control;panel.dataset.floatingOpen='';
         if(native)panel.showPopover();position(panel,trigger);trigger.setAttribute('aria-expanded','true');
-        (initialFocus?.()||panel.querySelector('input,button,a[href]')||panel).focus({preventScroll:true});onOpen?.();
+        focusPanel();onOpen?.();
       },
       position(){if(control.open)position(panel,trigger);}
     };
