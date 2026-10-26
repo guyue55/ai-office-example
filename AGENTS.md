@@ -21,6 +21,7 @@
 | 设置品牌／创建新企业 | [配置边界](docs/CONFIGURATION.md)、template.toml、scripts/new_project.py、scripts/configure_template.py |
 | 服务端／员工部署 | [INSTALL.md](INSTALL.md)、对应安装脚本及其帮助 |
 | 开发、检查、活体验收 | [CONTRIBUTING.md](CONTRIBUTING.md)、[验收记录与边界](docs/ACCEPTANCE.md) |
+| 控制台与助手整体体验升级 | [整体UI方案及阶段清单](docs/UI_UPGRADE_PLAN.md)、tests/ui-pages.json；局部通过不能代替全部阶段完成 |
 | 追溯模板来源与实现 | [来源](docs/SOURCE.md)、[实现记录](docs/IMPLEMENTATION.md) |
 | 通过 AI 操作真实服务 | [SKILL.md](office-skills/SKILL.md)、[RULES.md](office-skills/RULES.md)，再按情境读 references |
 

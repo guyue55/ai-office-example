@@ -37,7 +37,7 @@
 </td>
 </tr>{% else %}
 <tr>
-<td colspan="4" class="empty">没有符合条件的权限集。新建前请先检查是否可复用。</td>
+<td colspan="4" class="empty">{% set empty_title = '暂无权限集' %}{% set empty_description = '将常用权限组合后，再分配给角色。' %}{% include '_list_empty.html' %}</td>
 </tr>{% endfor %}
 </tbody>
 </table>

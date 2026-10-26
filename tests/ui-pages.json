@@ -165,6 +165,8 @@
     "_assistant_panel.html",
     "_filters.html",
     "_interactions.html",
+    "_list_empty.html",
+    "_nav_icon.html",
     "_permissions.html",
     "_search.html",
     "_workspace.html",
@@ -179,6 +181,8 @@
     "form-state.js",
     "interactions.js",
     "pagination.html",
+    "shell.css",
+    "shell.js",
     "styles.css",
     "workspace.js"
   ]

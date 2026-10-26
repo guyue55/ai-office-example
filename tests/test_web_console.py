@@ -743,3 +743,26 @@ def test_http_acceptance_notice_preserves_transport_boundary(web):
     assert "HTTP 验收模式" in response.text
     assert "传输未加密，请勿用于正式业务" in response.text
     assert "开发演示" not in response.text
+
+
+@pytest.mark.parametrize(
+    "path,title",
+    [("employees", "暂无人员"), ("roles", "暂无角色"), ("permission-sets", "暂无权限集")],
+)
+def test_list_empty_state_distinguishes_filters(web, path, title):
+    original = web.application.call.side_effect
+
+    async def operation(principal, name, payload, trace):
+        if name == "access.list":
+            return {"items": [], "next": None, "has_more": False}
+        return await original(principal, name, payload, trace)
+
+    web.application.call.side_effect = operation
+    empty = web.client.get(f"/console/{path}")
+    assert empty.status_code == 200
+    assert title in empty.text
+    filtered = web.client.get(f"/console/{path}?q=不存在&limit=20")
+    assert filtered.status_code == 200
+    assert "没有匹配结果" in filtered.text
+    assert "清除筛选" in filtered.text
+    assert f"/console/{path}?limit=20" in filtered.text

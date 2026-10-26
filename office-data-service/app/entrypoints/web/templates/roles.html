@@ -41,7 +41,7 @@
 </td>
 </tr>{% else %}
 <tr>
-<td colspan="4" class="empty">没有符合条件的角色。新建前请先搜索，优先复用已有角色。</td>
+<td colspan="4" class="empty">{% set empty_title = '暂无角色' %}{% set empty_description = '按工作职责建立角色；新建前请优先复用已有配置。' %}{% include '_list_empty.html' %}</td>
 </tr>{% endfor %}
 </tbody>
 </table>

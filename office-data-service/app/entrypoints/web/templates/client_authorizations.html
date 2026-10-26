@@ -26,6 +26,6 @@
 {% endif %}
 {% if item.cleanup in ['failed','pending'] %}{{ authorization_action(item, 'retry', '重试清理', '确认重试身份会话清理？此操作不会恢复已停用的授权。') }}{% endif %}
 </div>{% else %}<span class="muted small">仅可查看</span>{% endif %}</td></tr>
-{% else %}<tr><td colspan="5" class="empty">没有符合条件的授权。新客户端首次访问业务服务后会自动登记。</td></tr>{% endfor %}
+{% else %}<tr><td colspan="5" class="empty">{% set empty_title = '暂无客户端授权' %}{% set empty_description = '新客户端首次访问业务服务后会自动登记。' %}{% include '_list_empty.html' %}</td></tr>{% endfor %}
 </tbody></table></div>{% include 'pagination.html' %}</section>
 {% endblock %}

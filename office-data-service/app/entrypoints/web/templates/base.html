@@ -7,44 +7,50 @@
 </title>
 <style>{% include 'styles.css' %}
 {% include 'assistant.css' %}
+{% include 'shell.css' %}
 :root { --accent: {{ product.primary_color }}; }
 body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color }}; }
 </style>
 {% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}
 <script>try { if (innerWidth >= 1200 && JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').open) { document.documentElement.classList.add('assistant-preopen'); const value=Number(JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').width)||420; document.documentElement.style.setProperty('--assistant-width',Math.min(640,Math.max(360,Math.min(innerWidth-800,value)))+'px'); } } catch (_) {}</script>
 {% endif %}
+<script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
 <a class="small skip-link" href="#main-content">跳到主要内容</a>
-<nav class="shell-nav" aria-label="主要导航">
+{% from '_nav_icon.html' import icon %}
+<header class="mobile-shell"><strong>{{ product.short_name }}</strong><button type="button" data-navigation-toggle aria-expanded="false" aria-controls="primary-navigation">导航菜单</button></header>
+<nav class="shell-nav" id="primary-navigation" aria-label="主要导航">
 <div class="brand">{{ product.short_name }}<small>{{ product.organization }} · 管理工作台</small>
 </div>
-<a href="/console/dashboard" {% if request.url.path == '/console/dashboard' %}class="active" aria-current="page"{% endif %}>仪表盘</a>
-{% if me and 'agent.run' in me.permissions %}<a href="/console/assistant/workspace" {% if '/assistant' in request.url.path %}class="active" aria-current="page"{% endif %}>智能助手</a>{% endif %}
+<a href="/console/dashboard" {% if request.url.path == '/console/dashboard' %}class="active" aria-current="page"{% endif %}>{{ icon('M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z') }}<span>仪表盘</span></a>
+{% if me and 'agent.run' in me.permissions %}<a href="/console/assistant/workspace" {% if '/assistant' in request.url.path %}class="active" aria-current="page"{% endif %}>{{ icon('M7 18 3 21V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3ZM8 8h8M8 12h5') }}<span>智能助手</span></a>{% endif %}
 {% if me and 'access.read' in me.permissions %}
 <div class="nav-label">人员与授权</div>
-<a href="/console/employees" {% if '/employees' in request.url.path or request.url.path in ['/console/accounts/new','/console/accounts/link'] %}class="active" aria-current="page"{% endif %}>人员管理</a>
-<a href="/console/roles" {% if '/roles' in request.url.path and '/employees' not in request.url.path %}class="active" aria-current="page"{% endif %}>角色</a>
-<a href="/console/permission-sets" {% if '/permission-sets' in request.url.path and '/roles' not in request.url.path %}class="active" aria-current="page"{% endif %}>权限集</a>
-<a href="/console/permissions" {% if request.url.path == '/console/permissions' %}class="active" aria-current="page"{% endif %}>权限目录</a>
-{% if 'identity.read' in me.permissions %}<a href="/console/accounts/operations" {% if request.url.path.startswith('/console/accounts/operations') %}class="active" aria-current="page"{% endif %}>账号操作记录</a>{% endif %}
+<a href="/console/employees" {% if '/employees' in request.url.path or request.url.path in ['/console/accounts/new','/console/accounts/link'] %}class="active" aria-current="page"{% endif %}>{{ icon('M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 4a4 4 0 0 1 0 8M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0') }}<span>人员管理</span></a>
+<a href="/console/roles" {% if '/roles' in request.url.path and '/employees' not in request.url.path %}class="active" aria-current="page"{% endif %}>{{ icon('M12 3 3 7v6c0 5 9 8 9 8s9-3 9-8V7ZM9 12l2 2 4-4') }}<span>角色</span></a>
+<a href="/console/permission-sets" {% if '/permission-sets' in request.url.path and '/roles' not in request.url.path %}class="active" aria-current="page"{% endif %}>{{ icon('M3 5h7l2 3h9v12H3ZM7 12h10M7 16h7') }}<span>权限集</span></a>
+<a href="/console/permissions" {% if request.url.path == '/console/permissions' %}class="active" aria-current="page"{% endif %}>{{ icon('M5 3h14v18H5ZM9 7h6M9 11h6M9 15h4') }}<span>权限目录</span></a>
+{% if 'identity.read' in me.permissions %}<a href="/console/accounts/operations" {% if request.url.path.startswith('/console/accounts/operations') %}class="active" aria-current="page"{% endif %}>{{ icon('M6 3h12v18H6ZM9 7h6M9 11h6M9 15h4') }}<span>账号操作记录</span></a>{% endif %}
 {% endif %}
 {% if me and 'audit.read' in me.permissions %}
 <div class="nav-label">记录</div>
-<a href="/console/audit" {% if request.url.path == '/console/audit' %}class="active" aria-current="page"{% endif %}>审计</a>
+<a href="/console/audit" {% if request.url.path == '/console/audit' %}class="active" aria-current="page"{% endif %}>{{ icon('M10 3H4v18h16v-6M14 3h7v7M21 3l-9 9') }}<span>审计</span></a>
 {% endif %}
-{% if me and 'session.read.all' in me.permissions %}<a href="/console/client-authorizations?scope=all" {% if '/client-authorizations' in request.url.path %}class="active" aria-current="page"{% endif %}>客户端授权</a>{% endif %}
+{% if me and 'session.read.all' in me.permissions %}<a href="/console/client-authorizations?scope=all" {% if '/client-authorizations' in request.url.path %}class="active" aria-current="page"{% endif %}>{{ icon('M2 3h20v14H2ZM8 21h8M12 17v4') }}<span>客户端授权</span></a>{% endif %}
 {% if me %}
 {% include '_account_menu.html' %}{% endif %}
 </nav>
 <main id="main-content" tabindex="-1" {% if request.url.path == '/console/assistant/workspace' %}class="assistant-workspace-main"{% endif %}>
 {% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}<div class="assistant-launchbar"><button type="button" class="assistant-launch" id="assistant-launch" aria-label="打开智能助手" aria-controls="assistant-panel" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 18 3 21V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3Z"/><path d="M8 8h8M8 12h5"/></svg><span>智能助手</span></button></div>{% endif %}
+<div class="shell-context" aria-label="当前位置"><span>工作台</span><span aria-hidden="true">/</span><strong id="shell-current-page">管理控制台</strong></div>
 {% if demo_mode %}<p class="hint" role="note">局域网 HTTP 验收模式 · 传输未加密，请勿用于正式业务。</p>{% endif %}
 {% if notice %}
 <div class="notice" role="status">{{ notice }}</div>{% endif %}
 {% block content %}{% endblock %}
 <p class="trace">追踪号：{{ trace_id }}</p>
 </main>
+<script>{% include 'shell.js' %}</script>
 {% include '_interactions.html' %}
 {% include '_workspace.html' %}
 <script>{% include 'floating-panels.js' %}</script>

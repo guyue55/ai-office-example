@@ -98,7 +98,7 @@
 </td>
 </tr>{% else %}
 <tr>
-<td colspan="5" class="empty">没有符合条件的人员。可清除筛选后重试。</td>
+<td colspan="5" class="empty">{% set empty_title = '暂无人员' %}{% set empty_description = '开通员工后，可在这里维护账号与角色。' %}{% include '_list_empty.html' %}</td>
 </tr>{% endfor %}
 </tbody>
 </table>

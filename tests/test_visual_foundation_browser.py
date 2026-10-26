@@ -144,6 +144,31 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 for width in (1440, 1024, 768, 375, 320):
                     page.set_viewport_size({"width": width, "height": 900})
                     assert page.locator("body").evaluate("n=>n.scrollWidth<=innerWidth")
+                # 窄屏导航按需展开，不能继续吞掉整个首屏；Esc回到菜单入口。
+                page.set_viewport_size({"width": 390, "height": 800})
+                navigation = page.locator(".shell-nav")
+                toggle = page.locator("[data-navigation-toggle]")
+                expect(navigation).to_be_hidden()
+                toggle.click()
+                expect(navigation).to_be_visible()
+                expect(toggle).to_have_attribute("aria-expanded", "true")
+                page.keyboard.press("Escape")
+                expect(navigation).to_be_hidden()
+                expect(toggle).to_be_focused()
+                # 不执行脚本仍可访问全部获准导航，增强不能成为访问前提。
+                plain_context = browser.new_context(
+                    java_script_enabled=False, viewport={"width": 390, "height": 800}
+                )
+                plain_context.add_cookies(
+                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                )
+                plain = plain_context.new_page()
+                plain.goto(base + "/console/employees")
+                expect(plain.locator(".shell-nav")).to_be_visible()
+                expect(
+                    plain.locator(".shell-nav").get_by_role("link", name="仪表盘", exact=True)
+                ).to_be_visible()
+                plain_context.close()
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(base + "/console/employees")
                 evidence = Path("runtime/agent-research/visual-refinement")
