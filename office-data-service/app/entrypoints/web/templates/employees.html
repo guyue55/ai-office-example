@@ -5,14 +5,14 @@
 <div>
 <p class="eyebrow">人员与授权</p>
 <h2>人员管理</h2>
-<p class="muted">新建员工可一次完成登录开户和基础授权。已有账号可搜索关联；人员详情中统一维护登录资料、角色及账号安全。</p>
+<p class="muted">统一维护员工、登录账号与角色；新建员工可一次完成开户和基础授权。</p>
 </div>
 {% if accounts_enabled and 'identity.read' in me.permissions %}<div class="actions">{% if 'identity.create' in me.permissions and can_manage %}<a class="button" href="/console/accounts/new">新建员工</a>{% endif %}{% if can_manage %}<a class="button secondary" href="/console/accounts/link">关联已有账号</a>{% endif %}</div>{% endif %}
 </header>
 {% include '_access_flow.html' %}
 {% if can_manage and pending %}
-<details class="card pending-queue" {% if pending["items"] %}open{% endif %}>
-<summary>待认领登录 <span class="badge neutral">{{ pending["items"]|length }} 人</span></summary>
+<details class="card pending-queue">
+<summary>待认领登录 <span class="badge neutral">{{ pending["items"]|length }} 人</span><span class="pending-hint">展开认领并开通</span></summary>
 <p class="muted">以下账号已通过统一登录访问过本系统，但还没有对应的业务人员。时间为北京时间。确认姓名后点「认领并开通」。默认角色提供项目字段查阅、上报和本人数据维护；取消勾选则仅绑定身份。</p>
 <div class="table-wrap">
 <table>

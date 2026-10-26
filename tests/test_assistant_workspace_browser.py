@@ -108,6 +108,8 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 expect(page.locator("#assistant-panel")).to_be_hidden()
                 page.locator("#assistant-launch").click()
                 expect(page.locator("#assistant-topic")).to_have_text(conversation["title"])
+                expect(page.locator('[data-run="task-one"]')).to_be_visible()
+                expect(page.locator("#assistant-messages > .empty")).to_have_count(0)
                 page.get_by_role("button", name="更多会话操作", exact=True).click()
                 page.get_by_role("link", name="展开工作区", exact=True).click()
                 expect(page).to_have_url(base + "/console/assistant/workspace")
@@ -527,6 +529,18 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 for viewport in ({"width": 320, "height": 640}, {"width": 640, "height": 256}):
                     touch_page.set_viewport_size(viewport)
                     assert touch_page.locator("body").evaluate("node=>node.scrollWidth<=innerWidth")
+                    assert (
+                        touch_page.locator("#assistant-input").evaluate(
+                            "n=>getComputedStyle(n).fontSize"
+                        )
+                        == "16px"
+                    )
+                    assert (
+                        touch_page.locator(".assistant-answer").first.evaluate(
+                            "n=>getComputedStyle(n).fontSize"
+                        )
+                        == "16px"
+                    )
                     touch_page.locator("#assistant-input").scroll_into_view_if_needed()
                     expect(touch_page.locator("#assistant-input")).to_be_in_viewport()
                     history(touch_page)

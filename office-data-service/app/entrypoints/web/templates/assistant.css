@@ -42,8 +42,8 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-stage button {flex-shrink:0}
 .assistant-latest {position:absolute;right:16px;bottom:10px;background:#fff;border:1px solid var(--line);box-shadow:0 2px 6px #172b3a10;z-index:1}
 .assistant-composer {padding:8px 12px 6px;margin:0;background:#fff;flex-shrink:0}
-.assistant-input-box {border:1px solid #b8c7ce;border-radius:12px;padding:8px 10px 6px;min-width:0}
-.assistant-input-box:focus-within {border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 14%,transparent)}
+.assistant-input-box {border:1px solid var(--control-border);border-radius:12px;padding:8px 10px 6px;min-width:0}
+.assistant-input-box:focus-within {border-color:var(--focus-ring);box-shadow:0 0 0 2px var(--focus-ring)}
 .assistant-composer textarea {display:block;width:100%;min-height:48px;max-height:180px;resize:none;overflow-y:auto;font:inherit;line-height:1.6;border:0;background:transparent;outline:none!important;box-shadow:none!important;padding:4px 2px;margin:0;border-radius:0;color:var(--ink)}
 .assistant-context {font-size:11px;display:flex;align-items:center;min-height:24px}
 #assistant-context-chip {display:inline-flex;align-items:center;gap:2px;background:var(--bg);border-radius:6px;color:var(--muted);padding-left:7px;max-width:100%}
@@ -86,7 +86,7 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-full .assistant-welcome {padding-top:56px}
 .assistant-workspace-main {padding-top:22px}
 .assistant-resize {position:absolute;left:-4px;top:0;bottom:0;width:8px;cursor:col-resize;touch-action:none}
-.assistant-resize:focus-visible {outline:2px solid var(--accent);outline-offset:-3px}
+.assistant-resize:focus-visible {outline:2px solid var(--focus-ring);outline-offset:-3px}
 .assistant-markdown {white-space:normal;line-height:1.7}
 .assistant-markdown :is(p,ul,ol,blockquote,pre) {margin:8px 0}
 .assistant-markdown :is(h1,h2,h3,h4,h5,h6) {font-size:15px;margin:16px 0 8px}
@@ -100,3 +100,5 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 @media (max-width:700px) {.assistant-panel:not(.assistant-full) {width:100%}.assistant-full {height:calc(100dvh - 120px);min-height:360px}.assistant-header {padding:10px 12px 6px}.assistant-full .assistant-messages,.assistant-full .assistant-composer {padding-inline:12px}}
 @media (hover:none),(pointer:coarse) {.assistant-message-actions {opacity:1;height:44px}#assistant-context-chip .ui-icon-button,.assistant-footnote .ui-icon-button {width:40px;height:40px;padding:10px}.assistant-context .ui-text-action {min-height:40px}.assistant-tools .ui-text-action {min-height:40px}.assistant-topicbar .ui-text-action {min-height:40px}}
 @media (prefers-reduced-motion:reduce) {.assistant-panel * {scroll-behavior:auto!important;transition:none!important}}
+
+@media (max-width:700px) {.assistant-user,.assistant-answer,.assistant-composer textarea {font-size:16px}}
