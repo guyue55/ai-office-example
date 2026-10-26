@@ -50,3 +50,21 @@ OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --froz
 ```
 
 PG测试创建本轮临时容器并执行正式迁移；需要Docker服务。浏览器使用Playwright独立上下文，可通过OFFICE_TEST_BROWSER_CHANNEL=chrome选择已安装Chrome，否则按原Playwright安装说明准备浏览器。以上测试使用合成数据与模型替身，不发生真实模型计费。新的会话入口须同步HTTP、SDK、CLI、MCP及contracts；历史预算、权限指纹与兼容边界见docs/AGENT_WORKSPACE_PLAN.md。
+
+## 全页面视觉及流程回归
+
+`tests/ui-pages.json`登记所有页面及组件。`test_ui_catalog_browser.py`用合成上下文渲染真实模板，在1440／1024／768／390／320宽度验证布局、字段名称、减少动态效果及工作区输入位置，截图仅写入忽略的runtime。它不替代权限、数据库或身份系统功能验收。
+
+```sh
+OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome uv run --extra agent --frozen pytest tests/test_ui_catalog_browser.py tests/test_account_flow_browser.py tests/test_form_validation_browser.py tests/test_assistant_workspace_browser.py -q
+```
+
+`OFFICE_TEST_BROWSER_CHANNEL=chrome`仅选择本机已安装Chrome；也可省略并安装Playwright匹配版本的Chromium。浏览器缺失属于测试环境未就绪，不能记为功能通过。
+
+独立实例的匿名身份登录布局检查：
+
+```sh
+OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome OFFICE_UI_PUBLIC_URL=http://<独立验收服务器>:<端口> uv run --extra agent --frozen pytest tests/test_identity_login_layout_live.py -q
+```
+
+该入口仅打开登录页，不填写或读取凭证，不创建账号；检查刷新后布局位置和五种宽度，不能据此宣称所有瞬态布局偏移为零。开户／关联／授予角色流程使用隔离替身验证，不修改真实用户授权。

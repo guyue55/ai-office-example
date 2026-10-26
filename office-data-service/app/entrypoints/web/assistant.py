@@ -19,6 +19,18 @@ STATUSES = {
     "interrupted": "运行已中断",
     "outcome_unknown": "执行结果待核实",
 }
+# Web侧栏与完整任务页共用的结果说明，只描述系统状态，不采信模型声称成功。
+OUTCOMES = {
+    "completed": "本轮任务已完成，请核对实际回执。",
+    "failed": "本轮未完成，请核对任务详情和实际回执；不会自动重试。",
+    "interrupted": "任务已中断，未自动恢复；请核对实际回执后再发起新任务。",
+    "cancelled": "任务已停止；已完成的操作不会撤回。",
+    "outcome_unknown": "写入结果待核实，请先检查实际数据，不要重复提交。",
+    "queued": "任务已排队，尚未开始。",
+    "running": "任务正在处理，结果以实际回执为准。",
+    "awaiting_confirmation": "有操作等待您核对，批准后才会继续。",
+}
+
 OPERATIONS = {
     "whoami": "查看本人身份与权限",
     "capabilities": "查看可用能力",

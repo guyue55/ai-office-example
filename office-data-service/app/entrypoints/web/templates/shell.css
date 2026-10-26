@@ -49,3 +49,26 @@
 .task-receipt .section-head {align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
 .task-receipt details {font-size:13px}
 .task-technical {margin-top:18px;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--muted)}
+
+.check-option {display:flex;align-items:center;gap:10px;line-height:1.6}
+.check-option input[type=checkbox] {flex:0 0 17px;width:17px;margin:0}
+/* 完整工作区按可用高度分配会话空间，输入区不能被顶部说明挤出首屏。 */
+.assistant-workspace-main {height:100dvh;display:flex;flex-direction:column;min-height:0;padding-bottom:12px}
+.assistant-workspace-main > .assistant-full {height:auto;min-height:0;flex:1}
+.assistant-workspace-main > .shell-context,.assistant-workspace-main > .hint {flex-shrink:0}
+.assistant-workspace-main > .trace {display:none}
+@media(max-width:700px) {
+  .js .assistant-workspace-main {height:calc(100dvh - 60px)}
+  html:not(.js) .assistant-workspace-main {height:auto}
+}
+
+.state-page {max-width:720px;padding:32px}
+.state-mark {display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--soft);color:var(--ink);margin-bottom:20px}
+.state-error .state-mark {background:#fff1ef;color:#a83b35}
+.state-facts {display:grid;grid-template-columns:64px minmax(0,1fr);gap:6px 12px;font-size:12px;color:var(--muted);padding:14px 0;border-block:1px solid var(--line);margin:20px 0}
+.state-facts dd {margin:0;overflow-wrap:anywhere}
+.task-state {border-left:3px solid var(--control-border);padding:9px 12px;color:var(--muted);background:#fff;line-height:1.7}
+@media(max-width:700px) {.state-page {padding:24px 18px}}
+
+/* 多列管理表局部滚动，避免窄屏把姓名与状态压成逐字竖排。 */
+@media(max-width:700px) {.table-wrap > .management-table {min-width:680px}}

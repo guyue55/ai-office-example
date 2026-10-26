@@ -18,7 +18,7 @@ from pydantic import ValidationError
 from app.common.errors import DomainError, log_rejection, validation_error
 from app.entrypoints.errors import error_response
 from app.entrypoints.web.accounts import register_accounts
-from app.entrypoints.web.assistant import OPERATIONS, STATUSES, register_assistant
+from app.entrypoints.web.assistant import OPERATIONS, OUTCOMES, STATUSES, register_assistant
 from app.entrypoints.web.assistant_ui import register_assistant_ui
 from app.entrypoints.web.authentication import WebAuthentication, bind_identity
 from app.entrypoints.web.client_sessions import register_client_sessions
@@ -121,6 +121,7 @@ def web_router(application):
         context.update(
             me=identity,
             assistant_statuses=STATUSES,
+            assistant_outcomes=OUTCOMES,
             assistant_operations=OPERATIONS,
             demo_mode=settings.allow_lan_http_demo,
             csrf=token.get("csrf", ""),

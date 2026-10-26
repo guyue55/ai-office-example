@@ -4,7 +4,7 @@
   if (!api) return;
   const labels = JSON.parse(document.getElementById('assistant-labels').textContent);
   const active = new Set(['queued','running','awaiting_confirmation']);
-  const outcomes={completed:'本轮任务已完成，请核对实际回执。',failed:'本轮未完成，请核对任务详情和实际回执；不会自动重试。',interrupted:'任务已中断，未自动恢复；请核对实际回执后再发起新任务。',cancelled:'任务已停止；已完成的操作不会撤回。',outcome_unknown:'写入结果待核实，请先检查实际数据，不要重复提交。'};
+  const outcomes=Object.fromEntries(Object.entries(labels.outcomes).filter(([phase])=>!active.has(phase)));
   const names = {name:'名称', id:'编号', version:'版本', before:'变更前', after:'变更后', values:'字段值', operation:'操作', status:'状态', schema_revision:'字段定义版本', project_id:'数据容器编号', complete:'覆盖完整', next:'下一页', count:'数量', total:'总数', archived:'已归档', permissions:'权限', items:'数据项', warning:'提示', warnings:'提示', message:'说明', active:'启用'};
   function el(tag, text, cls) {const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (cls) node.className = cls; return node;}
   function button(text, action, kind='secondary') {const node = el('button', text, kind); node.type='button'; node.addEventListener('click', action); return node;}

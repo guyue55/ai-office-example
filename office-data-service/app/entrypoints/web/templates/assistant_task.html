@@ -1,6 +1,8 @@
 {% extends 'base.html' %}{% block title %}任务详情 · {{ product.short_name }}{% endblock %}
 {% block content %}
 <header class="page-header"><div><p class="eyebrow">我的工作 · 智能助手</p><h2>任务详情</h2><p class="muted"><span class="badge {{ 'on' if task.status == 'completed' and not (task.result and task.result.outcome_unknown) else 'neutral' }}">{{ statuses['outcome_unknown'] if task.result and task.result.outcome_unknown else statuses[task.status] }}</span> · 更新于 {{ task.updated_at|business_time }}</p></div><div><a href="/console/assistant">返回任务列表</a> <a class="button secondary" href="/console/assistant/{{ task.id }}">刷新进度</a></div></header>
+{% set outcome = 'outcome_unknown' if task.result and task.result.outcome_unknown else task.status %}
+<p class="{{ 'hint' if outcome in ['failed','interrupted','outcome_unknown'] else 'task-state' }}" role="status">{{ assistant_outcomes[outcome] }}</p>
 <section class="card"><h3>任务要求</h3><p class="assistant-text">{{ task.prompt }}</p><p class="muted small">任务编号：{{ task.id }}</p></section>
 {% if task.status in ['interrupted','outcome_unknown'] or (task.result and task.result.outcome_unknown) %}<p class="hint" role="alert">任务未自动恢复。请核对已有回执和数据实际状态，避免重复写入；如需继续，请在确认后发起新的任务。</p>{% endif %}
 {% if task.pending %}<section class="card"><h3>需要您确认的操作</h3><p>操作：{{ operations.get(task.pending.operation, task.pending.operation) }}</p><p class="hint">以下为服务器保存的完整预览。批准仅适用于本次操作，后续写入仍需分别确认。</p>

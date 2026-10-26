@@ -167,3 +167,65 @@ def test_account_commands_reject_arbitrary_upstream_and_secret_fields():
             )
     normalized = AccountCreate(kind="create", name=" 同事 ", username=" MZ001 ")
     assert normalized.name == "同事" and normalized.username == "mz001"
+
+
+@pytest.mark.parametrize("status", [409, 422])
+def test_create_preview_error_restores_nonsecret_values(accounts, status):
+    from app.common.errors import DomainError
+
+    original = accounts.application.call.side_effect
+
+    async def call(principal, operation, payload, trace):
+        if operation == "account.capabilities":
+            return {"enabled": True, "email_enabled": False}
+        if operation == "account.preview":
+            raise DomainError(status, "invalid_input", "请调整账号信息")
+        return await original(principal, operation, payload, trace)
+
+    accounts.application.call.side_effect = call
+    response = accounts.client.post(
+        "/console/accounts/new",
+        data={
+            "csrf": "form-csrf",
+            "key": "same-request-key",
+            "name": '<img src=x onerror="alert(1)">',
+            "username": "person01",
+            "email": "person@example.invalid",
+            "mode": "temporary",
+        },
+    )
+    assert response.status_code == status
+    assert response.headers["cache-control"] == "no-store"
+    assert "请调整账号信息" in response.text
+    assert 'value="same-request-key"' in response.text
+    assert 'value="person01"' in response.text
+    assert 'value="person@example.invalid"' in response.text
+    assert '<img src=x onerror="alert(1)">' not in response.text
+    assert 'name="default_role" checked' not in response.text
+    assert all(
+        call.args[1] != "account.submit" for call in accounts.application.call.call_args_list
+    )
+
+
+@pytest.mark.parametrize("status", [401, 403, 503])
+def test_create_preview_does_not_recover_security_or_service_failure(accounts, status):
+    from app.common.errors import DomainError
+
+    original = accounts.application.call.side_effect
+
+    async def call(principal, operation, payload, trace):
+        if operation == "account.preview":
+            raise DomainError(status, "invalid_input", "操作暂不可用")
+        return await original(principal, operation, payload, trace)
+
+    accounts.application.call.side_effect = call
+    response = accounts.client.post(
+        "/console/accounts/new",
+        data={"csrf": "form-csrf", "name": "同事", "username": "person01"},
+    )
+    assert response.status_code == (303 if status == 401 else status)
+    assert 'data-server-form-error tabindex="-1"' not in response.text
+    assert 'action="/console/accounts/new"' not in response.text
+    assert all(
+        call.args[1] != "account.submit" for call in accounts.application.call.call_args_list
+    )

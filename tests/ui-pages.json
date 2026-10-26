@@ -4,7 +4,8 @@
       "template": "access_detail.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
@@ -12,21 +13,24 @@
       "coverage": "账号生命周期安全链路",
       "tests": [
         "e2e_accounts.py",
-        "test_account_web.py"
+        "test_account_web.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "account_detail.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "account_link.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
@@ -34,7 +38,8 @@
       "coverage": "全页面浏览器巡视",
       "tests": [
         "e2e_page_review.py",
-        "test_account_flow_browser.py"
+        "test_account_flow_browser.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
@@ -42,14 +47,16 @@
       "coverage": "全页面浏览器巡视",
       "tests": [
         "e2e_page_review.py",
-        "test_account_flow_browser.py"
+        "test_account_flow_browser.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "account_operations.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
@@ -59,98 +66,112 @@
         "e2e_page_review.py",
         "e2e_accounts.py",
         "test_account_web.py",
-        "test_account_flow_browser.py"
+        "test_account_flow_browser.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "account_security.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "audit.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "client_authorizations.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "dashboard.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "employees.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "error.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "links.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "permission_sets.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "permissions.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "roles.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "signed_out.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "assistant.html",
       "coverage": "本人助手受理、预览与决定页面",
       "tests": [
-        "test_agent_web.py"
+        "test_agent_web.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
       "template": "assistant_task.html",
       "coverage": "本人助手受理、预览与决定页面",
       "tests": [
-        "test_agent_web.py"
+        "test_agent_web.py",
+        "test_ui_catalog_browser.py"
       ]
     },
     {
@@ -158,7 +179,8 @@
       "coverage": "独立HTTP浏览器侧栏／会话／审批及跨页验证",
       "tests": [
         "test_assistant_workspace_browser.py",
-        "test_assistant_workspace_web.py"
+        "test_assistant_workspace_web.py",
+        "test_ui_catalog_browser.py"
       ]
     }
   ],

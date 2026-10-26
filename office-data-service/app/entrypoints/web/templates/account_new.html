@@ -1,15 +1,17 @@
 {% extends 'base.html' %}
 {% block title %}新建员工 · {{ product.short_name }}{% endblock %}
 {% block content %}
+{% set values = form_values|default({}) %}
 <header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>新建员工</h2><p class="muted">一次完成登录开户与基础授权。额外职责可在开通后通过「授权角色」调整。</p></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
 <section class="card"><form class="form-stack" method="post" data-native-submit action="/console/accounts/new">
+{% if form_error %}<div class="form-errors" tabindex="-1" role="alert" data-server-form-error><strong>请核对开通信息</strong><p>{{ form_error }}</p></div>{% endif %}
 <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ key }}">
-<label>姓名<input type="text" name="name" required maxlength="100" autocomplete="off"></label>
-<label>登录账号<input type="text" name="username" required minlength="2" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,63}" placeholder="例如 mz001 或 zhangsan" autocomplete="off"></label>
+<label>姓名<input type="text" name="name" value="{{ values.get('name','') }}" required maxlength="100" autocomplete="off"></label>
+<label>登录账号<input type="text" name="username" value="{{ values.get('username','') }}" required minlength="2" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,63}" placeholder="例如 mz001 或 zhangsan" autocomplete="off"></label>
 <p class="muted">2–64位英文字母、数字、点、下划线或短横线，首位为字母或数字；统一为小写，创建后不改名。</p>
-<label>工作邮箱（可选）<input name="email" type="email" maxlength="254" autocomplete="off"></label>
-<label class="check-option"><input type="checkbox" name="default_role" checked>授予普通员工角色</label><p class="muted">包含项目字段查阅、上报、本人数据查看和维护；取消后只开户，不授予业务角色。</p>
-<label>首次使用方式<select name="mode"><option value="temporary">临时密码（首次登录必须修改）</option>{% if capability.email_enabled %}<option value="email">邮件设置密码</option>{% endif %}</select></label>
+<label>工作邮箱（可选）<input name="email" value="{{ values.get('email','') }}" type="email" maxlength="254" autocomplete="off"></label>
+<label class="check-option"><input type="checkbox" name="default_role" {% if values.get('default_role',true) %}checked{% endif %}>授予普通员工角色</label><p class="muted">包含项目字段查阅、上报、本人数据查看和维护；取消后只开户，不授予业务角色。</p>
+<label>首次使用方式<select name="mode"><option value="temporary">临时密码（首次登录必须修改）</option>{% if capability.email_enabled %}<option value="email" {% if values.get('mode') == 'email' %}selected{% endif %}>邮件设置密码</option>{% endif %}</select></label>
 {% if not capability.email_enabled %}<p class="muted">本实例未启用设密邮件。账号准备完成后，管理员在安全页面生成临时密码并点对点交付。</p>{% endif %}
 <div class="actions"><button type="submit">核对开通信息</button><a href="/console/employees" data-workspace-dismiss>取消</a></div>
 </form></section>

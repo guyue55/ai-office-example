@@ -14,7 +14,7 @@
 <header class="page-header"><div><p class="eyebrow">账号与安全</p><h2>客户端授权</h2><p class="muted">管理通过浏览器登录的 AI 工具和控制台访问。</p></div></header>
 <details class="list-help"><summary>授权与设备说明</summary><p>同次浏览器登录的客户端会一起失效。设备备注由客户端提供，不代表硬件认证；列表仅展示访问过本服务的授权。停用后需重新登录授权，旧凭证不能恢复；归档会隐藏记录并保留审计，“未停用”仅表示业务端没有禁用该授权，不代表身份登录仍未过期。</p></details>
 <section class="card">{% include '_filters.html' %}
-<div class="table-wrap"><table><thead><tr><th>人员与授权</th><th>客户端与设备</th><th>时间（北京时间）</th><th>业务授权状态</th><th>操作</th></tr></thead><tbody>
+<div class="table-wrap"><table class="management-table"><thead><tr><th>人员与授权</th><th>客户端与设备</th><th>时间（北京时间）</th><th>业务授权状态</th><th>操作</th></tr></thead><tbody>
 {% for item in listing['items'] %}<tr><td><strong>{{ item.employee_name }}</strong>{% if item.current %}<span class="badge">当前登录</span>{% endif %}<div class="muted small">OAuth 浏览器授权</div><details><summary class="small">授权编号</summary><code>{{ item.id }}</code></details></td>
 <td>{% for client in item.clients %}<div>{{ client }}</div>{% endfor %}<div class="muted small">设备备注：{{ item.device_name or '未提供' }}<br>平台：{{ item.platform or '未提供' }}</div></td>
 <td class="small">登记 {{ item.created_at|business_time }}<br>最近访问 {{ item.last_seen_at|business_time }}<details><summary>更多时间</summary>身份认证 {{ item.authenticated_at|business_time }}<br>最近访问令牌到期 {{ item.token_expires_at|business_time }}<p class="muted">访问令牌到期不等于整个授权结束。</p>{% if item.ended_at %}结束 {{ item.ended_at|business_time }}{% endif %}</details></td>

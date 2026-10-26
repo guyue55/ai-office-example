@@ -9,8 +9,9 @@ from uuid import uuid4
 
 from fastapi import Request
 from fastapi.responses import RedirectResponse
+from pydantic import ValidationError
 
-from app.common.errors import DomainError, require
+from app.common.errors import DomainError, log_rejection, require, validation_error
 from app.entrypoints.web.responses import COOKIE, LOGIN_COOKIE
 from app.entrypoints.web.session import new_csrf
 from app.entrypoints.web.tables import table_query
@@ -53,18 +54,44 @@ def register_accounts(
     async def create_preview(request: Request):
         form = dict(await request.form())
         csrf(request, form)
-        return await preview(
-            request,
-            {
-                "kind": "create",
-                "name": str(form.get("name", "")),
-                "username": str(form.get("username", "")),
-                "email": str(form.get("email", "")),
-                "role_ids": None if form.get("default_role") == "on" else [],
-                "mode": str(form.get("mode", "temporary")),
-            },
-            str(form.get("key", "")),
-        )
+        try:
+            return await preview(
+                request,
+                {
+                    "kind": "create",
+                    "name": str(form.get("name", "")),
+                    "username": str(form.get("username", "")),
+                    "email": str(form.get("email", "")),
+                    "role_ids": None if form.get("default_role") == "on" else [],
+                    "mode": str(form.get("mode", "temporary")),
+                },
+                str(form.get("key", "")),
+            )
+        except (DomainError, ValidationError) as caught:
+            error = validation_error(caught) if isinstance(caught, ValidationError) else caught
+            if error.status not in {409, 422}:
+                raise
+            # 仅恢复未执行写入的开户预览；重新核对职责，不把权限拒绝当作格式错误。
+            await permission(request, "identity.create", "access.manage", "identity.read")
+            capability = await operate(request, "account.capabilities")
+            require(capability["enabled"], 503, "identity_unavailable", "账号管理尚未配置")
+            values: dict[str, str | bool] = {
+                key: str(form.get(key, ""))[:limit]
+                for key, limit in (("name", 100), ("username", 64), ("email", 254), ("mode", 20))
+            }
+            values["default_role"] = form.get("default_role") == "on"
+            response = await render(
+                request,
+                "account_new.html",
+                capability=capability,
+                key=str(form.get("key", ""))[:128] or uuid4().hex,
+                form_values=values,
+                form_error=error.message,
+            )
+            response.status_code = error.status
+            response.headers["Cache-Control"] = "no-store"
+            log_rejection(request.state.trace_id, error.code, error.status, "web")
+            return response
 
     @router.get("/console/accounts/link")
     async def link_accounts(request: Request, q: str = ""):

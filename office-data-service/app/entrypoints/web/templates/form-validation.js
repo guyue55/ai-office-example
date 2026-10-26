@@ -2,6 +2,7 @@
 (() => {
   const descriptions=new WeakMap(), summaries=new WeakMap(), pending=new WeakSet();
   let sequence=0;
+  document.querySelector('[data-server-form-error]:not([hidden])')?.focus();
   const fields=form=>Array.from(form.elements).filter(field=>field.willValidate);
   function label(field) {
     if(field.dataset.validationLabel)return field.dataset.validationLabel;
