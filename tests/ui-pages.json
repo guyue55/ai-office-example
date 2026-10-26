@@ -175,6 +175,7 @@
     "assistant-view.js",
     "assistant.css",
     "base.html",
+    "floating-panels.js",
     "form-state.js",
     "interactions.js",
     "pagination.html",

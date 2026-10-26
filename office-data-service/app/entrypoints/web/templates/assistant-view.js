@@ -40,57 +40,70 @@
     }else box.append(fields(value));
     return box;
   }
+  function notices(value) {
+    const items=[];
+    for(const info of [value,value?.coverage]) {
+      if(!info||typeof info!=='object')continue;
+      if(info.complete===false)items.push('结果覆盖不完整，请核对范围与缺失信息。');
+      if(info.has_more===true||info.next)items.push('结果仍有后续页；本次返回不代表全部数据。');
+      if(Number.isInteger(info.excluded_schema_records)&&info.excluded_schema_records>0)items.push('有 '+info.excluded_schema_records+' 条记录因字段定义版本不同未纳入。');
+      for(const item of [info.warning,...(Array.isArray(info.warnings)?info.warnings:[])])if(typeof item==='string'&&item.trim())items.push(item.length>500?item.slice(0,500)+'…（完整内容见回执）':item);
+    }
+    return [...new Set(items)];
+  }
+  function renderWelcome(controls) {
+    const box=el('div',undefined,'assistant-welcome');box.dataset.placeholder='true';
+    box.append(el('span','开始一项工作','assistant-eyebrow'),el('h3','今天需要完成什么？'),el('p','可查询获准数据、整理信息并预览操作。涉及写入时，会请您核对确认。','muted'));
+    const prompts=el('div',undefined,'assistant-starters');
+    for(const [label,prompt] of [['了解我的权限','请说明我当前具备哪些权限，以及可以进行哪些操作。'],['查阅数据容器','请查询我可以访问的数据容器，说明返回结果的覆盖范围，不要修改数据。']])prompts.append(button(label,()=>controls.fillDraft(prompt),'assistant-prompt'));
+    box.append(prompts,el('p','仅提交获准资料；页面关联只说明讨论位置。','small muted'));return box;
+  }
   function renderTurn(turn, controls) {
-    const section=el('article',undefined,'assistant-turn'); section.dataset.run=turn.id;
-    const head=el('div',undefined,'assistant-turn-head');
-    head.append(el('span','您 · '+(turn.context_page ? controls.pageName(turn.context_page) : '未关联页面')),el('span', labels.statuses[turn.status] || '状态待核对'));
-    section.append(head,el('div',turn.prompt,'assistant-user'));
-    if (turn.history_hidden) {
-      if(active.has(turn.status)&&!turn.cancel_requested)section.append(button('停止任务',()=>controls.stop(turn)));
-      return section;
-    }
-    if(turn.detail_truncated){
-      const note=el('div',undefined,'assistant-preview');
-      note.append(el('p','这轮预览或回执较大，未在会话中展开；请到独立详情核对完整内容。','small muted'));
-      const link=el('a','打开完整任务详情');link.href='/console/assistant/'+encodeURIComponent(turn.id);note.append(link);section.append(note);
-    }
-    if (turn.pending) {
-      const pending=turn.pending; const card=el('section',undefined,'assistant-preview');
-      card.append(el('h3','需要您确认：'+(labels.operations[pending.operation] || pending.operation)), preview(pending), detail('完整预览与参数',{preview:pending.preview,arguments:pending.arguments}));
-      if (!('decision' in pending) && !turn.cancel_requested) {
-        const actions=el('div',undefined,'assistant-card-actions');
-        actions.append(button('拒绝',()=>controls.decide(turn,false)),button('批准本次操作',()=>controls.decide(turn,true),'primary'));
-        card.append(el('p','批准仅适用于当前预览；后续操作仍需分别确认。','small muted'),actions);
-      } else card.append(el('p','决定或停止请求已记录，等待实际回执。','small muted'));
+    const section=el('article',undefined,'assistant-turn');section.dataset.run=turn.id;
+    section.setAttribute('aria-label','工作要求与助手回复');
+    const user=el('div',turn.prompt,'assistant-user');user.setAttribute('aria-label','您的工作要求');section.append(user);
+    if(turn.context_page){const context=el('span',controls.pageName(turn.context_page),'assistant-message-context');context.setAttribute('aria-label','本轮关联页面：'+context.textContent);section.append(context);}
+    if(turn.history_hidden){if(active.has(turn.status)&&!turn.cancel_requested)section.append(button('停止任务',()=>controls.stop(turn)));return section;}
+    if(turn.detail_truncated){const note=el('div',undefined,'assistant-warning');note.append(el('p','本轮预览或回执较大，会话未完整展示。请先打开完整任务核对。'));const link=el('a','打开完整任务详情');link.href='/console/assistant/'+encodeURIComponent(turn.id);note.append(link);section.append(note);}
+    if(turn.pending){
+      const pending=turn.pending,card=el('section',undefined,'assistant-preview');card.setAttribute('aria-label','本次操作预览');
+      card.append(el('h3',('decision' in pending?'决定已记录：':'需要您确认：')+(labels.operations[pending.operation]||pending.operation)),preview(pending),detail('完整预览与参数',{preview:pending.preview,arguments:pending.arguments}));
+      if(!('decision' in pending)&&!turn.cancel_requested&&!turn.detail_truncated){const actions=el('div',undefined,'assistant-card-actions');actions.append(button('拒绝',()=>controls.decide(turn,false)),button('批准本次操作',()=>controls.decide(turn,true),'primary'));card.append(el('p','仅批准当前预览，后续操作仍需分别确认。','small muted'),actions);}
+      else card.append(el('p','请核对当前状态与完整内容，等待实际回执。','small muted'));
       section.append(card);
     }
-    if (turn.result) {
-      if (turn.result.explanation) {section.append(api.content.markdown(turn.result.explanation));section.append(button('复制回复',()=>api.content.copy(turn.result.explanation),'secondary small'));}
-      if(turn.result.usage){const usage=turn.result.usage;section.append(el('p','模型请求 '+(usage.requests??0)+' 次 · 输入 '+(usage.input_tokens??0)+' / 输出 '+(usage.output_tokens??0)+' tokens','small muted'));}
-      (turn.result.receipts || []).forEach(receipt => {
-        const card=el('section',undefined,'assistant-preview');
-        card.append(el('h3',receipt.status==='denied' ? '已拒绝，未执行此操作' : '实际工具回执'),el('p',labels.operations[receipt.operation] || receipt.operation || '数据查询','small muted'));
-        if (receipt.result) card.append(fields(receipt.result),detail('查看完整回执',receipt.result));
-        section.append(card);
-      });
-      if((turn.result.receipts||[]).some(receipt=>receipt.status==='received')) {
-        const refresh=el('div',undefined,'assistant-card-actions');
-        refresh.append(el('span','如操作影响当前页面，请先保存表单，再刷新核对。','small muted'),button('刷新业务页面',controls.refreshBusiness));
-        section.append(refresh);
+    const result=turn.result;
+    if(result){
+      if(result.explanation)section.append(api.content.markdown(result.explanation));
+      const receipts=result.receipts||[];
+      for(const text of [...new Set(receipts.flatMap(receipt=>notices(receipt.result)))])section.append(el('p',text,'assistant-warning'));
+      const reads=receipts.filter(receipt=>receipt.status==='read');
+      function receiptCard(receipt,index){
+        const card=el('section',undefined,'assistant-receipt');
+        card.append(el('h4',receipt.status==='denied'?'已拒绝，未执行此操作':labels.operations[receipt.operation]||receipt.operation||'工具回执'));
+        if(receipt.result){card.append(fields(receipt.result));const raw=detail('完整回执',receipt.result);raw.dataset.detailKey='receipt-'+index;card.append(raw);}
+        return card;
       }
-      if (turn.result.outcome_unknown || turn.status==='outcome_unknown') section.append(el('p','写入结果待核实，请先检查实际数据，不要重复提交。','hint'));
+      if(reads.length){const group=el('details',undefined,'assistant-receipt-group');group.dataset.detailKey='read-receipts';group.append(el('summary','工具回执（'+reads.length+'条）'));reads.forEach(receipt=>group.append(receiptCard(receipt,receipts.indexOf(receipt))));section.append(group);}
+      // 非只读回执默认直接展示；没有可信摘要时不把真实写入藏到模型结论之后。
+      receipts.forEach((receipt,index)=>{if(receipt.status!=='read')section.append(receiptCard(receipt,index));});
+      if(!active.has(turn.status)){
+        const actions=el('div',undefined,'assistant-message-actions');
+        if(result.explanation)actions.append(window.OfficeUI.iconButton('copy','复制回复',()=>api.content.copy(result.explanation)));
+        actions.append(window.OfficeUI.iconButton('info','查看任务详情',()=>controls.showDetails(turn)));
+        section.append(actions);
+      }
+      if(receipts.some(receipt=>receipt.status==='received'))section.append(button('刷新业务页面',controls.refreshBusiness,'ui-text-action small'));
     }
-    if (active.has(turn.status)) {
-      const stage=turn.cancel_requested?'已请求停止，等待执行结束':turn.pending?('decision' in turn.pending?'决定已记录，等待执行回执':'等待您的确认'):turn.write_inflight?'正在执行已批准操作，结果以回执为准':turn.status==='queued'?'任务已排队，尚未开始':'任务处理中，尚无新的执行回执';
-      section.append(el('p',stage,'assistant-stage small muted'));
-      const actions=el('div',undefined,'assistant-card-actions');
-      if (!turn.cancel_requested) actions.append(button('停止任务',()=>controls.stop(turn)));
-      else actions.append(el('span','已请求停止；已完成的操作不会撤回。','small muted'));
-      section.append(actions);
+    if(active.has(turn.status)){
+      const stage=turn.cancel_requested?'已请求停止；已完成操作不会撤回。':turn.pending?('decision' in turn.pending?'决定已记录，等待执行回执':'等待您的确认'):turn.write_inflight?'正在执行已批准操作，结果以回执为准':turn.status==='queued'?'任务已排队，尚未开始':'任务正在处理';
+      const row=el('div',undefined,'assistant-stage');row.append(el('span',stage));if(!turn.cancel_requested)row.append(button('停止任务',()=>controls.stop(turn),'ui-text-action small'));section.append(row);
     }
-    if(!turn.result&&turn.status==='outcome_unknown')section.append(el('p','写入结果待核实，请先检查实际数据，不要重复提交。','hint'));
-    if (turn.status==='interrupted') section.append(el('p','任务已中断，未自动恢复；请核对实际回执后再发起新任务。','hint'));
+    if(result?.outcome_unknown||turn.status==='outcome_unknown')section.append(el('p','写入结果待核实，请先检查实际数据，不要重复提交。','assistant-warning'));
+    else if(turn.status==='interrupted')section.append(el('p','任务已中断，未自动恢复；请核对实际回执后再发起新任务。','assistant-warning'));
+    else if(turn.status==='failed')section.append(el('p','本轮未完成，请核对任务详情和实际回执；不会自动重试。','assistant-warning'));
+    else if(turn.status==='cancelled')section.append(el('p','任务已停止；已完成的操作不会撤回。','small muted'));
     return section;
   }
-  api.view={el,button,renderTurn,active};
+  api.view={el,button,renderTurn,renderWelcome,active,labels,fields,detail};
 })();

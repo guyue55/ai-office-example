@@ -19,7 +19,13 @@
     retry: ['M20 7a9 9 0 1 0 1 9','M20 2v5h-5'],
     play: ['m8 4 12 8-12 8Z'],
     clock: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20','M12 6v6l4 2'],
-    more: ['M4 12h2m5 0h2m5 0h2']
+    more: ['M4 12h2m5 0h2m5 0h2'],
+    copy: ['M9 9h11v12H9Z','M5 16H3V3h12v2'],
+    close: ['m6 6 12 12M6 18 18 6'],
+    collapse: ['M3 4h18v16H3Z','M15 4v16','m7 8 4 4-4 4'],
+    chevron: ['m7 10 5 5 5-5'],
+    info: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20','M12 11v6M12 7v1'],
+    down: ['M12 4v16m-6-6 6 6 6-6']
   };
   function iconFor(label) {
     if (/归档/.test(label)) return 'archive';
@@ -48,13 +54,28 @@
     // 同一员工的姓名编辑与启停可能共用地址，按控件类型区分恢复目标。
     const actionKind = control.parentElement.querySelector('input[name=action]')?.value || '';
     if (focusKey) control.dataset.focusKey = focusKey + '|' + control.tagName + '|' + actionKind;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
-    for (const d of icons[iconFor(label)]) {
-      const path = document.createElementNS(svg.namespaceURI, 'path'); path.setAttribute('d', d); svg.append(path);
-    }
+    const svg = icon(iconFor(label));
     const text = document.createElement('span'); text.className = 'sr-only'; text.textContent = label;
     control.replaceChildren(svg, text);
+  }
+  // 图标显式命名；原表格增强器与新组件共用SVG，不靠新文案猜操作。
+  function icon(name) {
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');
+    for(const d of icons[name]||icons.more){const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',d);svg.append(path);}
+    return svg;
+  }
+  function decorateIcon(control,name,label,{text=false}={}) {
+    control.dataset.iconAction='';control.setAttribute('aria-label',label);
+    control.classList.add(text?'ui-text-action':'ui-icon-button');
+    if(!text)control.dataset.tooltip=label;
+    control.removeAttribute('title');
+    const span=document.createElement('span');span.textContent=label;if(!text)span.className='sr-only';
+    control.replaceChildren(icon(name),span);return control;
+  }
+  function iconButton(name,label,action) {
+    const control=document.createElement('button');control.type='button';decorateIcon(control,name,label);
+    control.addEventListener('click',action);return control;
   }
   function notify(message, error = false) {
     const notice = document.createElement('div');
@@ -106,12 +127,12 @@
     if (tip.matches(':popover-open')) tip.hidePopover();
   }
   function showTip(target) {
-    if (!target?.dataset.tooltip) return;
+    if (!target?.dataset.tooltip || target.disabled || matchMedia('(hover: none)').matches) return;
     hideTip();
     tipTimer = setTimeout(() => {
-      if (!target.isConnected) return;
+      if (!target.isConnected || target.disabled) return;
       tipTarget = target; tip.textContent = target.dataset.tooltip;
-      target.setAttribute('aria-describedby', [target.getAttribute('aria-describedby'), tip.id].filter(Boolean).join(' '));
+      if(target.getAttribute('aria-label')!==target.dataset.tooltip)target.setAttribute('aria-describedby', [target.getAttribute('aria-describedby'), tip.id].filter(Boolean).join(' '));
       if (tip.showPopover) tip.showPopover();
       const rect = target.getBoundingClientRect();
       const width = tip.offsetWidth, height = tip.offsetHeight;
@@ -138,6 +159,7 @@
     const box = document.getElementById('action-confirm');
     if (!box || box.open || confirmationPending) return Promise.resolve(false);
     confirmationPending = true;
+    window.OfficeUI.closePopovers?.();
     const previous = document.activeElement;
     const cancel = box.querySelector('[data-confirm-cancel]');
     const accept = box.querySelector('[data-confirm-accept]');
@@ -204,12 +226,13 @@
   };
   function present(title, content) {
     if(dialog.open)return false;
+    window.OfficeUI.closePopovers?.();
     const previous=document.activeElement;
     heading.textContent=title;holder.replaceChildren(content);
     dialog.addEventListener('close',()=>{holder.replaceChildren();previous?.isConnected&&previous.focus({preventScroll:true});},{once:true});
     dialog.showModal();heading.focus();return true;
   }
-  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present};
+  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present, icon, decorateIcon, iconButton};
   enhance(document);
   let pending = false;
   new MutationObserver(records => {

@@ -43,6 +43,7 @@ uv run pytest -m 'not live' -q
 ```sh
 OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_conversations_postgres.py tests/test_agent_records_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_postgres_readiness.py -q
 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_assistant_workspace_browser.py tests/test_agent_browser.py -q
+OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_assistant_browser_postgres.py -q
 ```
 
 PG测试创建本轮临时容器并执行正式迁移；需要Docker服务。浏览器使用Playwright独立上下文，可通过OFFICE_TEST_BROWSER_CHANNEL=chrome选择已安装Chrome，否则按原Playwright安装说明准备浏览器。以上测试使用合成数据与模型替身，不发生真实模型计费。新的会话入口须同步HTTP、SDK、CLI、MCP及contracts；历史预算、权限指纹与兼容边界见docs/AGENT_WORKSPACE_PLAN.md。

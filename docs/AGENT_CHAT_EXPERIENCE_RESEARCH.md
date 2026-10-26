@@ -1,6 +1,6 @@
 # 企业 Agent 聊天体验：完整链路调研与实施取舍
 
-日期：2026-10-26；状态：调研完成、待界面实施。范围：ai-office-example 的 codex/agent 分支；现有界面代码基线 `2e19f71`。本文补充并校正[视觉方案](AGENT_CHAT_VISUAL_DESIGN.md)，不将研究结论等同于员工实测或上线验收。
+日期：2026-10-26；状态：调研已用于界面实施，完成项与证据见[实施账本](AGENT_CHAT_VISUAL_IMPLEMENTATION.md)。范围：ai-office-example 的 codex/agent 分支；调研时界面代码基线 `2e19f71`。本文补充并校正[视觉方案](AGENT_CHAT_VISUAL_DESIGN.md)，不将研究结论等同于员工实测或上线验收。
 
 ## 1. 研究结论
 

@@ -15,6 +15,31 @@ from test_web_console import web  # noqa: F401
 pytestmark = pytest.mark.live
 
 
+def history(page):
+    panel = page.locator("#assistant-history-panel")
+    if not panel.is_visible():
+        page.get_by_role("button", name="历史会话", exact=True).click()
+    expect(panel).to_be_visible()
+    return panel
+
+
+def select_conversation(page, identifier):
+    panel = history(page)
+    panel.locator(f'[data-conversation="{identifier}"]').click()
+    expect(panel).to_be_hidden()
+    # 浮层关闭和草稿恢复是同步行为；正文仍需等待该会话的BFF响应。
+    expect(page.locator("#assistant-topic")).not_to_have_text("正在加载会话")
+
+
+def option(page, name):
+    page.get_by_role("button", name="更多会话操作", exact=True).click()
+    return page.locator("#assistant-options-panel").get_by_role("button", name=name, exact=True)
+
+
+def sync(page):
+    option(page, "同步会话状态").click()
+
+
 def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noqa: F811
     if os.environ.get("OFFICE_AGENT_BROWSER_TESTS") != "1":
         pytest.skip("需OFFICE_AGENT_BROWSER_TESTS=1，只启动隔离应用和浏览器")
@@ -46,8 +71,8 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 page.goto(base + "/console/dashboard")
                 page.get_by_role("button", name="✦ 智能助手", exact=True).click()
                 expect(page.locator("#assistant-panel")).to_be_visible()
-                expect(page.locator("#assistant-conversations option")).to_have_count(2)
-                page.locator("#assistant-conversations").select_option(conversation["id"])
+                expect(history(page).locator("[data-conversation]")).to_have_count(1)
+                select_conversation(page, conversation["id"])
                 expect(page.get_by_role("button", name="批准本次操作", exact=True)).to_be_visible()
                 evidence = Path("runtime/agent-research/browser")
                 evidence.mkdir(parents=True, exist_ok=True)
@@ -64,8 +89,8 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 # 两个页面先读取同一预览，然后验证重复决定不会变成第二次执行。
                 other = context.new_page()
                 other.goto(base + "/console/assistant/workspace")
-                expect(other.locator("#assistant-conversations option")).to_have_count(2)
-                other.locator("#assistant-conversations").select_option(conversation["id"])
+                expect(history(other).locator("[data-conversation]")).to_have_count(1)
+                select_conversation(other, conversation["id"])
                 expect(other.get_by_role("button", name="批准本次操作", exact=True)).to_be_visible()
                 other.get_by_role("button", name="批准本次操作", exact=True).click()
                 expect(other.locator("#action-confirm")).to_be_visible()
@@ -82,13 +107,14 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 page.reload()
                 expect(page.locator("#assistant-panel")).to_be_hidden()
                 page.locator("#assistant-launch").click()
-                expect(page.locator("#assistant-conversations")).to_have_value(conversation["id"])
-                page.locator(".assistant-tools a").click()
+                expect(page.locator("#assistant-topic")).to_have_text(conversation["title"])
+                page.get_by_role("button", name="更多会话操作", exact=True).click()
+                page.get_by_role("link", name="展开工作区", exact=True).click()
                 expect(page).to_have_url(base + "/console/assistant/workspace")
                 expect(page.locator("#assistant-panel")).to_have_class(
                     "assistant-panel assistant-full"
                 )
-                expect(page.locator("#assistant-conversations")).to_have_value(conversation["id"])
+                expect(page.locator("#assistant-topic")).to_have_text(conversation["title"])
                 page.set_viewport_size({"width": 1024, "height": 768})
                 assert page.locator("body").evaluate("node => node.scrollWidth <= innerWidth")
                 page.set_viewport_size({"width": 390, "height": 844})
@@ -103,7 +129,7 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                     pending=None,
                     result={"explanation": "合成回复", "receipts": []},
                 )
-                page.get_by_role("button", name="重新加载", exact=True).click()
+                sync(page)
                 expect(page.locator("#assistant-feedback")).to_contain_text("已同步")
                 page.get_by_role("button", name="新会话", exact=True).click()
                 page.locator("#assistant-input").fill("合成的第二个工作要求")
@@ -117,29 +143,29 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 )
                 assert "message_history" not in submitted
                 turn.update(status="running", pending=None, result=None)
-                page.get_by_role("button", name="重新加载", exact=True).click()
+                sync(page)
                 expect(page.get_by_role("button", name="停止任务", exact=True)).to_be_visible()
                 page.get_by_role("button", name="停止任务", exact=True).click()
                 page.locator("[data-confirm-accept]").click()
                 expect(page.locator("#assistant-feedback")).to_contain_text("已同步")
                 assert any(name == "agent.cancel" for name, _ in calls)
                 turn.update(status="running", cancel_requested=False)
-                page.get_by_role("button", name="重新加载", exact=True).click()
+                sync(page)
                 expect(page.locator("#assistant-feedback")).to_contain_text("任务正在处理")
                 # 网络中断只影响读取，不能隐式重发决定／取消；恢复时重新取权威快照。
                 decisions_before = len([name for name, _ in calls if name == "agent.decide"])
                 page.route("**/console/assistant-ui/conversations/*", lambda route: route.abort())
-                page.get_by_role("button", name="重新加载", exact=True).click()
+                sync(page)
                 expect(page.locator("#assistant-feedback")).to_contain_text("暂时无法连接")
                 assert (
                     len([name for name, _ in calls if name == "agent.decide"]) == decisions_before
                 )
                 page.unroute("**/console/assistant-ui/conversations/*")
-                page.get_by_role("button", name="重新加载", exact=True).click()
+                sync(page)
                 expect(page.locator("#assistant-feedback")).to_contain_text("任务正在处理")
                 # 权限撤销清空已呈现正文，不留下旧消息与可批准按钮。
                 state["allowed"] = False
-                page.get_by_role("button", name="重新加载", exact=True).click()
+                sync(page)
                 expect(page.locator("#assistant-messages")).to_contain_text("当前身份或权限不可用")
                 expect(page.locator("#assistant-input")).to_be_disabled()
                 assert "合成请求" not in page.locator("#assistant-messages").inner_text()
@@ -227,9 +253,25 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 page.goto(base + "/console/dashboard")
                 page.locator("#assistant-launch").click()
-                select = page.locator("#assistant-conversations")
-                expect(select.locator("option")).to_have_count(3)
-                select.select_option(conversation["id"])
+                # 浮层Esc只关闭当前层，并把焦点还给触发器，不收起整个助手。
+                history(page)
+                expect(page.locator("#assistant-query")).to_be_focused()
+                page.keyboard.press("Escape")
+                expect(page.locator("#assistant-history-panel")).to_be_hidden()
+                expect(page.locator("[data-assistant-history]")).to_be_focused()
+                expect(page.locator("#assistant-panel")).to_be_visible()
+                page.get_by_role("button", name="更多会话操作", exact=True).focus()
+                expect(page.get_by_role("tooltip")).to_have_text("更多会话操作")
+                # 在常用侧栏尺寸中正文保留至少65%，紧凑头部不挤占阅读区。
+                page.set_viewport_size({"width": 1440, "height": 900})
+                assert (
+                    page.locator(".assistant-message-area").evaluate(
+                        "node=>node.getBoundingClientRect().height / document.querySelector('#assistant-panel').getBoundingClientRect().height"
+                    )
+                    >= 0.65
+                )
+                expect(history(page).locator("[data-conversation]")).to_have_count(2)
+                select_conversation(page, conversation["id"])
                 expect(page.locator(".assistant-markdown strong")).to_have_text("合成说明")
                 assert (
                     page.locator(
@@ -240,6 +282,27 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 assert page.locator(".assistant-markdown a[href^='javascript:']").count() == 0
                 expect(page.locator(".assistant-markdown table")).to_be_visible()
                 assert page.locator("body").evaluate("node=>node.scrollWidth<=innerWidth")
+                # 组件级展示验证：普通读回执折叠，缺数与写入事实始终可见。
+                page.evaluate("""() => {
+                    const sample = OfficeAssistant.view.renderTurn({id:'visibility-probe',prompt:'回执可见性核验',status:'outcome_unknown',result:{explanation:'核对实际回执',receipts:[
+                        {status:'read',operation:'projects',result:{complete:false,next:'page-two',items:[]}},
+                        {status:'received',operation:'submit_record',result:{id:'visible-write',status:'candidate'}}
+                    ]}}, {pageName:()=>'',showDetails:()=>{},refreshBusiness:()=>{}});
+                    document.querySelector('#assistant-messages').append(sample);
+                }""")
+                probe = page.locator('[data-run="visibility-probe"]')
+                expect(probe.locator(".assistant-receipt-group")).not_to_have_attribute("open", "")
+                expect(
+                    probe.get_by_text("结果覆盖不完整，请核对范围与缺失信息。", exact=True)
+                ).to_be_visible()
+                expect(probe.get_by_text("visible-write", exact=True)).to_be_visible()
+                expect(
+                    probe.get_by_text(
+                        "写入结果待核实，请先检查实际数据，不要重复提交。", exact=True
+                    )
+                ).to_be_visible()
+                assert probe.get_by_role("button", name="重试").count() == 0
+                probe.evaluate("node=>node.remove()")
                 page.get_by_role("button", name="复制回复", exact=True).last.click()
                 expect(page.locator("#record-dialog")).to_be_visible()
                 expect(page.get_by_label("待复制原文")).to_have_value(turn["result"]["explanation"])
@@ -249,10 +312,10 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 page.get_by_role("button", name="关闭详情", exact=True).click()
                 field = page.locator("#assistant-input")
                 field.fill("第一个会话的未发草稿")
-                select.select_option("conversation-two")
+                select_conversation(page, "conversation-two")
                 expect(field).to_have_value("")
                 field.fill("第二份草稿")
-                select.select_option(conversation["id"])
+                select_conversation(page, conversation["id"])
                 expect(field).to_have_value("第一个会话的未发草稿")
                 field.dispatch_event(
                     "keydown", {"key": "Enter", "ctrlKey": True, "isComposing": True}
@@ -266,26 +329,30 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 )
                 turn["version"] += 1
                 turn["result"]["explanation"] += "\n新回执"
-                page.get_by_role("button", name="重新加载", exact=True).click()
+                sync(page)
                 expect(page.locator(".assistant-markdown").last).to_contain_text("新回执")
                 assert page.evaluate(
                     "window.prior===document.querySelector('[data-run=older-task]')"
                 )
-                expect(
-                    page.get_by_role("button", name="有更新 · 回到最新", exact=True)
-                ).to_be_visible()
-                page.get_by_role("button", name="有更新 · 回到最新", exact=True).click()
+                expect(page.get_by_role("button", name="回到最新消息", exact=True)).to_be_visible()
+                page.get_by_role("button", name="回到最新消息", exact=True).click()
                 expect(page.locator("[data-assistant-latest]")).to_be_hidden()
                 # 键盘改变侧栏宽度，不占用主页面全部宽度。
                 separator = page.get_by_role("separator", name="调整助手宽度")
                 separator.focus()
                 separator.press("ArrowLeft")
                 expect(separator).to_have_attribute("aria-valuenow", "440")
-                page.get_by_role("button", name="改名", exact=True).click()
+                for key, width in (("Home", "360"), ("End", "640")):
+                    separator.press(key)
+                    expect(separator).to_have_attribute("aria-valuenow", width)
+                    assert page.locator("body").evaluate("node=>node.scrollWidth<=innerWidth")
+                separator.press("Home")
+                option(page, "重命名会话").click()
                 page.get_by_label("会话标题", exact=True).fill("重新命名的会话")
                 page.get_by_role("button", name="保存标题", exact=True).click()
                 expect(page.locator("#record-dialog")).to_be_hidden()
                 assert conversation["title"] == "重新命名的会话"
+                history(page)
                 page.locator("#assistant-query").fill("合成%_")
                 with page.expect_response(
                     lambda response: (
@@ -295,12 +362,14 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                     page.get_by_role("button", name="搜索", exact=True).click()
                 assert search_response.value.status == 200
                 page.wait_for_function(
-                    "document.querySelector('#assistant-conversations').disabled===false"
+                    "document.querySelector('#assistant-search button').disabled===false"
                 )
                 assert [payload for name, payload in calls if name == "agent.conversation.list"][
                     -1
                 ]["q"] == "合成%_"
+                page.get_by_role("button", name="关闭历史会话", exact=True).click()
                 field.fill("")
+                page.get_by_role("button", name="新会话", exact=True).click()
                 page.get_by_role("button", name="了解我的权限", exact=True).click()
                 expect(field).to_have_value("请说明我当前具备哪些权限，以及可以进行哪些操作。")
                 assert not any(name == "agent.start" for name, _ in calls)
@@ -325,6 +394,31 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 assert len([name for name, _ in calls if name == "agent.start"]) == 1
                 assert page.url == base + "/console/dashboard"
                 assert not errors
+                # 触控模拟：不能依靠hover才能找到回复操作；窄屏与低高度仍可发送。
+                touch = browser.new_context(
+                    viewport={"width": 390, "height": 700}, has_touch=True, is_mobile=True
+                )
+                touch.add_cookies(
+                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                )
+                touch_page = touch.new_page()
+                touch_page.goto(base + "/console/assistant/workspace")
+                select_conversation(touch_page, conversation["id"])
+                expect(
+                    touch_page.get_by_role("button", name="复制回复", exact=True).first
+                ).to_be_visible()
+                assert (
+                    touch_page.locator(".assistant-message-actions").first.evaluate(
+                        "node=>getComputedStyle(node).opacity"
+                    )
+                    == "1"
+                )
+                assert touch_page.locator("body").evaluate("node=>node.scrollWidth<=innerWidth")
+                history(touch_page)
+                expect(touch_page.locator("#assistant-query")).to_be_visible()
+                touch_page.get_by_role("button", name="关闭历史会话", exact=True).click()
+                expect(touch_page.locator("[data-assistant-history]")).to_be_focused()
+                touch.close()
             finally:
                 browser.close()
     finally:

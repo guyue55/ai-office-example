@@ -1,28 +1,39 @@
 <section id="assistant-panel" class="assistant-panel{% if assistant_full %} assistant-full{% endif %}" aria-labelledby="assistant-title" data-full="{{ 'true' if assistant_full else 'false' }}" data-csrf="{{ csrf }}" data-owner="{{ me.id|default('current') }}" {% if not assistant_full %}hidden{% endif %}>
   <div class="assistant-resize" role="separator" tabindex="0" aria-label="调整助手宽度" aria-orientation="vertical" aria-valuemin="360" aria-valuemax="640" aria-valuenow="420" {% if assistant_full %}hidden{% endif %}></div>
   <header class="assistant-header">
-    <div><h2 id="assistant-title">智能助手</h2><span class="muted small">沿用您的权限 · 写入前由您确认</span></div>
-    <div class="assistant-tools"><a href="/console/assistant/workspace" aria-label="展开助手工作区" title="展开工作区">↗</a><button type="button" class="secondary" data-assistant-close aria-label="收起智能助手" {% if assistant_full %}hidden{% endif %}>收起</button></div>
+    <div class="assistant-heading"><h2 id="assistant-title">智能助手 <span class="assistant-ai-label">AI</span></h2><div class="assistant-tools"><button type="button" class="ui-text-action" data-assistant-new>新会话</button><button type="button" data-assistant-menu aria-label="更多会话操作">更多会话操作</button><button type="button" data-assistant-close aria-label="收起智能助手" {% if assistant_full %}hidden{% endif %}>收起</button></div></div>
+    <div class="assistant-topicbar"><span id="assistant-topic">新会话</span><button type="button" class="ui-text-action" data-assistant-history>历史会话</button></div>
   </header>
-  <div class="assistant-sessionbar">
-    <label class="sr-only" for="assistant-conversations">选择会话</label><select id="assistant-conversations"><option value="">选择会话</option></select>
-    <button type="button" class="secondary" data-assistant-new>新会话</button>
-    <button type="button" class="secondary" data-assistant-rename disabled title="修改会话标题">改名</button>
-    <button type="button" class="secondary" data-assistant-archive disabled>归档</button>
+  <div id="assistant-feedback" class="assistant-feedback sr-only" role="status" aria-live="polite"></div>
+  <button type="button" class="secondary small assistant-reconnect" data-assistant-reconnect hidden>重新连接</button>
+  <div class="assistant-message-area">
+    <div id="assistant-messages" class="assistant-messages" role="region" aria-label="会话记录" tabindex="0"><p class="empty">正在准备助手。</p></div>
+    <button type="button" class="assistant-latest" data-assistant-latest hidden aria-label="回到最新消息">回到最新消息</button>
   </div>
-  <form class="assistant-search" id="assistant-search"><label class="sr-only" for="assistant-query">搜索会话标题</label><input id="assistant-query" type="search" maxlength="100" placeholder="搜索本人会话标题"><button type="submit" class="secondary small">搜索</button></form>
-  <div id="assistant-session-info" class="small muted assistant-session-info"></div>
-  <div class="assistant-historybar"><label><input type="checkbox" id="assistant-archived"> 归档会话</label><button class="small secondary" type="button" data-assistant-more hidden>更多会话</button><a class="small" href="/console/assistant">独立任务记录</a></div>
-  <div id="assistant-feedback" class="assistant-feedback" role="status" aria-live="polite">打开后加载您的会话。</div>
-  <div id="assistant-messages" class="assistant-messages" role="region" aria-label="会话记录" tabindex="0"><p class="empty">用自然语言描述工作，或从会话列表继续。</p></div>
-  <button type="button" class="secondary small assistant-latest" data-assistant-latest hidden>有更新 · 回到最新</button>
   <button type="button" class="secondary small" data-assistant-earlier hidden>查看更早消息</button>
   <form id="assistant-composer" class="assistant-composer">
-    <div class="assistant-starters"><button type="button" class="secondary small" data-assistant-starter="请说明我当前具备哪些权限，以及可以进行哪些操作。">了解我的权限</button><button type="button" class="secondary small" data-assistant-starter="请查询我可以访问的数据容器，说明返回结果的覆盖范围，不要修改数据。">查阅数据容器</button></div>
-    <label class="assistant-context"><input type="checkbox" id="assistant-context" checked> 关联当前页面：<span id="assistant-page-label"></span></label>
-    <label class="sr-only" for="assistant-input">您的工作要求</label><textarea id="assistant-input" rows="3" maxlength="16000" aria-describedby="assistant-input-hint" placeholder="例如：查看我有权访问的数据，说明哪些已经确认。" required></textarea>
-    <p id="assistant-input-hint" class="small muted">Enter 换行 · Ctrl / ⌘ + Enter 发送</p>
-    <div class="assistant-compose-actions"><span class="muted small">仅提交获准资料；说明以实际回执为准。</span><button type="submit" data-assistant-send disabled>发送</button></div>
+    <div class="assistant-input-box">
+      <div class="assistant-context"><span id="assistant-context-chip"><span id="assistant-page-label"></span><button type="button" data-assistant-context-remove aria-label="取消关联当前页面">取消关联当前页面</button></span><button type="button" class="ui-text-action small" data-assistant-context-add hidden>关联当前页面</button><input id="assistant-context" type="checkbox" class="sr-only" checked tabindex="-1" aria-hidden="true"></div>
+      <label class="sr-only" for="assistant-input">您的工作要求</label><textarea id="assistant-input" rows="2" maxlength="16000" aria-describedby="assistant-input-hint" placeholder="描述您希望完成的工作……" required></textarea>
+      <div class="assistant-compose-actions"><span id="assistant-input-hint" class="sr-only">Enter 换行 · Ctrl / ⌘ + Enter 发送</span><button type="submit" data-assistant-send disabled>发送</button></div>
+    </div>
+    <p class="assistant-footnote">AI 辅助 · 以实际回执为准 <button type="button" data-assistant-help aria-label="使用说明与快捷键">使用说明</button></p>
   </form>
+  <section id="assistant-history-panel" popover="manual" class="ui-floating-panel assistant-history-panel" role="dialog" aria-labelledby="assistant-history-title" tabindex="-1">
+    <header class="assistant-popup-heading"><h3 id="assistant-history-title">历史会话</h3><button type="button" data-floating-close aria-label="关闭历史会话">关闭历史会话</button></header>
+    <form class="assistant-search" id="assistant-search"><label class="sr-only" for="assistant-query">搜索会话标题</label><input id="assistant-query" type="search" maxlength="100" placeholder="搜索会话标题"><button type="submit" class="secondary small">搜索</button></form>
+    <label class="assistant-history-filter"><input type="checkbox" id="assistant-archived"> 归档会话</label>
+    <p id="assistant-history-status" class="small muted" role="status" aria-live="polite"></p>
+    <div id="assistant-conversations" class="assistant-conversations" role="list" aria-label="本人会话"></div>
+    <button type="button" class="ui-text-action small" data-assistant-more hidden>更多会话</button>
+  </section>
+  <section id="assistant-options-panel" popover="manual" class="ui-floating-panel assistant-options-panel" role="dialog" aria-label="会话操作" tabindex="-1">
+    <button type="button" data-floating-dismiss data-assistant-rename disabled>重命名会话</button>
+    <button type="button" data-floating-dismiss data-assistant-archive disabled>归档会话</button>
+    <a href="/console/assistant/workspace" data-floating-dismiss {% if assistant_full %}hidden{% endif %}>展开工作区</a>
+    <a href="/console/assistant" data-floating-dismiss>任务记录</a>
+    <button type="button" data-floating-dismiss data-assistant-sync>同步会话状态</button>
+    <button type="button" data-floating-dismiss data-assistant-help>使用说明与快捷键</button>
+  </section>
   <script type="application/json" id="assistant-labels">{{ {'statuses': assistant_statuses, 'operations': assistant_operations}|tojson }}</script>
 </section>

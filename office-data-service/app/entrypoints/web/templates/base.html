@@ -47,6 +47,7 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 </main>
 {% include '_interactions.html' %}
 {% include '_workspace.html' %}
+<script>{% include 'floating-panels.js' %}</script>
 <script>{% include 'account-menu.js' %}</script>
 {% if me and 'agent.run' in me.permissions %}
 {% if request.url.path != '/console/assistant/workspace' %}{% include '_assistant_panel.html' %}{% endif %}
