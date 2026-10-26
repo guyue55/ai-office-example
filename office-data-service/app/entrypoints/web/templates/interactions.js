@@ -126,8 +126,9 @@
     tipTarget = null;
     if (tip.matches(':popover-open')) tip.hidePopover();
   }
-  function showTip(target) {
-    if (!target?.dataset.tooltip || target.disabled || matchMedia('(hover: none)').matches) return;
+  function showTip(target, keyboard = false) {
+    // 触屏不依赖悬停；接入键盘时仍须展示聚焦提示。
+    if (!target?.dataset.tooltip || target.disabled || (!keyboard && matchMedia('(hover: none)').matches)) return;
     hideTip();
     tipTimer = setTimeout(() => {
       if (!target.isConnected || target.disabled) return;
@@ -146,13 +147,24 @@
   });
   document.addEventListener('pointerout', event => {
     const target = event.target.closest('[data-tooltip]');
-    if (target && !target.contains(event.relatedTarget)) tipHideTimer = setTimeout(hideTip, 150);
+    if (target && !target.contains(event.relatedTarget)) tipHideTimer = setTimeout(() => {
+      if (!document.activeElement?.matches('[data-tooltip]')) hideTip();
+    }, 150);
   });
   tip.addEventListener('pointerenter', () => clearTimeout(tipHideTimer));
-  tip.addEventListener('pointerleave', hideTip);
-  document.addEventListener('focusin', event => showTip(event.target.closest('[data-tooltip]')));
+  tip.addEventListener('pointerleave', () => {if (!document.activeElement?.matches('[data-tooltip]')) hideTip();});
+  document.addEventListener('focusin', event => showTip(event.target.closest('[data-tooltip]'), true));
   document.addEventListener('focusout', hideTip);
-  window.addEventListener('scroll', hideTip, true); window.addEventListener('resize', hideTip);
+  function repositionTip() {
+    const focused = document.activeElement?.closest('[data-tooltip]');
+    hideTip();
+    // 键盘聚焦可能引发浏览器自动滚动；不能因此取消尚未显示的提示。
+    if (focused) {
+      const rect = focused.getBoundingClientRect();
+      if (rect.top >= 0 && rect.bottom <= innerHeight) showTip(focused, true);
+    }
+  }
+  window.addEventListener('scroll', repositionTip, true); window.addEventListener('resize', repositionTip);
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && tipTarget) { hideTip(); event.preventDefault(); event.stopPropagation(); } }, true);
   // 所有站内确认复用同一组件；重复点击不替换仍未完成的确认。
   function confirm(message, options = {}) {

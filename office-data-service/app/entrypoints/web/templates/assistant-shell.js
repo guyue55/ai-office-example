@@ -31,7 +31,7 @@
   function rememberDraft(){drafts.set(state.id,input.value);}
   function sizeInput(){input.style.height='auto';input.style.height=Math.min(180,Math.max(48,input.scrollHeight))+'px';}
   function restoreDraft(){input.value=drafts.get(state.id)||'';sizeInput();}
-  function setWidth(value){const maximum=Math.max(360,Math.min(640,innerWidth-800));width=Math.min(maximum,Math.max(360,value));resize.setAttribute('aria-valuemax',String(maximum));resize.setAttribute('aria-valuenow',String(width));document.documentElement.style.setProperty('--assistant-width',width+'px');}
+  function setWidth(value){const maximum=Math.max(360,Math.min(640,innerWidth-800));width=Math.min(maximum,Math.max(360,value));resize.setAttribute('aria-valuemax',String(maximum));resize.setAttribute('aria-valuenow',String(width));resize.setAttribute('aria-valuetext',width+'像素');const choice=$('#assistant-width');if(choice){choice.value=[360,420,640].includes(width)?String(width):'';choice.querySelector('[value=""]').textContent='自定义（'+width+'像素）';}document.documentElement.style.setProperty('--assistant-width',width+'px');}
   function jumpLatest(){followLatest=true;messages.scrollTop=messages.scrollHeight;latest.hidden=true;}
   function showError(error){
     state.failures++;
@@ -202,6 +202,7 @@
   $('[data-assistant-sync]').addEventListener('click',sync);reconnect.addEventListener('click',sync);
   if(!full){
     try{setWidth(Number(JSON.parse(sessionStorage.getItem(storeKey)||'{}').width)||420);}catch(_){}
+    $('#assistant-width').addEventListener('change',event=>{setWidth(Number(event.target.value));save();});
     resize.addEventListener('pointerdown',event=>{if(event.button!==0)return;resize.setPointerCapture(event.pointerId);event.preventDefault();});
     resize.addEventListener('pointermove',event=>{if(resize.hasPointerCapture(event.pointerId))setWidth(innerWidth-event.clientX);});
     resize.addEventListener('pointerup',event=>{if(resize.hasPointerCapture(event.pointerId)){resize.releasePointerCapture(event.pointerId);save();}});

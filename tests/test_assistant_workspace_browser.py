@@ -339,9 +339,23 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 expect(page.locator("[data-assistant-latest]")).to_be_hidden()
                 # 键盘改变侧栏宽度，不占用主页面全部宽度。
                 separator = page.get_by_role("separator", name="调整助手宽度")
+                page.get_by_role("button", name="更多会话操作", exact=True).click()
+                width_choice = page.get_by_label("侧栏宽度", exact=True)
+                for choice in ("360", "640", "420"):
+                    width_choice.select_option(choice)
+                    expect(separator).to_have_attribute("aria-valuenow", choice)
+                    assert page.locator("#assistant-panel").evaluate(
+                        "node=>node.getBoundingClientRect().width"
+                    ) == int(choice)
+                page.keyboard.press("Escape")
                 separator.focus()
                 separator.press("ArrowLeft")
                 expect(separator).to_have_attribute("aria-valuenow", "440")
+                page.get_by_role("button", name="更多会话操作", exact=True).click()
+                expect(width_choice).to_have_value("")
+                expect(width_choice.locator("option:checked")).to_have_text("自定义（440像素）")
+                page.keyboard.press("Escape")
+                separator.focus()
                 for key, width in (("Home", "360"), ("End", "640")):
                     separator.press(key)
                     expect(separator).to_have_attribute("aria-valuenow", width)
@@ -418,6 +432,20 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 expect(touch_page.locator("#assistant-query")).to_be_visible()
                 touch_page.get_by_role("button", name="关闭历史会话", exact=True).click()
                 expect(touch_page.locator("[data-assistant-history]")).to_be_focused()
+                # 无hover设备接入键盘，聚焦仍显示提示；Esc只关闭提示。
+                touch_page.get_by_role("button", name="更多会话操作", exact=True).focus()
+                expect(touch_page.get_by_role("tooltip")).to_have_text("更多会话操作")
+                touch_page.keyboard.press("Escape")
+                expect(touch_page.get_by_role("tooltip")).to_be_hidden()
+                # 重排相关模拟，不把窄视口称为真实浏览器缩放验收。
+                for viewport in ({"width": 320, "height": 640}, {"width": 640, "height": 256}):
+                    touch_page.set_viewport_size(viewport)
+                    assert touch_page.locator("body").evaluate("node=>node.scrollWidth<=innerWidth")
+                    touch_page.locator("#assistant-input").scroll_into_view_if_needed()
+                    expect(touch_page.locator("#assistant-input")).to_be_in_viewport()
+                    history(touch_page)
+                    expect(touch_page.locator("#assistant-query")).to_be_in_viewport()
+                    touch_page.get_by_role("button", name="关闭历史会话", exact=True).click()
                 touch.close()
             finally:
                 browser.close()
