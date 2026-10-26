@@ -95,3 +95,46 @@ def test_assistant_start_keeps_request_key_and_cancel_version(web):  # noqa: F81
     )
     assert result.status_code == 303
     assert seen[-1] == ("agent.cancel", {"identifier": "task-one", "version": 4})
+
+
+def test_task_result_separates_receipts_from_model_claims(web):  # noqa: F811
+    original = web.application.call.side_effect
+    task = {
+        "id": "task-result",
+        "version": 1,
+        "prompt": "核查操作结果",
+        "status": "completed",
+        "cancel_requested": False,
+        "updated_at": datetime.now(UTC),
+        "pending": None,
+        "result": {
+            "explanation": "<script>错误声称已全部成功</script>",
+            "outcome_unknown": True,
+            "receipts": [
+                {"operation": "record", "status": "read", "result": {"name": "测试"}},
+                {"operation": "access", "status": "denied"},
+                {"operation": "submit_record", "status": "received", "result": {"id": "candidate"}},
+            ],
+        },
+    }
+
+    async def operation(principal, name, payload, trace, **options):
+        if name == "me":
+            return {"name": "测试员工", "permissions": ["agent.run"]}
+        if name == "agent.get":
+            return task
+        return await original(principal, name, payload, trace)
+
+    web.application.call.side_effect = operation
+    response = web.client.get("/console/assistant/task-result")
+    assert response.status_code == 200
+    assert "执行结果待核实" in response.text
+    assert "避免重复写入" in response.text
+    assert "只读查询回执" in response.text
+    assert "已拒绝，未执行" in response.text
+    assert "已收到执行回执" in response.text
+    assert "<script>错误声称已全部成功</script>" not in response.text
+    assert '<details class="task-technical"><summary>' in response.text
+    task["result"]["receipts"] = []
+    response = web.client.get("/console/assistant/task-result")
+    assert "本轮没有工具回执，不能据此认定完成了数据操作" in response.text

@@ -132,6 +132,13 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                     >= 3
                 )
                 page.locator(".page-header h2").click()
+                # 详情以共享抽屉导入时，不得复制全局助手入口和位置栏。
+                page.locator("a.permission-name").first.click()
+                expect(page.locator("#workspace")).to_be_visible()
+                expect(page.locator("#workspace .workspace-section-title")).to_be_attached()
+                expect(page.locator("#workspace #assistant-launch")).to_have_count(0)
+                expect(page.locator("#workspace .shell-context")).to_have_count(0)
+                page.get_by_role("button", name="关闭操作面板", exact=True).click()
                 queue.locator("summary").click()
                 expect(queue.get_by_role("button", name="认领并开通", exact=True)).to_be_visible()
                 queue.locator("summary").click()

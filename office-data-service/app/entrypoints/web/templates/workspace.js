@@ -37,7 +37,7 @@
     const main = documentCopy.querySelector('main');
     if (!main) throw new Error('页面内容不可用，请在完整页面中核对。');
     // 仅导入服务端页面内容，不执行响应里的脚本或外部资源声明。
-    main.querySelectorAll('script, style, link').forEach(node => node.remove());
+    main.querySelectorAll('script, style, link, .assistant-launchbar, .shell-context').forEach(node => node.remove());
     return main;
   }
   function paint(main, url) {

@@ -50,7 +50,8 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 {% block content %}{% endblock %}
 <p class="trace">追踪号：{{ trace_id }}</p>
 </main>
-<script>{% include 'shell.js' %}</script>
+<script>{% include 'shell.js' %}
+{% include 'form-validation.js' %}</script>
 {% include '_interactions.html' %}
 {% include '_workspace.html' %}
 <script>{% include 'floating-panels.js' %}</script>

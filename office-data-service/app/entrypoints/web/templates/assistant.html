@@ -9,6 +9,6 @@
 <p class="hint">仅提交允许当前模型处理的资料。任务和结果会保存在企业服务器；停止任务不会撤回已完成的操作。</p><div><button type="submit">开始处理</button></div></form>
 {% else %}<p class="hint" role="status">{{ capability.message or '智能助手尚未启用，请联系管理员配置模型运行环境。' }}</p>{% endif %}</section>
 <section class="card"><h3>我的任务</h3>
-<form method="get" class="toolbar"><label>搜索 <input name="q" value="{{ request.query_params.get('q','') }}" maxlength="100" placeholder="任务内容"></label><label>状态 <select name="status"><option value="">全部状态</option>{% for code,label in statuses.items() %}<option value="{{ code }}" {% if request.query_params.get('status') == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button type="submit" class="secondary">筛选</button><a href="/console/assistant">重置</a></form>
+{% set filter_mode = 'tasks' %}{% set search_placeholder = '搜索任务内容' %}{% include '_filters.html' %}
 <div class="table-wrap"><table><thead><tr><th>任务</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead><tbody>{% for item in listing['items'] %}<tr><td>{{ item.prompt }}</td><td><span class="badge neutral">{{ statuses[item.status] }}</span></td><td>{{ item.updated_at|business_time }}</td><td><a href="/console/assistant/{{ item.id }}">查看任务</a></td></tr>{% else %}<tr><td colspan="4" class="empty">{% set empty_title = '暂无任务' %}{% set empty_description = '从智能助手提交工作后，可在这里查看任务和实际回执。' %}{% include '_list_empty.html' %}</td></tr>{% endfor %}</tbody></table></div>{% include 'pagination.html' %}</section>
 {% endblock %}

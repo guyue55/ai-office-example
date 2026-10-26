@@ -33,14 +33,16 @@
       "template": "account_new.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_account_flow_browser.py"
       ]
     },
     {
       "template": "account_operation.html",
       "coverage": "全页面浏览器巡视",
       "tests": [
-        "e2e_page_review.py"
+        "e2e_page_review.py",
+        "test_account_flow_browser.py"
       ]
     },
     {
@@ -56,7 +58,8 @@
       "tests": [
         "e2e_page_review.py",
         "e2e_accounts.py",
-        "test_account_web.py"
+        "test_account_web.py",
+        "test_account_flow_browser.py"
       ]
     },
     {
@@ -163,6 +166,7 @@
     "_access_flow.html",
     "_account_menu.html",
     "_assistant_panel.html",
+    "_assistant_result.html",
     "_filters.html",
     "_interactions.html",
     "_list_empty.html",
@@ -179,6 +183,7 @@
     "base.html",
     "floating-panels.js",
     "form-state.js",
+    "form-validation.js",
     "interactions.js",
     "pagination.html",
     "shell.css",
