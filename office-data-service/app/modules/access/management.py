@@ -49,11 +49,7 @@ class Management:
         self.access, self.db, self.issuer = access, access.db, issuer
 
     async def me(self):
-        codes = sorted(
-            p.code
-            for p in (await self.db.scalars(select(Permission)))
-            if self.access.allows(p.code)
-        )
+        codes = await self.access.effective_permissions()
         return {
             **view(self.access.actor, ("id", "name", "active", "version")),
             "permissions": codes,

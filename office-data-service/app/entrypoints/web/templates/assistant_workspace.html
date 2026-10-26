@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}智能助手 · {{ product.short_name }}{% endblock %}
+{% block content %}
+{% set assistant_full = true %}{% include '_assistant_panel.html' %}
+<noscript><p class="hint">会话工作区需要启用JavaScript。您仍可使用<a href="/console/assistant">独立任务页面</a>。</p></noscript>
+{% endblock %}

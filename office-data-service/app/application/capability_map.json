@@ -1,5 +1,10 @@
 {
-  "data.aggregate": {"mcp": "aggregate_data", "sdk": "aggregate", "cli": "aggregate", "mode": "direct"},
+  "data.aggregate": {
+    "mcp": "aggregate_data",
+    "sdk": "aggregate",
+    "cli": "aggregate",
+    "mode": "direct"
+  },
   "me": {
     "mcp": "whoami",
     "sdk": "me",
@@ -246,10 +251,64 @@
     "cli": "data-apply",
     "mode": "preview-confirm"
   },
-  "agent.capabilities": {"mcp": "assistant_capabilities", "sdk": "assistant_capabilities", "cli": "assistant-capabilities", "mode": "direct"},
-  "agent.start": {"mcp": "start_assistant_run", "sdk": "assistant_start", "cli": "assistant-start", "mode": "direct"},
-  "agent.list": {"mcp": "list_assistant_runs", "sdk": "assistant_runs", "cli": "assistant-runs", "mode": "direct"},
-  "agent.get": {"mcp": "get_assistant_run", "sdk": "assistant_run", "cli": "assistant-run", "mode": "direct"},
-  "agent.decide": {"mcp": "decide_assistant_run", "sdk": "assistant_decide", "cli": "assistant-decide", "mode": "direct"},
-  "agent.cancel": {"mcp": "cancel_assistant_run", "sdk": "assistant_cancel", "cli": "assistant-cancel", "mode": "direct"}
+  "agent.capabilities": {
+    "mcp": "assistant_capabilities",
+    "sdk": "assistant_capabilities",
+    "cli": "assistant-capabilities",
+    "mode": "direct"
+  },
+  "agent.start": {
+    "mcp": "start_assistant_run",
+    "sdk": "assistant_start",
+    "cli": "assistant-start",
+    "mode": "direct"
+  },
+  "agent.list": {
+    "mcp": "list_assistant_runs",
+    "sdk": "assistant_runs",
+    "cli": "assistant-runs",
+    "mode": "direct"
+  },
+  "agent.get": {
+    "mcp": "get_assistant_run",
+    "sdk": "assistant_run",
+    "cli": "assistant-run",
+    "mode": "direct"
+  },
+  "agent.decide": {
+    "mcp": "decide_assistant_run",
+    "sdk": "assistant_decide",
+    "cli": "assistant-decide",
+    "mode": "direct"
+  },
+  "agent.cancel": {
+    "mcp": "cancel_assistant_run",
+    "sdk": "assistant_cancel",
+    "cli": "assistant-cancel",
+    "mode": "direct"
+  },
+  "agent.conversation.create": {
+    "mcp": "create_assistant_conversation",
+    "sdk": "assistant_conversation_create",
+    "cli": "assistant-conversation-create",
+    "mode": "direct"
+  },
+  "agent.conversation.list": {
+    "mcp": "list_assistant_conversations",
+    "sdk": "assistant_conversations",
+    "cli": "assistant-conversations",
+    "mode": "direct"
+  },
+  "agent.conversation.get": {
+    "mcp": "get_assistant_conversation",
+    "sdk": "assistant_conversation",
+    "cli": "assistant-conversation",
+    "mode": "direct"
+  },
+  "agent.conversation.archive": {
+    "mcp": "archive_assistant_conversation",
+    "sdk": "assistant_conversation_archive",
+    "cli": "assistant-conversation-archive",
+    "mode": "direct"
+  }
 }

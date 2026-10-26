@@ -52,3 +52,46 @@ def test_hosted_cli_start_exact_object_and_explicit_decision(tmp_path):
         ),
     )
     client.assistant_decide.assert_called_once_with("run", 2, "ticket", False)
+
+
+def test_conversation_sdk_and_cli_keep_server_owned_context(tmp_path):
+    sdk = object.__new__(OfficeClient)
+    sdk.request = Mock(return_value={"id": "conversation"})
+    sdk.assistant_conversation_create("合成会话")
+    sdk.request.assert_called_with(
+        "POST", "/api/v2/agent/conversations", json={"title": "合成会话"}
+    )
+    sdk.assistant_conversation("unsafe/id", before="previous", limit=10)
+    sdk.request.assert_called_with(
+        "GET", "/api/v2/agent/conversations/unsafe%2Fid", params={"before": "previous", "limit": 10}
+    )
+    sdk.assistant_start(
+        "继续查询", "stable-request", conversation_id="conversation", context_page="employees"
+    )
+    sdk.request.assert_called_with(
+        "POST",
+        "/api/v2/agent/runs",
+        json={
+            "prompt": "继续查询",
+            "request_key": "stable-request",
+            "conversation_id": "conversation",
+            "context_page": "employees",
+        },
+    )
+    parser = build_parser()
+    client = Mock()
+    execute(
+        client,
+        parser.parse_args(
+            ["assistant-conversation-archive", "conversation", "--version", "3", "--restore"]
+        ),
+    )
+    client.assistant_conversation_archive.assert_called_once_with("conversation", 3, False)
+    source = tmp_path / "conversation-task.json"
+    source.write_text(
+        '{"prompt":"继续查询","request_key":"stable-request","conversation_id":"conversation","context_page":"employees"}'
+    )
+    execute(client, parser.parse_args(["assistant-start", "--file", str(source)]))
+    client.assistant_start.assert_called_once_with(
+        "继续查询", "stable-request", conversation_id="conversation", context_page="employees"
+    )

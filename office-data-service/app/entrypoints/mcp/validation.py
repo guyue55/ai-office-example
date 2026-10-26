@@ -55,9 +55,22 @@ class ExportArguments(Input):
 
 
 from app.common.inputs import IdentifierInput as ReadIdentifierArguments
-from app.modules.agent.schemas import RunCancel, RunDecision, RunList, RunStart
+from app.modules.agent.schemas import (
+    ConversationArchive,
+    ConversationCreate,
+    ConversationGet,
+    ConversationList,
+    RunCancel,
+    RunDecision,
+    RunList,
+    RunStart,
+)
 
 TOOL_INPUTS: dict[str, type[BaseModel]] = {
+    "create_assistant_conversation": ConversationCreate,
+    "list_assistant_conversations": ConversationList,
+    "get_assistant_conversation": ConversationGet,
+    "archive_assistant_conversation": ConversationArchive,
     "assistant_capabilities": EmptyInput,
     "start_assistant_run": RunStart,
     "list_assistant_runs": RunList,

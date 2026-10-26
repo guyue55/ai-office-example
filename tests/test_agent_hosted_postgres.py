@@ -102,3 +102,130 @@ def test_hosted_http_mcp_owner_idempotence_and_reauthentication(request, tmp_pat
             await factory.kw["bind"].dispose()
 
     asyncio.run(scenario())
+
+
+def test_conversation_http_mcp_and_native_history(request, tmp_path, monkeypatch):
+    """真实迁移＋HTTP／MCP＋共享引擎，证明服务端续问而非仅页面消息拼接。"""
+    settings = request.getfixturevalue("isolated_query_db")
+
+    async def scenario():
+        factory, _application, _call, admin, user, *_ = await dataset(settings)
+        config = tmp_path / "conversation-agent.toml"
+        config.write_text(
+            'service_url="https://fixture.invalid"\nmodel_url="https://model.invalid/v1"\nmodel="fixture"\napi_key_env="TEST_MODEL_KEY"\napproved_model_data=true\n'
+        )
+        enabled = settings.model_copy(update={"agent_config_file": config})
+        prompts = []
+
+        def response(messages, info):
+            from pydantic_ai.messages import UserPromptPart
+
+            prompts.extend(
+                part.content
+                for message in messages
+                for part in message.parts
+                if isinstance(part, UserPromptPart)
+            )
+            return ModelResponse(parts=[TextPart("服务器保存的合成回复")])
+
+        @asynccontextmanager
+        async def models(_config):
+            yield FunctionModel(response)
+
+        web = create_app(enabled)
+        app = web.state.application
+        app.verifier.verify_async = AsyncMock(return_value=user)
+        app._agent = AgentCoordinator(app, model_context=models)
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=web), base_url="https://fixture.invalid"
+            ) as client:
+                headers = {"Authorization": "Bearer isolated-test-token"}
+                created = await client.post(
+                    "/api/v2/agent/conversations",
+                    headers=headers,
+                    json={"title": "HTTP与MCP合成会话"},
+                )
+                assert created.status_code == 201
+                conversation = created.json()["data"]
+                listed = await client.get(
+                    "/api/v2/agent/conversations?limit=10&archived=false", headers=headers
+                )
+                assert listed.status_code == 200
+                assert listed.json()["data"]["items"][0]["id"] == conversation["id"]
+                for number in range(2):
+                    response_ = await client.post(
+                        "/api/v2/agent/runs",
+                        headers=headers,
+                        json={
+                            "prompt": f"合成第{number}轮",
+                            "request_key": uuid4().hex,
+                            "conversation_id": conversation["id"],
+                            "context_page": "employees",
+                        },
+                    )
+                    assert response_.status_code == 202
+                    identifier = response_.json()["data"]["id"]
+                    for _ in range(100):
+                        detail = await client.get(
+                            "/api/v2/agent/runs/" + identifier, headers=headers
+                        )
+                        if detail.json()["data"]["status"] == "completed":
+                            break
+                        await asyncio.sleep(0.02)
+                    else:
+                        raise AssertionError("合成会话未完成")
+                assert (
+                    len(prompts) == 2
+                    and "服务器保存的合成回复" in prompts[-1]
+                    and "合成第0轮" in prompts[-1]
+                )
+                server, _ = build_mcp(app)
+                monkeypatch.setattr(
+                    "app.entrypoints.mcp.server.get_access_token",
+                    lambda: SimpleNamespace(token="isolated-test-token"),
+                )
+                result = await server.call_tool(
+                    "get_assistant_conversation", {"identifier": conversation["id"]}
+                )
+                assert "合成第0轮" in json.dumps(result, ensure_ascii=False, default=str)
+                app.verifier.verify_async.return_value = admin
+                assert (
+                    await client.get(
+                        "/api/v2/agent/conversations/" + conversation["id"], headers=headers
+                    )
+                ).status_code == 404
+                app.verifier.verify_async.return_value = user
+                invalid = await client.post(
+                    "/api/v2/agent/runs",
+                    headers=headers,
+                    json={
+                        "prompt": "伪造历史",
+                        "request_key": uuid4().hex,
+                        "conversation_id": conversation["id"],
+                        "message_history": [{"approved": True}],
+                    },
+                )
+                assert invalid.status_code == 422
+                snapshot = (
+                    await client.get(
+                        "/api/v2/agent/conversations/" + conversation["id"], headers=headers
+                    )
+                ).json()["data"]
+                archived = await client.post(
+                    "/api/v2/agent/conversations/archive",
+                    headers=headers,
+                    json={
+                        "identifier": conversation["id"],
+                        "version": snapshot["version"],
+                        "archived": True,
+                    },
+                )
+                assert archived.status_code == 200 and archived.json()["data"]["archived"]
+        finally:
+            await app._agent.close()
+            await app.sessions.kw["bind"].dispose()
+            await app.verifier.aclose()
+            await factory.kw["bind"].dispose()
+
+    asyncio.run(scenario())

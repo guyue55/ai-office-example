@@ -1,4 +1,4 @@
-"""服务端 Web 控制台（BFF）：会话、页面与授权操作；禁止模型调用。"""
+"""服务端Web控制台：复用应用服务，助手执行由可选协调器负责。"""
 
 import base64
 import hashlib
@@ -16,8 +16,10 @@ from fastapi.routing import APIRoute
 from pydantic import ValidationError
 
 from app.common.errors import DomainError, log_rejection, validation_error
+from app.entrypoints.errors import error_response
 from app.entrypoints.web.accounts import register_accounts
-from app.entrypoints.web.assistant import register_assistant
+from app.entrypoints.web.assistant import OPERATIONS, STATUSES, register_assistant
+from app.entrypoints.web.assistant_ui import register_assistant_ui
 from app.entrypoints.web.authentication import WebAuthentication, bind_identity
 from app.entrypoints.web.client_sessions import register_client_sessions
 from app.entrypoints.web.login_gate import LoginGate
@@ -75,6 +77,10 @@ def web_router(application):
                 if error.status == 401:
                     store.destroy(request.cookies.get(COOKIE))
                 log_rejection(request.state.trace_id, error.code, error.status, "web")
+                if request.url.path.startswith("/console/assistant-ui/"):
+                    response = error_response(error, request.state.trace_id)
+                    response.headers["Cache-Control"] = "no-store"
+                    return response
                 return web_error_response(request, error)
 
             return guarded
@@ -114,6 +120,8 @@ def web_router(application):
         identity = await application.call(principal, "me", {}, request.state.trace_id)
         context.update(
             me=identity,
+            assistant_statuses=STATUSES,
+            assistant_operations=OPERATIONS,
             demo_mode=settings.allow_lan_http_demo,
             csrf=token.get("csrf", ""),
             trace_id=request.state.trace_id,
@@ -582,6 +590,7 @@ def web_router(application):
             },
         )
 
+    register_assistant_ui(router, operate, render, require_csrf)
     register_assistant(router, operate, render, require_csrf, form_version, notify)
     register_client_sessions(router, operate, render, require_csrf, form_version, notify, store)
     register_accounts(

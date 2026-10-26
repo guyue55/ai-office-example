@@ -10,6 +10,7 @@ from app.application.agent_runner import AgentRunner, recover_runs
 from app.application.contracts import validate_output
 from app.common.errors import DomainError, require
 from app.modules.access.service import Access
+from app.modules.agent.conversations import Conversations
 from app.modules.agent.service import AgentRecords, run_view
 
 
@@ -63,9 +64,24 @@ class AgentCoordinator:
         async with self.sessions.begin() as db:
             # 创建容量与请求幂等检查由同一已有权限锁串行，不在事务中执行模型。
             access = await Access.create(
-                db, principal, trace_id, exclusive=operation == "agent.start"
+                db,
+                principal,
+                trace_id,
+                exclusive=operation
+                in {"agent.start", "agent.conversation.create", "agent.conversation.archive"},
             )
-            if operation == "agent.capabilities":
+            if operation.startswith("agent.conversation."):
+                conversations = Conversations(access)
+                action = operation.rsplit(".", 1)[-1]
+                if action == "create":
+                    result = await conversations.create(**payload)
+                elif action == "list":
+                    result = await conversations.listing(**payload)
+                elif action == "get":
+                    result = await conversations.detail(**payload)
+                else:
+                    result = await conversations.archive(**payload)
+            elif operation == "agent.capabilities":
                 result = {
                     "installed": find_spec("office_agent") is not None,
                     "configured": self.settings.agent_config_file is not None,
@@ -91,7 +107,12 @@ class AgentCoordinator:
                     )
                     digest = hashlib.sha256(
                         json.dumps(
-                            {"prompt": prompt, "config": self.config.model_dump(mode="json")},
+                            {
+                                "prompt": prompt,
+                                "config": self.config.model_dump(mode="json"),
+                                "conversation_id": payload.get("conversation_id"),
+                                "context_page": payload.get("context_page", ""),
+                            },
                             ensure_ascii=False,
                             sort_keys=True,
                         ).encode()
@@ -102,12 +123,25 @@ class AgentCoordinator:
                         digest,
                         per_user=self.settings.agent_max_per_user,
                         total=self.settings.agent_max_running,
+                        conversation_id=payload.get("conversation_id"),
+                        context_page=payload.get("context_page", ""),
                     )
                     result, identifier = run_view(row), row.id
                 elif operation == "agent.list":
                     result = await records.listing(**payload)
                 elif operation == "agent.get":
-                    result = run_view(await records.owned(payload["identifier"]))
+                    row = await records.owned(payload["identifier"])
+                    result = run_view(row)
+                    if (
+                        row.conversation_id
+                        and row.access_fingerprint != await access.authorization_fingerprint()
+                    ):
+                        result.update(
+                            prompt="权限配置已变化，此轮内容已隐藏。",
+                            pending=None,
+                            result=None,
+                            history_hidden=True,
+                        )
                 elif operation == "agent.decide":
                     result = await records.decide(**payload)
                 elif operation == "agent.cancel":

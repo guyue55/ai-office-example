@@ -35,3 +35,14 @@ uv run pytest -m 'not live' -q
 贡献者须具备所提交材料的相应权利；自有新增贡献按仓库 Apache-2.0 提供，不提交客户资料或不兼容的第三方源码。保留 LICENSE、NOTICE 及第三方声明；企业项目品牌配置不改动这些版权归属。CI 使用固定摘要的 Gitleaks 扫描可达历史，不上传含原始秘密的扫描报告，发现问题时先私密处理。
 
 日常操作、候选构建、Tag／Release、升级与回退顺序见 [操作手册](docs/OPERATIONS.md)。
+
+## 可选Agent会话与工作区回归
+
+安装可选依赖后运行`uv run --extra agent --frozen pytest -m 'not live' -q`，独立模型协议运行`uv run --project clients/agent --frozen pytest clients/agent/tests -q`。会话／审批变更还须分别执行下列隔离检查；不得指向在用企业库或用户浏览器会话：
+
+```sh
+OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_conversations_postgres.py tests/test_agent_records_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_postgres_readiness.py -q
+OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_assistant_workspace_browser.py tests/test_agent_browser.py -q
+```
+
+PG测试创建本轮临时容器并执行正式迁移；需要Docker服务。浏览器使用Playwright独立上下文，可通过OFFICE_TEST_BROWSER_CHANNEL=chrome选择已安装Chrome，否则按原Playwright安装说明准备浏览器。以上测试使用合成数据与模型替身，不发生真实模型计费。新的会话入口须同步HTTP、SDK、CLI、MCP及contracts；历史预算、权限指纹与兼容边界见docs/AGENT_WORKSPACE_PLAN.md。

@@ -29,6 +29,8 @@ DEFINITIONS = {
 PERMISSIONS = {code: definition[1] for code, definition in DEFINITIONS.items()}
 
 AUDIT_ACTIONS = {
+    "agent.conversation.created": "创建助手会话",
+    "agent.conversation.archived": "归档或恢复助手会话",
     "agent.created": "创建智能助手任务",
     "agent.decided": "确认或拒绝助手操作",
     "agent.cancelled": "请求停止助手任务",

@@ -1,0 +1,21 @@
+<section id="assistant-panel" class="assistant-panel{% if assistant_full %} assistant-full{% endif %}" aria-labelledby="assistant-title" data-full="{{ 'true' if assistant_full else 'false' }}" data-csrf="{{ csrf }}" data-owner="{{ me.id|default('current') }}" {% if not assistant_full %}hidden{% endif %}>
+  <header class="assistant-header">
+    <div><h2 id="assistant-title">智能助手</h2><span class="muted small">沿用您的权限 · 写入前由您确认</span></div>
+    <div class="assistant-tools"><a href="/console/assistant/workspace" aria-label="展开助手工作区" title="展开工作区">↗</a><button type="button" class="secondary" data-assistant-close aria-label="收起智能助手" {% if assistant_full %}hidden{% endif %}>收起</button></div>
+  </header>
+  <div class="assistant-sessionbar">
+    <label class="sr-only" for="assistant-conversations">选择会话</label><select id="assistant-conversations"><option value="">选择会话</option></select>
+    <button type="button" class="secondary" data-assistant-new>新会话</button>
+    <button type="button" class="secondary" data-assistant-archive disabled>归档</button>
+  </div>
+  <div class="assistant-historybar"><label><input type="checkbox" id="assistant-archived"> 归档会话</label><button class="small secondary" type="button" data-assistant-more hidden>更多会话</button><a class="small" href="/console/assistant">独立任务记录</a></div>
+  <div id="assistant-feedback" class="assistant-feedback" role="status" aria-live="polite">打开后加载您的会话。</div>
+  <div id="assistant-messages" class="assistant-messages" role="region" aria-label="会话记录" tabindex="0"><p class="empty">用自然语言描述工作，或从会话列表继续。</p></div>
+  <button type="button" class="secondary small" data-assistant-earlier hidden>查看更早消息</button>
+  <form id="assistant-composer" class="assistant-composer">
+    <label class="assistant-context"><input type="checkbox" id="assistant-context" checked> 关联当前页面：<span id="assistant-page-label"></span></label>
+    <label class="sr-only" for="assistant-input">您的工作要求</label><textarea id="assistant-input" rows="3" maxlength="16000" placeholder="例如：查看我有权访问的数据，说明哪些已经确认。" required></textarea>
+    <div class="assistant-compose-actions"><span class="muted small">仅提交获准资料；说明以实际回执为准。</span><button type="submit" data-assistant-send disabled>发送</button></div>
+  </form>
+  <script type="application/json" id="assistant-labels">{{ {'statuses': assistant_statuses, 'operations': assistant_operations}|tojson }}</script>
+</section>

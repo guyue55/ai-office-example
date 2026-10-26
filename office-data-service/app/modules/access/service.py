@@ -1,6 +1,8 @@
 """所有入口共用的实时授权；授权修改与审计在一个数据库事务内。"""
 
 import asyncio
+import hashlib
+import json
 import logging
 import time
 from uuid import uuid4
@@ -154,6 +156,21 @@ class Access:
 
     def allows(self, code: str):
         return self.enforcer.enforce("u:" + self.actor.id, code)
+
+    async def effective_permissions(self):
+        """当前员工真实有效权限；身份展示与助手历史边界共用。"""
+        return sorted(
+            code for code in await self.db.scalars(select(Permission.code)) if self.allows(code)
+        )
+
+    async def authorization_fingerprint(self):
+        """仅本人的有效权限及安全纪元；他人授权变化不造成无关会话中断。"""
+        value = {
+            "actor": self.actor.id,
+            "permissions": await self.effective_permissions(),
+            "tokens_after": self.actor.tokens_after,
+        }
+        return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
     def need(self, code: str):
         require(self.allows(code), 403, "permission_denied", "缺少操作权限：" + code)

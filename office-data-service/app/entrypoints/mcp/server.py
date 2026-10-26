@@ -36,7 +36,13 @@ from app.modules.access.outputs import (
     PendingIdentityPage,
 )
 from app.modules.access.session_schemas import SessionPage, SessionView
-from app.modules.agent.outputs import AgentCapability, RunSummary, RunView
+from app.modules.agent.outputs import (
+    AgentCapability,
+    ConversationSummary,
+    ConversationView,
+    RunSummary,
+    RunView,
+)
 from app.modules.data.change_contracts import DataChange, DataPreview, DataResult
 from app.modules.data.outputs import (
     ConfirmationOutput,
@@ -450,15 +456,59 @@ def build_mcp(application):
             {"identifier": record_id, "after_revision": after_revision, "limit": limit},
         )
 
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def create_assistant_conversation(title: str = "新会话") -> ConversationSummary:
+        """创建本人工作会话，不执行模型。"""
+        return await call("agent.conversation.create", {"title": title})
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def list_assistant_conversations(
+        after: str = "", limit: int = 10, page: int | None = None, archived: bool = False
+    ) -> AccessPage[ConversationSummary]:
+        """分页读取本人活动或归档会话；只读不执行模型。"""
+        return await call(
+            "agent.conversation.list",
+            {"after": after, "limit": limit, "page": page, "archived": archived},
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def get_assistant_conversation(
+        identifier: str, before: str = "", limit: int = 10
+    ) -> ConversationView:
+        """读取本人有界历史，权限修订变化时隐藏旧正文。"""
+        return await call(
+            "agent.conversation.get", {"identifier": identifier, "before": before, "limit": limit}
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def archive_assistant_conversation(
+        identifier: str, version: int, archived: bool
+    ) -> ConversationSummary:
+        """归档或恢复本人会话，不删除执行和审批证据。"""
+        return await call(
+            "agent.conversation.archive",
+            {"identifier": identifier, "version": version, "archived": archived},
+        )
+
     @server.tool(annotations=ToolAnnotations(read_only_hint=True))
     async def assistant_capabilities() -> AgentCapability:
         """核对服务器智能助手是否配置就绪；不代表模型真实调用已验收。"""
         return await call("agent.capabilities")
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
-    async def start_assistant_run(prompt: str, request_key: str) -> RunView:
+    async def start_assistant_run(
+        prompt: str, request_key: str, conversation_id: str | None = None, context_page: str = ""
+    ) -> RunView:
         """受理本人任务；重试保留request_key。受理不等于执行成功。"""
-        return await call("agent.start", {"prompt": prompt, "request_key": request_key})
+        return await call(
+            "agent.start",
+            {
+                "prompt": prompt,
+                "request_key": request_key,
+                "conversation_id": conversation_id,
+                "context_page": context_page,
+            },
+        )
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=True))
     async def list_assistant_runs(

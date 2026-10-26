@@ -7,28 +7,7 @@ from sqlalchemy.orm import load_only
 
 from app.common.errors import require
 from app.infrastructure.models import AgentRun
-
-ACTIVE = {"queued", "running", "awaiting_confirmation"}
-
-
-def run_view(row, *, detail=True):
-    result = {
-        key: getattr(row, key)
-        for key in (
-            "id",
-            "version",
-            "prompt",
-            "status",
-            "cancel_requested",
-            "created_at",
-            "updated_at",
-        )
-    }
-    if detail:
-        result.update(pending=row.pending, result=row.result, write_inflight=row.write_inflight)
-    else:
-        result["prompt"] = row.prompt[:160]
-    return result
+from app.modules.agent.state import ACTIVE, run_view
 
 
 class AgentRecords:
@@ -44,7 +23,9 @@ class AgentRecords:
         require(row is not None, 404, "not_found", "任务不存在或不属于当前员工")
         return row
 
-    async def create(self, prompt, request_key, digest, *, per_user, total):
+    async def create(
+        self, prompt, request_key, digest, *, per_user, total, conversation_id=None, context_page=""
+    ):
         previous = await self.db.scalar(
             select(AgentRun).where(
                 AgentRun.owner_id == self.access.actor.id, AgentRun.request_key == request_key
@@ -58,6 +39,11 @@ class AgentRecords:
                 "同一请求标识的任务内容或配置已经变化",
             )
             return previous, False
+        if conversation_id:
+            # 局部导入避免模块环；同会话锁与全局权限锁一起保证受理串行。
+            from app.modules.agent.conversations import Conversations
+
+            await Conversations(self.access).attach(conversation_id)
         active = select(AgentRun).where(AgentRun.status.in_(ACTIVE))
         own = await self.db.scalar(
             select(func.count()).select_from(
@@ -73,6 +59,11 @@ class AgentRecords:
         )
         row = AgentRun(
             owner_id=self.access.actor.id,
+            conversation_id=conversation_id,
+            context_page=context_page,
+            access_fingerprint=await self.access.authorization_fingerprint()
+            if conversation_id
+            else None,
             prompt=prompt,
             request_key=request_key,
             request_digest=digest,
@@ -114,6 +105,8 @@ class AgentRecords:
                 AgentRun.cancel_requested,
                 AgentRun.created_at,
                 AgentRun.updated_at,
+                AgentRun.conversation_id,
+                AgentRun.access_fingerprint,
             )
         )
         rows = list(
@@ -135,8 +128,15 @@ class AgentRecords:
                 "start": offset + 1 if rows else 0,
                 "end": offset + len(rows) if rows else 0,
             }
+        items = []
+        fingerprint = await self.access.authorization_fingerprint()
+        for row in rows:
+            item = run_view(row, detail=False)
+            if row.conversation_id and row.access_fingerprint != fingerprint:
+                item["prompt"] = "权限配置已变化，此轮内容已隐藏。"
+            items.append(item)
         return {
-            "items": [run_view(row, detail=False) for row in rows],
+            "items": items,
             "has_more": more,
             "next": rows[-1].id if more else None,
             "pagination": pagination,

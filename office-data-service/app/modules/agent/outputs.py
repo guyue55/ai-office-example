@@ -15,6 +15,10 @@ class RunSummary(Versioned):
 
 
 class RunView(RunSummary):
+    conversation_id: str | None = None
+    context_page: str = ""
+    history_hidden: bool = False
+    detail_truncated: bool = False
     pending: dict | None
     result: dict | None
     write_inflight: bool
@@ -25,3 +29,18 @@ class AgentCapability(Output):
     configured: bool
     ready: bool
     message: str
+
+
+class ConversationSummary(Versioned):
+    title: str
+    archived: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ConversationView(ConversationSummary):
+    turns: list[RunView]
+    has_more: bool
+    next: str | None
+    access_fingerprint: str
+    history_reset: bool

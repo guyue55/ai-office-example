@@ -6,9 +6,13 @@
 <title>{% block title %}{{ product.short_name }} · 管理工作台{% endblock %}
 </title>
 <style>{% include 'styles.css' %}
+{% include 'assistant.css' %}
 :root { --accent: {{ product.primary_color }}; }
 body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color }}; }
 </style>
+{% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}
+<script>try { if (innerWidth >= 1200 && JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').open) document.documentElement.classList.add('assistant-preopen'); } catch (_) {}</script>
+{% endif %}
 </head>
 <body>
 <a class="small skip-link" href="#main-content">跳到主要内容</a>
@@ -16,7 +20,7 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 <div class="brand">{{ product.short_name }}<small>{{ product.organization }} · 管理工作台</small>
 </div>
 <a href="/console/dashboard" {% if request.url.path == '/console/dashboard' %}class="active" aria-current="page"{% endif %}>仪表盘</a>
-{% if me and 'agent.run' in me.permissions %}<a href="/console/assistant" {% if '/assistant' in request.url.path %}class="active" aria-current="page"{% endif %}>智能助手</a>{% endif %}
+{% if me and 'agent.run' in me.permissions %}<a href="/console/assistant/workspace" {% if '/assistant' in request.url.path %}class="active" aria-current="page"{% endif %}>智能助手</a>{% endif %}
 {% if me and 'access.read' in me.permissions %}
 <div class="nav-label">人员与授权</div>
 <a href="/console/employees" {% if '/employees' in request.url.path or request.url.path in ['/console/accounts/new','/console/accounts/link'] %}class="active" aria-current="page"{% endif %}>人员管理</a>
@@ -33,7 +37,8 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 {% if me %}
 {% include '_account_menu.html' %}{% endif %}
 </nav>
-<main id="main-content" tabindex="-1">
+<main id="main-content" tabindex="-1" {% if request.url.path == '/console/assistant/workspace' %}class="assistant-workspace-main"{% endif %}>
+{% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}<div class="assistant-launchbar"><button type="button" class="secondary" id="assistant-launch" aria-controls="assistant-panel" aria-expanded="false">✦ 智能助手</button></div>{% endif %}
 {% if demo_mode %}<p class="hint" role="note">局域网 HTTP 验收模式 · 传输未加密，请勿用于正式业务。</p>{% endif %}
 {% if notice %}
 <div class="notice" role="status">{{ notice }}</div>{% endif %}
@@ -43,6 +48,12 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 {% include '_interactions.html' %}
 {% include '_workspace.html' %}
 <script>{% include 'account-menu.js' %}</script>
+{% if me and 'agent.run' in me.permissions %}
+{% if request.url.path != '/console/assistant/workspace' %}{% include '_assistant_panel.html' %}{% endif %}
+<script>{% include 'assistant-transport.js' %}</script>
+<script>{% include 'assistant-view.js' %}</script>
+<script>{% include 'assistant-shell.js' %}</script>
+{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

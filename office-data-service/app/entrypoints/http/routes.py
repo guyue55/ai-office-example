@@ -21,7 +21,15 @@ from app.modules.access.authentication import Principal
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import EmployeeUpdate, GrantUpdate, Links, Named, NewEmployee
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
-from app.modules.agent.schemas import RunCancel, RunDecision, RunList, RunStart
+from app.modules.agent.schemas import (
+    ConversationArchive,
+    ConversationCreate,
+    ConversationList,
+    RunCancel,
+    RunDecision,
+    RunList,
+    RunStart,
+)
 from app.modules.data.change_contracts import DataApplyInput, DataPreviewInput
 from app.modules.data.schemas import (
     ConfirmInput,
@@ -43,6 +51,12 @@ class SessionQuery(SessionList):
 
 
 class AgentQuery(RunList):
+    model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
+    limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 10
+    page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
+
+
+class ConversationQuery(ConversationList):
     model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
     limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 10
     page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
@@ -84,6 +98,8 @@ def router(application, *, registry, prefix="/api/v2"):
     async def invoke(request, principal, operation, payload=None):
         allowed = {
             "agent.list": set(RunList.model_fields),
+            "agent.conversation.list": set(ConversationList.model_fields),
+            "agent.conversation.get": {"before", "limit"},
             "session.list": set(SessionList.model_fields),
             "access.list": {"after", "limit", "q", "page", "actor", "action", "since", "until"},
             "account.search": {"q"},
@@ -133,6 +149,45 @@ def router(application, *, registry, prefix="/api/v2"):
         )
 
     agent = group(tags=["智能助手"])
+
+    @agent.post(
+        "/agent/conversations",
+        status_code=201,
+        response_model=OPERATION_OUTPUTS["agent.conversation.create"],
+    )
+    async def conversation_create(request: Request, args: ConversationCreate, principal: Actor):
+        return await invoke(request, principal, "agent.conversation.create", args.model_dump())
+
+    @agent.get("/agent/conversations", response_model=OPERATION_OUTPUTS["agent.conversation.list"])
+    async def conversation_list(
+        request: Request, principal: Actor, args: Annotated[ConversationQuery, Query()]
+    ):
+        return await invoke(request, principal, "agent.conversation.list", args.model_dump())
+
+    @agent.get(
+        "/agent/conversations/{identifier}",
+        response_model=OPERATION_OUTPUTS["agent.conversation.get"],
+    )
+    async def conversation_get(
+        request: Request,
+        principal: Actor,
+        identifier: str,
+        before: str = "",
+        limit: Annotated[int, Query(ge=1, le=20)] = 10,
+    ):
+        return await invoke(
+            request,
+            principal,
+            "agent.conversation.get",
+            {"identifier": identifier, "before": before, "limit": limit},
+        )
+
+    @agent.post(
+        "/agent/conversations/archive",
+        response_model=OPERATION_OUTPUTS["agent.conversation.archive"],
+    )
+    async def conversation_archive(request: Request, args: ConversationArchive, principal: Actor):
+        return await invoke(request, principal, "agent.conversation.archive", args.model_dump())
 
     @agent.get("/agent/capabilities", response_model=OPERATION_OUTPUTS["agent.capabilities"])
     async def assistant_capabilities(request: Request, principal: Actor):

@@ -9,6 +9,10 @@ COMMAND_GROUPS = (
     (
         "服务器智能助手",
         (
+            ("assistant-conversation-create", "创建本人工作会话"),
+            ("assistant-conversations", "分页查看活动或归档会话"),
+            ("assistant-conversation", "读取会话和有界历史"),
+            ("assistant-conversation-archive", "归档或恢复会话，保留执行证据"),
             ("assistant-capabilities", "查看服务器AI配置与可用状态"),
             ("assistant-start", "启动一次服务器任务，保留原请求标识"),
             ("assistant-runs", "查询本人任务历史与执行状态"),

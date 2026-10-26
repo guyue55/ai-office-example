@@ -66,7 +66,7 @@ docker build --build-arg OFFICE_AGENT=1 -f deploy/Dockerfile -t office-agent:loc
 
 确认请求只接受任务ID、当前版本、服务器生成的proposal_id和布尔决定。旧版本、重复决定、他人任务、伪造提案与额外模型历史被拒绝。CLI/MCP宿主仍须取得真人的明确同意，不能从模型文字推断批准；协议本身不证明键盘前坐着真人。
 
-任务状态为等待、运行、待确认、结束、失败、停止、中断、结果待核实。模型文字是解释，`receipts`才是实际操作回执。确认等待占用任务总时限（默认120秒）；首版没有跨天会话、后台无限等待或自动重启续跑。
+任务状态为等待、运行、待确认、结束、失败、停止、中断、结果待核实。模型文字是解释，`receipts`才是实际操作回执。确认等待占用任务总时限（默认120秒）；当前支持持久会话和有界续问，但活动任务没有后台无限等待或自动重启续跑。
 
 取消不撤回已提交事务。在途写入丢失回执或进程故障时保守标为结果待核实，不自动重放。重启遗留活动任务标为中断；需要人工核对原数据和审计后另发任务。业务审计附可信`agent_run_id`，任务记录保留实际结果，不保存OAuth、供应商密钥或完整模型内部历史。
 
@@ -89,3 +89,30 @@ uv run python scripts/package_client_setup.py --artifact-dir /path/to/candidate 
 ```
 
 不加--with-agent保持普通员工包；添加时验证完整候选的Agent声明、来源及摘要，按独立Agent锁文件导出带哈希依赖，带入第三份轮包与agent.example.toml。服务器助手使用者无需安装本机模型运行时。员工按原setup.sh／setup.ps1安装，只写本交付目录的虚拟环境；安装结果agent_runtime记录本地能力，实际模型配置和用户登录另行完成。普通包和Agent包使用不同目录，不能原地静默切换。
+
+## 全局助手与会话（Agent分支新增）
+
+控制台顶栏入口打开非模态侧栏；窗口宽度小于1200时进入`/console/assistant/workspace`全页。侧栏／全页共用同一界面与服务端会话。原`/console/assistant`和任务详情保留为独立任务记录及兼容入口。普通服务未安装或未配置Agent时显示未启用，不影响原工作台。
+
+发送第一条消息时创建会话；后续消息使用该会话。会话内一次一个活动任务；归档前需结束或停止活动任务，恢复后可继续。当前最多100个未归档会话；列表默认10项，可继续加载或通过接口使用有界数字分页。轮次默认最近10项，可加载更早消息，界面最多50轮并明确提示；这是有界展示，不表示已读取全部。会话单页最多500000字节；单轮超过128000字节、4000节点或24层时明确标记detail_truncated，界面提供独立详情链接，不能在未展示的预览上批准。
+
+页面标签仅提供讨论位置，支持仪表盘、人员、角色、权限集、权限、审计、授权及助手；没有自动上传整页、表格或选中对象。可取消关联；每次发送固定页面标签，不随正在处理时的导航变化。草稿仅在当前页面内存，离开页面有未发送内容时浏览器会提示，未发送草稿不写浏览器存储。
+
+关闭／收起不停止服务器任务；“停止任务”单独确认。刷新恢复会话ID，审批仍从服务器重读，不从浏览器恢复批准。等待真人决定仍受原任务时限约束。无回执写入不自动重发；审批冲突刷新后需重新核对。发送失败留存当前页面的稳定request_key，手动重试同一内容复用它；跨刷新后先看已受理任务，不盲目重发。
+
+服务端最多读取前三个已结束的同指纹轮次（保留失败／中断／结果未知标记），以最多6000字节且不超过输入预算一半的文本参考补充本轮；不回放模型工具历史或审批。当前员工有效权限／安全纪元变化时，旧正文与回执隐藏，活动会话任务在下次工具／模型前阻断；无关员工权限调整不影响当前会话。该指纹基于当前基座动作权限及tokens_after；未来若新增项目级数据范围，必须把范围变化纳入此边界，不能仅增加前端筛选。
+
+自动更新只查询状态，单次一个请求，活动任务2秒起、失败退避最多15秒；连续4次失败或120次读取后暂停，隐藏标签／收起停止定时，重新加载可继续。没有SSE、WebSocket或逐字流式。源代码只增加共用原生JS／CSS组件，无外部CDN、NPM运行依赖或云会话服务。
+
+### 会话API与多端入口
+
+| 操作 | HTTP | SDK | CLI／MCP |
+|---|---|---|---|
+| 创建 | POST `/api/v2/agent/conversations` | assistant_conversation_create | assistant-conversation-create／create_assistant_conversation |
+| 列表 | GET同上 | assistant_conversations | assistant-conversations／list_assistant_conversations |
+| 详情 | GET `/api/v2/agent/conversations/{id}` | assistant_conversation | assistant-conversation／get_assistant_conversation |
+| 归档／恢复 | POST `/api/v2/agent/conversations/archive` | assistant_conversation_archive | assistant-conversation-archive／archive_assistant_conversation |
+
+`assistant-start`文件可选添加conversation_id和context_page，原prompt／request_key用法保留。API／MCP仍拒绝额外message_history等字段。本人会话权限沿用agent.run，不能读取其他员工会话。新增Alembic0013向前升级，无会话旧任务保持可查；不要直接降级删表。会话归档保留执行与审计证据。
+
+实现依据、任务范围与验收记录见[工作区计划](AGENT_WORKSPACE_PLAN.md)。

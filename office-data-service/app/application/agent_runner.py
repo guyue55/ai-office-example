@@ -6,6 +6,7 @@ from importlib import import_module
 
 from sqlalchemy import select
 
+from app.application.agent_history import ConversationContext
 from app.application.agent_tools import ApplicationToolBridge
 from app.common.security_context import agent_run_context
 from app.infrastructure.models import AgentRun, Audit
@@ -158,9 +159,11 @@ class AgentRunner:
                 await self.finish(identifier, "cancelled")
                 return
             await self.update(identifier, status="running")
+            history = ConversationContext(self.application, row, authenticate)
+            prompt = await history.prompt(self.config.limits.input_bytes)
             bridge = ApplicationToolBridge(
                 self.application,
-                authenticate,
+                history.principal,
                 observer=lambda m, p, r: self.observe(identifier, m, p, r),
             )
             gateway = self.gateway_type(bridge, self.config.limits)
@@ -168,7 +171,7 @@ class AgentRunner:
                 result = await self.core.run_with_gateway(
                     model,
                     gateway,
-                    row.prompt,
+                    prompt,
                     approve=lambda proposal: self.approve(identifier, proposal),
                 )
             status = "completed" if result.status == "completed" else "failed"

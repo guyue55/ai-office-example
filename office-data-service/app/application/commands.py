@@ -16,7 +16,16 @@ from app.modules.access.account_schemas import (
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import ACCESS_INPUTS, normalize_access_command
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
-from app.modules.agent.schemas import RunCancel, RunDecision, RunList, RunStart
+from app.modules.agent.schemas import (
+    ConversationArchive,
+    ConversationCreate,
+    ConversationGet,
+    ConversationList,
+    RunCancel,
+    RunDecision,
+    RunList,
+    RunStart,
+)
 from app.modules.data.change_contracts import DataApplyInput, DataPreviewInput
 from app.modules.data.schemas import (
     ArchiveInput,
@@ -44,6 +53,10 @@ class UpdateInput[T](IdentifierInput):
 
 
 OPERATION_INPUTS: dict[str, type[BaseModel]] = {
+    "agent.conversation.create": ConversationCreate,
+    "agent.conversation.list": ConversationList,
+    "agent.conversation.get": ConversationGet,
+    "agent.conversation.archive": ConversationArchive,
     "agent.capabilities": EmptyInput,
     "agent.start": RunStart,
     "agent.list": RunList,

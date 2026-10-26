@@ -149,22 +149,35 @@
       "tests": [
         "test_agent_web.py"
       ]
+    },
+    {
+      "template": "assistant_workspace.html",
+      "coverage": "独立HTTP浏览器侧栏／会话／审批及跨页验证",
+      "tests": [
+        "test_assistant_workspace_browser.py",
+        "test_assistant_workspace_web.py"
+      ]
     }
   ],
   "components": [
-    "base.html",
-    "_account_menu.html",
-    "_filters.html",
-    "pagination.html",
-    "_permissions.html",
-    "_workspace.html",
-    "_interactions.html",
     "_access_flow.html",
+    "_account_menu.html",
+    "_assistant_panel.html",
+    "_filters.html",
+    "_interactions.html",
+    "_permissions.html",
     "_search.html",
-    "form-state.js",
-    "workspace.js",
-    "interactions.js",
+    "_workspace.html",
     "account-menu.js",
-    "styles.css"
+    "assistant-shell.js",
+    "assistant-transport.js",
+    "assistant-view.js",
+    "assistant.css",
+    "base.html",
+    "form-state.js",
+    "interactions.js",
+    "pagination.html",
+    "styles.css",
+    "workspace.js"
   ]
 }

@@ -213,14 +213,35 @@ class OfficeClient:
     def capabilities(self):
         return self.request("GET", "/api/v2/capabilities")
 
+    def assistant_conversation_create(self, title="新会话"):
+        return self.request("POST", "/api/v2/agent/conversations", json={"title": title})
+
+    def assistant_conversations(self, **params):
+        return self.request("GET", "/api/v2/agent/conversations", params=params)
+
+    def assistant_conversation(self, identifier, **params):
+        return self.request(
+            "GET", f"/api/v2/agent/conversations/{quote(identifier, safe='')}", params=params
+        )
+
+    def assistant_conversation_archive(self, identifier, version, archived):
+        return self.request(
+            "POST",
+            "/api/v2/agent/conversations/archive",
+            json={"identifier": identifier, "version": version, "archived": archived},
+        )
+
     def assistant_capabilities(self):
         return self.request("GET", "/api/v2/agent/capabilities")
 
-    def assistant_start(self, prompt, request_key):
+    def assistant_start(self, prompt, request_key, *, conversation_id=None, context_page=""):
         """启动服务器模型任务；request_key重试须不变，受理不等于完成。"""
-        return self.request(
-            "POST", "/api/v2/agent/runs", json={"prompt": prompt, "request_key": request_key}
-        )
+        payload = {"prompt": prompt, "request_key": request_key}
+        if conversation_id is not None:
+            payload.update(conversation_id=conversation_id, context_page=context_page)
+        elif context_page:
+            payload["context_page"] = context_page
+        return self.request("POST", "/api/v2/agent/runs", json=payload)
 
     def assistant_runs(self, **params):
         return self.request("GET", "/api/v2/agent/runs", params=params)

@@ -264,6 +264,11 @@ class AgentRun(Entity):
         ),
         Index("ix_agent_run_owner_created", "owner_id", "created_at", "id"),
     )
+    conversation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("agent_conversation.id"), nullable=True, index=True
+    )
+    context_page: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    access_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
     owner_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
     request_key: Mapped[str] = mapped_column(String(100))
     request_digest: Mapped[str] = mapped_column(String(64))
@@ -275,5 +280,18 @@ class AgentRun(Entity):
     write_inflight: Mapped[bool] = mapped_column(Boolean, default=False)
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     trace_id: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AgentConversation(Entity):
+    """本人会话；每轮消息和回执沿用AgentRun，不建立第二份执行事实。"""
+
+    __tablename__ = "agent_conversation"
+    __table_args__ = (Index("ix_agent_conversation_owner_updated", "owner_id", "updated_at", "id"),)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    title: Mapped[str] = mapped_column(String(100))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

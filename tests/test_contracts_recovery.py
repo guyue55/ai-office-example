@@ -195,7 +195,7 @@ def test_all_business_http_routes_publish_output_models():
         for method, operation in path.items()
         if method in {"get", "post", "patch", "put", "delete"}
     ]
-    assert len(operations) == 47
+    assert len(operations) == 51  # 新增本人会话创建、列表、详情及归档四个入口。
     assert "post" in schema["paths"]["/api/v2/data/aggregate"]
     assert all(
         operation["responses"][

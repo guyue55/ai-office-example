@@ -46,7 +46,7 @@
 
 依赖方向由 scripts/check_architecture.py 核查。业务模块不反向依赖 application 或传输入口；通用层不依赖业务／基础设施／传输层。新增入口必须复用服务端权限、审计和操作注册，不能建立旁路。
 
-**Agent分支范围更新（2026-10-25）：用户已明确要求服务端和员工端都支持AI，整体升级为智能体基座。** 采用共享运行时、员工端SDK适配、服务端原应用异步适配及外部HTTP／MCP接入；具体设计及真实完成状态见[总体方案](docs/AGENT_PLATFORM_DESIGN.md)和[执行计划](docs/AGENT_PLAN.md)。服务端Agent和Web助手已实现，运行配置、单进程约束与验收边界见[运行指南](docs/AGENT_OPERATIONS.md)，不能将可选依赖安装当成能力已上线。客户端和模型都不直连数据库；模型调用不得替代原权限、版本、幂等和审计。
+**Agent分支范围更新（2026-10-25）：用户已明确要求服务端和员工端都支持AI，整体升级为智能体基座。** 采用共享运行时、员工端SDK适配、服务端原应用异步适配及外部HTTP／MCP接入；具体设计及真实完成状态见[总体方案](docs/AGENT_PLATFORM_DESIGN.md)和[执行计划](docs/AGENT_PLAN.md)。服务端Agent和Web助手已实现；全局侧栏／持久会话见[工作区计划](docs/AGENT_WORKSPACE_PLAN.md)，须维护服务端历史、本人有效权限指纹和单会话串行，不允许浏览器上传模型历史或自批。未来增加项目级数据范围或安全维度时，必须同时扩展Access.authorization_fingerprint与历史可见性，不能仅改前端筛选。运行配置、单进程约束与验收边界见[运行指南](docs/AGENT_OPERATIONS.md)，不能将可选依赖安装当成能力已上线。客户端和模型都不直连数据库；模型调用不得替代原权限、版本、幂等和审计。
 
 FastAPI 请求链路保持异步：复用现有异步数据库、HTTP 和生命周期管理，不在事件循环执行阻塞 I/O 或重计算；必要的阻塞操作应明确隔离并验证取消、超时和资源释放。不能跨并发任务共享同一个有状态数据库会话。
 
@@ -136,7 +136,7 @@ uv sync --frozen
 | 任务 | 执行顺序 |
 |---|---|
 | 日常修改 | 核对仓库／分支与已有修改 → 相关门禁 → 文档同步 → 明确文件提交；受保护 main 走 PR |
-| 可选Agent变更 | 先读AGENT_PLAN与AGENT_OPERATIONS；共享引擎及三协议HTTP回归／内部桥／隔离PG／浏览器，普通与Agent镜像分别核验；新版本同步两份锁文件和Agent模块版本 |
+| 可选Agent变更 | 先读AGENT_PLAN与AGENT_OPERATIONS；共享引擎及三协议HTTP回归／内部桥／隔离PG／浏览器；会话变更额外检查test_agent_conversations_postgres及test_assistant_workspace_browser，普通与Agent镜像分别核验；新版本同步两份锁文件和Agent模块版本 |
 | 模型、业务码、数据库变更 | 真实模型／注册表 → 生成并审核契约 → 配套迁移与兼容验证，不手改生成指纹 |
 | 发版准备 | 确定版本／范围 → 同步 VERSION、工作区包、锁文件、OpenAPI 与发布说明 → 最终源码提交及 CI |
 | 候选构建 | 显式传当前版本 Tag 参数与新输出目录 → 核对两个 manifest 的 SHA → 摘要、许可与隔离安装验收 |
