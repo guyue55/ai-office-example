@@ -217,7 +217,7 @@
     resize.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();setWidth(event.key==='Home'?360:event.key==='End'?640:width+(event.key==='ArrowLeft'?20:-20));save();}});
     window.addEventListener('resize',()=>setWidth(width));
   }
-  function open(){if(!full&&innerWidth<1200){location.assign('/console/assistant/workspace');return;}root.hidden=false;document.body.classList.toggle('assistant-open',!full);launch?.setAttribute('aria-expanded','true');save();bootstrap();sizeInput();input.focus();}
+  function open(){root.hidden=false;document.body.classList.toggle('assistant-open',!full);launch?.setAttribute('aria-expanded','true');save();bootstrap();sizeInput();input.focus();}
   function close(){if(full)return;ui.closePopovers();clearPoll();document.documentElement.classList.remove('assistant-preopen');root.hidden=true;document.body.classList.remove('assistant-open');launch?.setAttribute('aria-expanded','false');save();launch?.focus();}
   launch?.addEventListener('click',()=>root.hidden?open():close());$('[data-assistant-close]').addEventListener('click',close);
   document.addEventListener('keydown',event=>{if(!event.defaultPrevented&&event.key==='Escape'&&root.contains(document.activeElement)&&!document.querySelector('dialog[open]')&&!root.hidden&&!full){event.preventDefault();close();}});

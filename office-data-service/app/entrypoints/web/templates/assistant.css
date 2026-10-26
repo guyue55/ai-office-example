@@ -1,5 +1,11 @@
 /* 共用侧栏／工作区；密度服从阅读，审批和未知结果不收进轻量动作。 */
-.assistant-launchbar {display:flex;justify-content:flex-end;margin-bottom:12px}
+/* 入口固定在视口角落，不随业务页滚走；打开后由面板自己的收起按钮接管。 */
+.assistant-launchbar {position:fixed;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));z-index:29}
+.assistant-launch {display:flex;align-items:center;gap:9px;min-height:48px;padding:12px 18px;border:1px solid var(--ink);border-radius:28px;background:var(--ink);color:#fff;box-shadow:0 6px 22px #172b3a26;cursor:pointer;transition:box-shadow .18s}
+.assistant-launch:hover {box-shadow:0 8px 26px #172b3a40}
+.assistant-launch:focus-visible {outline:3px solid var(--focus-default);outline-offset:3px}
+body.assistant-open .assistant-launchbar {visibility:hidden}
+@media (max-width:1200px) {.assistant-resize {display:none}}
 .assistant-panel {display:flex;flex-direction:column;position:fixed;right:0;top:0;bottom:0;width:var(--assistant-width,420px);background:#fff;border-left:1px solid var(--line);z-index:30;color:var(--ink)}
 .assistant-panel[hidden],.assistant-panel [hidden] {display:none!important}
 body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-width,420px)}

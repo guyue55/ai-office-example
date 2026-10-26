@@ -38,7 +38,7 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 {% include '_account_menu.html' %}{% endif %}
 </nav>
 <main id="main-content" tabindex="-1" {% if request.url.path == '/console/assistant/workspace' %}class="assistant-workspace-main"{% endif %}>
-{% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}<div class="assistant-launchbar"><button type="button" class="secondary" id="assistant-launch" aria-controls="assistant-panel" aria-expanded="false">✦ 智能助手</button></div>{% endif %}
+{% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}<div class="assistant-launchbar"><button type="button" class="assistant-launch" id="assistant-launch" aria-label="打开智能助手" aria-controls="assistant-panel" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 18 3 21V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3Z"/><path d="M8 8h8M8 12h5"/></svg><span>智能助手</span></button></div>{% endif %}
 {% if demo_mode %}<p class="hint" role="note">局域网 HTTP 验收模式 · 传输未加密，请勿用于正式业务。</p>{% endif %}
 {% if notice %}
 <div class="notice" role="status">{{ notice }}</div>{% endif %}

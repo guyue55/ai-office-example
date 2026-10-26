@@ -69,7 +69,7 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(base + "/console/dashboard")
-                page.get_by_role("button", name="✦ 智能助手", exact=True).click()
+                page.get_by_role("button", name="打开智能助手", exact=True).click()
                 expect(page.locator("#assistant-panel")).to_be_visible()
                 expect(history(page).locator("[data-conversation]")).to_have_count(1)
                 select_conversation(page, conversation["id"])
@@ -110,6 +110,26 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 expect(page.locator("#assistant-topic")).to_have_text(conversation["title"])
                 expect(page.locator('[data-run="task-one"]')).to_be_visible()
                 expect(page.locator("#assistant-messages > .empty")).to_have_count(0)
+                # 业务页入口固定在右下角；窄屏打开同一侧栏，不再跳转工作区。
+                page.get_by_role("button", name="收起智能助手", exact=True).click()
+                launcher = page.locator("#assistant-launch")
+                assert (
+                    launcher.evaluate("el => getComputedStyle(el.parentElement).position")
+                    == "fixed"
+                )
+                for viewport in [{"width": 1024, "height": 800}, {"width": 390, "height": 700}]:
+                    page.set_viewport_size(viewport)
+                    bounds = launcher.bounding_box()
+                    assert bounds and bounds["y"] + bounds["height"] <= viewport["height"]
+                    assert bounds["x"] + bounds["width"] <= viewport["width"]
+                    launcher.click()
+                    expect(page).to_have_url(base + "/console/dashboard")
+                    expect(page.locator("#assistant-panel")).to_be_visible()
+                    expect(page.locator("[data-assistant-close]")).to_be_visible()
+                    page.get_by_role("button", name="收起智能助手", exact=True).click()
+                    expect(launcher).to_be_focused()
+                page.set_viewport_size({"width": 1440, "height": 1000})
+                launcher.click()
                 page.get_by_role("button", name="更多会话操作", exact=True).click()
                 page.get_by_role("link", name="展开工作区", exact=True).click()
                 expect(page).to_have_url(base + "/console/assistant/workspace")
