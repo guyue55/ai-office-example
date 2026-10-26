@@ -41,3 +41,5 @@
 这两项是共享交互状态问题，使用现有组件修复，不引入新前端框架。依据继续采用[WCAG悬停／聚焦内容](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)、[WAI Tooltip](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/)与[对话框焦点指导](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)，非模态浮层仍允许离开，不误加模态焦点陷阱。
 
 本轮浏览器三项通过，覆盖新增键盘／提示状态转换，并保留原审批冲突、断网、权限撤销、草稿、Markdown及窄屏断言。真人读屏、全站颜色／全部目标尺寸、Windows与实际缩放仍是独立验收项；不能把局部修复称为全面合规或完整安全审计。
+
+后续独立复核确认的当前任务通知与Tooltip对象归属问题，实施设计、回归矩阵与证据统一维护在[状态交互计划](AGENT_CHAT_STATE_PLAN.md)，不将此前通过的局部用例当作已覆盖所有交互组合。

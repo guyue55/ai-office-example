@@ -96,7 +96,7 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 expect(other.locator("#action-confirm")).to_be_visible()
                 page.get_by_role("button", name="批准本次操作", exact=True).click()
                 page.locator("[data-confirm-accept]").click()
-                expect(page.locator("#assistant-feedback")).to_contain_text("任务正在处理")
+                expect(page.locator("#assistant-feedback")).to_contain_text("决定已记录")
                 other.locator("[data-confirm-accept]").click()
                 expect(other.locator("#assistant-feedback")).to_contain_text("状态已变化")
                 assert turn["pending"]["decision"] is True
@@ -130,7 +130,7 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                     result={"explanation": "合成回复", "receipts": []},
                 )
                 sync(page)
-                expect(page.locator("#assistant-feedback")).to_contain_text("已同步")
+                expect(page.locator("#assistant-feedback")).to_contain_text("任务已完成")
                 page.get_by_role("button", name="新会话", exact=True).click()
                 page.locator("#assistant-input").fill("合成的第二个工作要求")
                 page.get_by_role("button", name="发送", exact=True).click()
@@ -147,7 +147,7 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 expect(page.get_by_role("button", name="停止任务", exact=True)).to_be_visible()
                 page.get_by_role("button", name="停止任务", exact=True).click()
                 page.locator("[data-confirm-accept]").click()
-                expect(page.locator("#assistant-feedback")).to_contain_text("已同步")
+                expect(page.locator("#assistant-feedback")).to_contain_text("任务已停止")
                 assert any(name == "agent.cancel" for name, _ in calls)
                 turn.update(status="running", cancel_requested=False)
                 sync(page)
@@ -349,6 +349,53 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                     "node=>node.selectionEnd===node.value.length"
                 )
                 page.get_by_role("button", name="关闭详情", exact=True).click()
+                # 状态通知使用当前任务权威状态；重复同步不重新写live region。
+                page.evaluate("""() => {
+                    window.feedbackWrites=0;
+                    new MutationObserver(()=>window.feedbackWrites++).observe(document.querySelector('#assistant-feedback'),{childList:true,characterData:true,subtree:true});
+                }""")
+                turn.update(status="running", write_inflight=True)
+                sync(page)
+                expect(page.locator("#assistant-feedback")).to_contain_text("正在执行已批准操作")
+                turn["cancel_requested"] = True
+                sync(page)
+                expect(page.locator("#assistant-feedback")).to_contain_text("已请求停止")
+                turn.update(write_inflight=False, cancel_requested=False)
+                for status, text in (
+                    ("queued", "任务已排队"),
+                    ("running", "任务正在处理"),
+                    ("failed", "本轮未完成"),
+                    ("interrupted", "任务已中断"),
+                    ("cancelled", "任务已停止"),
+                    ("outcome_unknown", "写入结果待核实"),
+                    ("completed", "任务已完成"),
+                ):
+                    turn.update(status=status, version=turn["version"] + 1)
+                    sync(page)
+                    expect(page.locator("#assistant-feedback")).to_contain_text(text)
+                    before = page.evaluate("feedbackWrites")
+                    sync(page)
+                    page.wait_for_function(
+                        "document.querySelector('#assistant-search button').disabled===false"
+                    )
+                    assert page.evaluate("feedbackWrites") == before
+                turn["result"]["outcome_unknown"] = True
+                sync(page)
+                expect(page.locator("#assistant-feedback")).to_contain_text("写入结果待核实")
+                del turn["result"]["outcome_unknown"]
+                sync(page)
+                expect(page.locator("#assistant-feedback")).to_contain_text("任务已完成")
+                previous["status"] = "failed"
+                turn["id"] = "task-two"
+                before = page.evaluate("feedbackWrites")
+                sync(page)
+                expect(page.locator("[data-run=task-two]")).to_be_attached()
+                expect(page.locator("#assistant-feedback")).to_contain_text("任务已完成")
+                assert page.evaluate("feedbackWrites") > before
+                previous["status"] = "completed"
+                turn["id"] = "task-one"
+                select_conversation(page, "conversation-two")
+                select_conversation(page, conversation["id"])
                 field = page.locator("#assistant-input")
                 field.fill("第一个会话的未发草稿")
                 select_conversation(page, "conversation-two")

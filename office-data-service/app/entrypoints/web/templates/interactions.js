@@ -8,7 +8,8 @@
   if (!dialog?.showModal) return;
   document.documentElement.classList.add('ui-enhanced');
   let local, tipTarget, tipTimer, tipHideTimer, lastFocusKey, confirmationPending = false;
-  let dismissedTip = null, pendingTip = null;
+  let focusTip = null, hoverTip = null, overTip = false, pendingTip = null;
+  const dismissedTips = new WeakSet();
   const icons = {
     account: ['M3 5h18v14H3Z','M7 9h3v3H7Z','M14 9h4M14 13h4M7 16h11'],
     eye: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12','M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6'],
@@ -128,48 +129,59 @@
     tipTarget = null;
     if (tip.matches(':popover-open')) tip.hidePopover();
   }
-  function showTip(target, keyboard = false) {
-    // 触屏不依赖悬停；接入键盘时仍须展示聚焦提示。
-    if (!target?.dataset.tooltip || target===dismissedTip || target.disabled || (!keyboard && matchMedia('(hover: none)').matches)) return;
-    hideTip();
-    pendingTip = target;
-    tipTimer = setTimeout(() => {
-      pendingTip = null;
-      if (!target.isConnected || target.disabled) return;
-      tipTarget = target; tip.textContent = target.dataset.tooltip;
-      if(target.getAttribute('aria-label')!==target.dataset.tooltip)target.setAttribute('aria-describedby', [target.getAttribute('aria-describedby'), tip.id].filter(Boolean).join(' '));
-      if (tip.showPopover) tip.showPopover();
-      const rect = target.getBoundingClientRect();
-      const width = tip.offsetWidth, height = tip.offsetHeight;
-      tip.style.left = Math.max(8, Math.min(innerWidth-width-8, rect.x+rect.width/2-width/2)) + 'px';
-      tip.style.top = (rect.top > height+12 ? rect.top-height-8 : rect.bottom+8) + 'px';
-    }, 150);
+  function validTip(target) {
+    return target?.dataset.tooltip && target.isConnected && !target.disabled && !dismissedTips.has(target) && !!target.getClientRects().length;
   }
-  document.addEventListener('pointerover', event => {
-    const target = event.target.closest('[data-tooltip]');
-    if (target && !target.contains(event.relatedTarget)) {dismissedTip=null;showTip(target);}
+  function placeTip(target) {
+    const rect = target.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(innerWidth-width-8, rect.x+rect.width/2-width/2)) + 'px';
+    tip.style.top = Math.max(8,Math.min(innerHeight-height-8,rect.top > height+12 ? rect.top-height-8 : rect.bottom+8)) + 'px';
+  }
+  function syncTip() {
+    clearTimeout(tipHideTimer);
+    // 悬停提示自身时保持对应对象；否则新指针意图优先，离开后回到有效焦点对象。
+    const target = overTip && validTip(tipTarget) ? tipTarget : validTip(hoverTip) ? hoverTip : validTip(focusTip) ? focusTip : null;
+    if (!target) {hideTip();return;}
+    const rect=target.getBoundingClientRect();
+    if (rect.bottom<0 || rect.top>innerHeight) {hideTip();return;}
+    if (tipTarget===target && tip.matches(':popover-open')) {placeTip(target);return;}
+    if (pendingTip===target) return;
+    hideTip();pendingTip=target;
+    tipTimer=setTimeout(()=>{
+      pendingTip=null;if(!validTip(target))return;
+      tipTarget=target;tip.textContent=target.dataset.tooltip;
+      if(target.getAttribute('aria-label')!==target.dataset.tooltip)target.setAttribute('aria-describedby',[target.getAttribute('aria-describedby'),tip.id].filter(Boolean).join(' '));
+      if(tip.showPopover)tip.showPopover();placeTip(target);
+    },150);
+  }
+  document.addEventListener('pointerover',event=>{
+    if(matchMedia('(hover: none)').matches)return;
+    const target=event.target.closest('[data-tooltip]');
+    if(target&&!target.contains(event.relatedTarget)){hoverTip=target;overTip=false;dismissedTips.delete(target);syncTip();}
   });
-  document.addEventListener('pointerout', event => {
-    const target = event.target.closest('[data-tooltip]');
-    if (target && !target.contains(event.relatedTarget)) tipHideTimer = setTimeout(() => {
-      if (!document.activeElement?.matches('[data-tooltip]')) hideTip();
-    }, 150);
+  document.addEventListener('pointerout',event=>{
+    const target=event.target.closest('[data-tooltip]');
+    if(target&&!target.contains(event.relatedTarget)&&hoverTip===target){hoverTip=null;clearTimeout(tipHideTimer);tipHideTimer=setTimeout(syncTip,150);}
   });
-  tip.addEventListener('pointerenter', () => clearTimeout(tipHideTimer));
-  tip.addEventListener('pointerleave', () => {if (!document.activeElement?.matches('[data-tooltip]')) hideTip();});
-  document.addEventListener('focusin', event => {dismissedTip=null;showTip(event.target.closest('[data-tooltip]'), true);});
-  document.addEventListener('focusout', hideTip);
-  function repositionTip() {
-    const focused = document.activeElement?.closest('[data-tooltip]');
-    hideTip();
-    // 键盘聚焦可能引发浏览器自动滚动；不能因此取消尚未显示的提示。
-    if (focused) {
-      const rect = focused.getBoundingClientRect();
-      if (rect.top >= 0 && rect.bottom <= innerHeight) showTip(focused, true);
+  tip.addEventListener('pointerenter',()=>{overTip=true;clearTimeout(tipHideTimer);});
+  tip.addEventListener('pointerleave',()=>{overTip=false;syncTip();});
+  document.addEventListener('focusin',event=>{
+    focusTip=event.target.closest('[data-tooltip]');hoverTip=null;overTip=false;
+    if(focusTip)dismissedTips.delete(focusTip);syncTip();
+  });
+  document.addEventListener('focusout',event=>{
+    if(focusTip===event.target.closest('[data-tooltip]'))focusTip=null;
+    syncTip();
+  });
+  function repositionTip(){overTip=false;syncTip();}
+  window.addEventListener('scroll',repositionTip,true);window.addEventListener('resize',repositionTip);
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&(tipTarget||pendingTip)){
+      // 同次交互的焦点／悬停均抑制，避免滚动时退回另一个提示而重新弹出。
+      [tipTarget,pendingTip,focusTip,hoverTip].filter(Boolean).forEach(target=>dismissedTips.add(target));
+      overTip=false;hideTip();event.preventDefault();event.stopPropagation();
     }
-  }
-  window.addEventListener('scroll', repositionTip, true); window.addEventListener('resize', repositionTip);
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && (tipTarget||pendingTip)) { dismissedTip=tipTarget||pendingTip;hideTip(); event.preventDefault(); event.stopPropagation(); } }, true);
+  },true);
   // 所有站内确认复用同一组件；重复点击不替换仍未完成的确认。
   function confirm(message, options = {}) {
     const box = document.getElementById('action-confirm');

@@ -43,6 +43,7 @@ uv run pytest -m 'not live' -q
 ```sh
 OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_conversations_postgres.py tests/test_agent_records_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_postgres_readiness.py -q
 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_assistant_workspace_browser.py tests/test_agent_browser.py -q
+OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_shared_tooltip_browser.py -q
 OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_assistant_browser_postgres.py -q
 ```
 

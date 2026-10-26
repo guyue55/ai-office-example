@@ -12,7 +12,7 @@
   const pages={dashboard:'仪表盘',employees:'人员管理',roles:'角色','permission-sets':'权限集',permissions:'权限目录',audit:'审计','client-authorizations':'客户端授权',assistant:'智能助手'};
   const path=location.pathname.split('/')[2],page=Object.hasOwn(pages,path)?path:'';
   const state={id:'',conversation:null,turns:[],conversations:new Map(),next:'',listNext:'',ready:false,loading:false,busy:false,failures:0,polls:0,timer:null,blocked:false,version:0,epoch:'',intent:null,actionError:''};
-  let width=420,followLatest=true;
+  let width=420,followLatest=true,lastAnnouncement='';
   try{state.id=JSON.parse(sessionStorage.getItem(storeKey)||'{}').id||'';}catch(_){}
   ui.decorateIcon($('[data-assistant-menu]'),'more','更多会话操作');
   ui.decorateIcon($('[data-assistant-close]'),'collapse','收起智能助手');
@@ -23,9 +23,19 @@
   const historyPopup=ui.floating($('[data-assistant-history]'),$('#assistant-history-panel'),{initialFocus:()=>query});
   const optionsPopup=ui.floating($('[data-assistant-menu]'),$('#assistant-options-panel'));
   function save(){try{sessionStorage.setItem(storeKey,JSON.stringify({id:state.id,open:full||!root.hidden,width}));}catch(_){}}
-  function say(text,{visible=false,error=false,retry=false}={}){
-    if(feedback.textContent!==text)feedback.textContent=text;
+  function say(text,{visible=false,error=false,retry=false,key=''}={}){
+    if(feedback.textContent!==text||key&&key!==lastAnnouncement)feedback.replaceChildren(document.createTextNode(text));
+    lastAnnouncement=key;
     feedback.classList.toggle('sr-only',!visible);feedback.classList.toggle('is-error',error);reconnect.hidden=!retry;
+  }
+  function announceTurn(){
+    const turn=state.turns.at(-1);
+    if(!turn){say('会话已同步。');return;}
+    const phase=turn.result?.outcome_unknown?'outcome_unknown':turn.status;
+    const terminal=view.outcomes;
+    const text=terminal[phase]||(turn.cancel_requested?'已请求停止；已完成操作不会撤回。':turn.pending?('decision' in turn.pending?'决定已记录，等待执行回执。':'有操作等待您核对，批准后才会继续。'):turn.write_inflight?'正在执行已批准操作，结果以回执为准。':phase==='queued'?'任务已排队，尚未开始。':'任务正在处理。');
+    const key=[state.id,turn.id,phase,!!turn.cancel_requested,!!turn.write_inflight,turn.pending?.ticket||'',turn.pending?.decision??''].join(':');
+    say(text,{key,visible:!!terminal[phase]&&phase!=='completed',error:phase==='failed'});
   }
   function clearPoll(){clearTimeout(state.timer);state.timer=null;}
   function rememberDraft(){drafts.set(state.id,input.value);}
@@ -122,9 +132,7 @@
       if(state.actionError)say(state.actionError,{visible:true,error:true,retry:true});
       else if(item.history_reset)say('权限配置已变化，旧内容已隐藏；新问题仅使用当前可用信息。',{visible:true});
       else if(item.archived)say('此会话已归档；可从更多会话操作中恢复。',{visible:true});
-      else if(state.turns.some(turn=>turn.pending&&!('decision' in turn.pending)))say('有操作等待您核对，批准后才会继续。');
-      else if(state.turns.some(turn=>view.active.has(turn.status)))say('任务正在处理。');
-      else say('会话已同步。');
+      else announceTurn();
       if(state.polls>=120)say('已暂停自动更新，请重新连接核对任务。',{visible:true,retry:true});
     }catch(error){showError(error);}finally{state.loading=false;updateControls();schedule();}
   }
