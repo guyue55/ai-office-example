@@ -146,3 +146,41 @@ def test_workspace_rejects_untrusted_history_and_external_page_context(web):  # 
         ).status_code
         == 415
     )
+
+
+def test_markdown_asset_is_fixed_local_and_source_verified(web):  # noqa: F811
+    import hashlib
+    import json
+    from pathlib import Path
+
+    root = (
+        Path(__file__).resolve().parents[1]
+        / "office-data-service/app/entrypoints/web/static/markdown-it-15.0.3"
+    )
+    source = json.loads((root / "SOURCE.json").read_text())
+    response = web.client.get("/assets/assistant/markdown-it-15.0.3.js")
+    assert response.status_code == 200
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert hashlib.sha256(response.content).hexdigest() == source["bundle_sha256"]
+    assert (root / "LICENSE").read_text().find("MIT") >= 0
+    assert len(source["bundled_licenses"]) == 5
+    for dependency in source["bundled_licenses"]:
+        assert (root / (dependency["name"] + ".LICENSE")).is_file()
+
+
+def test_rename_rejects_blank_titles_and_bff_passes_search(web):  # noqa: F811
+    import pytest
+    from pydantic import ValidationError
+
+    _conversation, _turn, calls, _state = install_workspace(web)
+    response = web.client.get("/console/assistant-ui/bootstrap", params={"q": "%_合成"})
+    assert response.status_code == 200
+    assert [payload for name, payload in calls if name == "agent.conversation.list"][-1][
+        "q"
+    ] == "%_合成"
+    for title in ["", "  ", "\n"]:
+        with pytest.raises(ValidationError):
+            validate_command(
+                "agent.conversation.rename",
+                {"identifier": "conversation", "version": 1, "title": title},
+            )

@@ -169,6 +169,7 @@
     "_search.html",
     "_workspace.html",
     "account-menu.js",
+    "assistant-content.js",
     "assistant-shell.js",
     "assistant-transport.js",
     "assistant-view.js",

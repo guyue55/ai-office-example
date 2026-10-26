@@ -50,6 +50,7 @@ OPERATION_OUTPUTS: dict[str, type[BaseModel]] = {
     "agent.conversation.list": AccessPage[ConversationSummary],
     "agent.conversation.get": ConversationView,
     "agent.conversation.archive": ConversationSummary,
+    "agent.conversation.rename": ConversationSummary,
     "agent.capabilities": AgentCapability,
     "agent.start": RunView,
     "agent.list": AccessPage[RunSummary],

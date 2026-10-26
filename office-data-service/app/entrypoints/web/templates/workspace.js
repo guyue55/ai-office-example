@@ -238,6 +238,8 @@
     if (select.matches('[data-page-size-form] select[name="limit"]')) select.form.requestSubmit();
   });
   document.addEventListener('submit', async event => {
+    // 已由专属组件处理的表单不再重复导航／提交（如助手异步搜索与发送）。
+    if(event.defaultPrevented)return;
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
     if (form.hasAttribute('data-native-submit') && !form.hasAttribute('data-async-dialog')) {

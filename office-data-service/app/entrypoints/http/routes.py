@@ -25,6 +25,7 @@ from app.modules.agent.schemas import (
     ConversationArchive,
     ConversationCreate,
     ConversationList,
+    ConversationRename,
     RunCancel,
     RunDecision,
     RunList,
@@ -188,6 +189,12 @@ def router(application, *, registry, prefix="/api/v2"):
     )
     async def conversation_archive(request: Request, args: ConversationArchive, principal: Actor):
         return await invoke(request, principal, "agent.conversation.archive", args.model_dump())
+
+    @agent.post(
+        "/agent/conversations/rename", response_model=OPERATION_OUTPUTS["agent.conversation.rename"]
+    )
+    async def conversation_rename(request: Request, args: ConversationRename, principal: Actor):
+        return await invoke(request, principal, "agent.conversation.rename", args.model_dump())
 
     @agent.get("/agent/capabilities", response_model=OPERATION_OUTPUTS["agent.capabilities"])
     async def assistant_capabilities(request: Request, principal: Actor):

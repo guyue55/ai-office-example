@@ -95,3 +95,26 @@ def test_conversation_sdk_and_cli_keep_server_owned_context(tmp_path):
     client.assistant_start.assert_called_once_with(
         "继续查询", "stable-request", conversation_id="conversation", context_page="employees"
     )
+
+
+def test_conversation_rename_and_title_search_adapters():
+    sdk = object.__new__(OfficeClient)
+    sdk.request = Mock(return_value={"id": "conversation"})
+    sdk.assistant_conversation_rename("conversation", 4, "新标题")
+    sdk.request.assert_called_with(
+        "POST",
+        "/api/v2/agent/conversations/rename",
+        json={"identifier": "conversation", "version": 4, "title": "新标题"},
+    )
+    parser, client = build_parser(), Mock()
+    execute(
+        client,
+        parser.parse_args(
+            ["assistant-conversation-rename", "conversation", "--version", "4", "--title", "新标题"]
+        ),
+    )
+    client.assistant_conversation_rename.assert_called_once_with("conversation", 4, "新标题")
+    execute(client, parser.parse_args(["assistant-conversations", "--q", "%_合成"]))
+    client.assistant_conversations.assert_called_once_with(
+        after="", limit=10, archived=False, q="%_合成"
+    )

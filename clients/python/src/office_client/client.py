@@ -231,6 +231,13 @@ class OfficeClient:
             json={"identifier": identifier, "version": version, "archived": archived},
         )
 
+    def assistant_conversation_rename(self, identifier, version, title):
+        return self.request(
+            "POST",
+            "/api/v2/agent/conversations/rename",
+            json={"identifier": identifier, "version": version, "title": title},
+        )
+
     def assistant_capabilities(self):
         return self.request("GET", "/api/v2/agent/capabilities")
 

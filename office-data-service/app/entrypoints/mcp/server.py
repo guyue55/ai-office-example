@@ -463,12 +463,16 @@ def build_mcp(application):
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=True))
     async def list_assistant_conversations(
-        after: str = "", limit: int = 10, page: int | None = None, archived: bool = False
+        after: str = "",
+        limit: int = 10,
+        page: int | None = None,
+        archived: bool = False,
+        q: str = "",
     ) -> AccessPage[ConversationSummary]:
         """分页读取本人活动或归档会话；只读不执行模型。"""
         return await call(
             "agent.conversation.list",
-            {"after": after, "limit": limit, "page": page, "archived": archived},
+            {"after": after, "limit": limit, "page": page, "archived": archived, "q": q},
         )
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=True))
@@ -488,6 +492,16 @@ def build_mcp(application):
         return await call(
             "agent.conversation.archive",
             {"identifier": identifier, "version": version, "archived": archived},
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def rename_assistant_conversation(
+        identifier: str, version: int, title: str
+    ) -> ConversationSummary:
+        """按当前版本重命名本人会话，不改变审批或执行记录。"""
+        return await call(
+            "agent.conversation.rename",
+            {"identifier": identifier, "version": version, "title": title},
         )
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=True))

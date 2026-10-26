@@ -202,7 +202,14 @@
     if (target) target.focus({preventScroll:true});
     lastFocusKey = null; return !!target;
   };
-  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus};
+  function present(title, content) {
+    if(dialog.open)return false;
+    const previous=document.activeElement;
+    heading.textContent=title;holder.replaceChildren(content);
+    dialog.addEventListener('close',()=>{holder.replaceChildren();previous?.isConnected&&previous.focus({preventScroll:true});},{once:true});
+    dialog.showModal();heading.focus();return true;
+  }
+  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present};
   enhance(document);
   let pending = false;
   new MutationObserver(records => {

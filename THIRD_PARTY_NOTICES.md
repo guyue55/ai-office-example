@@ -33,3 +33,8 @@ Gitleaks 是独立执行的密钥扫描工具，当前固定 v8.30.1；构建只
 - [Gitleaks](https://github.com/gitleaks/gitleaks)
 
 对外重新分发源码、wheel、完整安装包和容器是不同交付范围，应按实际交付材料核查，不声称本文已经完成所有二进制分发的合规认证。
+
+
+## 助手本地Markdown解析器
+
+Agent分支服务端包含markdown-it 15.0.3浏览器UMD包（MIT），位于 `office-data-service/app/entrypoints/web/static/markdown-it-15.0.3/`。来源npm固定版本官方tarball，经dist SHA-512校验，SOURCE.json记录来源、完整性和实际包SHA-256；不是从CDN动态加载。该目录保留主LICENSE及包所含entities 8.1.0（BSD-2-Clause）、linkify-it 6.1.0（MIT）、mdurl 2.1.0（MIT）、punycode.js 2.3.1（MIT）、uc.micro 3.0.0（MIT）许可；依赖版本按上游15.0.3的package-lock核对。运行不需要Node或NPM。重新构建或替换此文件时须同步来源、哈希、许可和恶意输入回归，不只替换版本号。

@@ -1,8 +1,8 @@
 /* 助手共用布局：桌面非模态并排，不改变页面滚动条和模态窗口语义。 */
 .assistant-launchbar {display:flex;justify-content:flex-end;margin-bottom:12px}
-.assistant-panel {--assistant-width:420px;display:flex;flex-direction:column;position:fixed;right:0;top:0;bottom:0;width:var(--assistant-width);background:#fff;border-left:1px solid var(--line);z-index:30;box-shadow:-4px 0 18px #172b3a08}
+.assistant-panel {display:flex;flex-direction:column;position:fixed;right:0;top:0;bottom:0;width:var(--assistant-width,420px);background:#fff;border-left:1px solid var(--line);z-index:30;box-shadow:-4px 0 18px #172b3a08}
 .assistant-panel[hidden],.assistant-panel [hidden] {display:none!important}
-body.assistant-open main,.assistant-preopen main {margin-right:420px}
+body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-width,420px)}
 .assistant-header {display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--line);gap:12px}
 .assistant-header h2 {font-size:18px;margin:0}
 .assistant-tools {display:flex;gap:12px;align-items:center;flex-shrink:0}
@@ -40,3 +40,27 @@ body.assistant-open main,.assistant-preopen main {margin-right:420px}
 @media (max-width:1200px) {body.assistant-open main,.assistant-preopen main {margin-right:0}.assistant-panel:not(.assistant-full) {width:min(420px,100%)}body.assistant-open .assistant-panel:not(.assistant-full) {box-shadow:-12px 0 30px #172b3a20}}
 @media (max-width:700px) {.assistant-panel:not(.assistant-full) {width:100%}.assistant-full {height:calc(100dvh - 120px);min-height:420px}.assistant-header {padding:12px 16px}.assistant-sessionbar {padding-inline:10px}.assistant-compose-actions .small {max-width:65%}}
 @media (prefers-reduced-motion:reduce) {.assistant-panel * {scroll-behavior:auto!important}}
+
+.assistant-latest {align-self:center;margin:4px 12px}
+#assistant-input-hint {margin:5px 0;min-height:18px}
+.assistant-composer textarea {resize:none;overflow-y:auto}
+
+.assistant-markdown {white-space:normal;line-height:1.65}
+.assistant-markdown :is(p,ul,ol,blockquote,pre) {margin:8px 0}
+.assistant-markdown :is(h1,h2,h3,h4,h5,h6) {font-size:15px;margin:12px 0 6px}
+.assistant-markdown ul,.assistant-markdown ol {padding-left:24px}
+.assistant-markdown pre {overflow:auto;max-height:300px;padding:10px;background:var(--soft);border-radius:6px;white-space:pre}
+.assistant-markdown code {font-size:12px;background:var(--soft);overflow-wrap:anywhere}
+.assistant-markdown blockquote {border-left:3px solid var(--line);padding-left:12px;color:var(--muted)}
+.assistant-table-scroll {max-width:100%;overflow:auto;margin:10px 0}
+.assistant-table-scroll table {width:max-content;min-width:100%;font-size:12px}
+.assistant-stage {border-left:2px solid var(--line);padding-left:8px}
+
+.assistant-resize {position:absolute;left:-4px;top:0;bottom:0;width:8px;cursor:col-resize;touch-action:none}
+.assistant-resize:focus-visible {outline:2px solid var(--accent);outline-offset:-3px}
+.assistant-search {display:flex;gap:6px;padding:0 16px 6px;margin:0}
+.assistant-search input {min-width:0;flex:1;margin:0;padding:6px 9px}
+.assistant-session-info {padding:0 16px 6px;min-height:18px}
+.assistant-starters {display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.assistant-sessionbar {flex-wrap:wrap}
+.assistant-sessionbar select {flex-basis:120px}

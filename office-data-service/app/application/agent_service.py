@@ -79,6 +79,8 @@ class AgentCoordinator:
                     result = await conversations.listing(**payload)
                 elif action == "get":
                     result = await conversations.detail(**payload)
+                elif action == "rename":
+                    result = await conversations.rename(**payload)
                 else:
                     result = await conversations.archive(**payload)
             elif operation == "agent.capabilities":

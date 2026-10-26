@@ -59,7 +59,13 @@ class ConversationCreate(Input):
     title: str = Field(default="新会话", min_length=1, max_length=100)
 
 
+class ConversationRename(IdentifierInput):
+    version: int = Field(ge=1, strict=True)
+    title: str = Field(min_length=1, max_length=100, pattern=r"\S")
+
+
 class ConversationList(NumberedListInput):
+    q: str = Field(default="", max_length=100)
     limit: int = Field(default=10, ge=1, le=100, strict=True)
     archived: bool = False
 

@@ -1,8 +1,10 @@
 """同源助手BFF：沿用Web身份／CSRF及统一契约，不接收模型历史或工具决定伪造。"""
 
+from pathlib import Path
 from typing import Literal
 
 from fastapi import Query, Request, Response
+from fastapi.responses import FileResponse
 from office_contracts import Meta, prepare_success
 from pydantic import Field
 
@@ -20,7 +22,7 @@ class AssistantBootstrap(Output):
 
 
 class AssistantAction(Input):
-    action: Literal["create", "start", "decide", "cancel", "archive"]
+    action: Literal["create", "start", "decide", "cancel", "archive", "rename"]
     csrf: str = Field(min_length=1, max_length=200)
     payload: dict
 
@@ -31,11 +33,22 @@ ACTIONS = {
     "decide": "agent.decide",
     "cancel": "agent.cancel",
     "archive": "agent.conversation.archive",
+    "rename": "agent.conversation.rename",
 }
 
 
 def register_assistant_ui(router, operate, render, csrf):
     registry = build_registry()
+
+    @router.get("/assets/assistant/markdown-it-15.0.3.js", include_in_schema=False)
+    async def markdown_parser():
+        # 固定资源路径，无用户文件名／CDN；许可和来源随wheel一起交付。
+        path = Path(__file__).parent / "static/markdown-it-15.0.3/markdown-it.min.js"
+        return FileResponse(
+            path,
+            media_type="text/javascript",
+            headers={"Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff"},
+        )
 
     def respond(request, result, model, status=200):
         prepared = prepare_success(
@@ -56,10 +69,17 @@ def register_assistant_ui(router, operate, render, csrf):
         return await render(request, "assistant_workspace.html")
 
     @router.get("/console/assistant-ui/bootstrap")
-    async def bootstrap(request: Request, after: str = "", archived: bool = False):
+    async def bootstrap(
+        request: Request,
+        after: str = "",
+        archived: bool = False,
+        q: str = Query(default="", max_length=100),
+    ):
         capability = await operate(request, "agent.capabilities")
         listing = await operate(
-            request, "agent.conversation.list", {"limit": 10, "after": after, "archived": archived}
+            request,
+            "agent.conversation.list",
+            {"limit": 10, "after": after, "archived": archived, "q": q},
         )
         return respond(
             request, {"capability": capability, "conversations": listing}, AssistantBootstrap

@@ -310,5 +310,11 @@
     "sdk": "assistant_conversation_archive",
     "cli": "assistant-conversation-archive",
     "mode": "direct"
+  },
+  "agent.conversation.rename": {
+    "mcp": "rename_assistant_conversation",
+    "sdk": "assistant_conversation_rename",
+    "cli": "assistant-conversation-rename",
+    "mode": "direct"
   }
 }

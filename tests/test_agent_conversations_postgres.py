@@ -46,6 +46,16 @@ def test_conversation_ownership_serial_idempotency_archive_and_history(request):
         try:
             conversation = await action(user, "create", title="合成会话")
             cid = conversation["id"]
+            renamed = await action(user, "rename", identifier=cid, version=1, title="合成%_新会话")
+            assert renamed["version"] == 2 and renamed["title"] == "合成%_新会话"
+            with pytest.raises(DomainError) as stale:
+                await action(user, "rename", identifier=cid, version=1, title="过期标题")
+            assert stale.value.status == 409
+            with pytest.raises(DomainError) as other:
+                await action(admin, "rename", identifier=cid, version=2, title="越权标题")
+            assert other.value.status == 404
+            assert len((await action(user, "listing", q="%_"))["items"]) == 1
+            assert not (await action(user, "listing", q="%_不存在"))["items"]
             with pytest.raises(DomainError) as denied:
                 await action(admin, "detail", identifier=cid)
             assert denied.value.status == 404

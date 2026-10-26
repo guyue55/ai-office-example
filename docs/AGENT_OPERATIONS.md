@@ -111,8 +111,23 @@ uv run python scripts/package_client_setup.py --artifact-dir /path/to/candidate 
 | 创建 | POST `/api/v2/agent/conversations` | assistant_conversation_create | assistant-conversation-create／create_assistant_conversation |
 | 列表 | GET同上 | assistant_conversations | assistant-conversations／list_assistant_conversations |
 | 详情 | GET `/api/v2/agent/conversations/{id}` | assistant_conversation | assistant-conversation／get_assistant_conversation |
+| 改名 | POST `/api/v2/agent/conversations/rename` | assistant_conversation_rename | assistant-conversation-rename／rename_assistant_conversation |
 | 归档／恢复 | POST `/api/v2/agent/conversations/archive` | assistant_conversation_archive | assistant-conversation-archive／archive_assistant_conversation |
 
 `assistant-start`文件可选添加conversation_id和context_page，原prompt／request_key用法保留。API／MCP仍拒绝额外message_history等字段。本人会话权限沿用agent.run，不能读取其他员工会话。新增Alembic0013向前升级，无会话旧任务保持可查；不要直接降级删表。会话归档保留执行与审计证据。
 
 实现依据、任务范围与验收记录见[工作区计划](AGENT_WORKSPACE_PLAN.md)。
+
+### 聊天交互补充
+
+会话列表支持按标题搜索（q，最多100字符，按字面匹配，%／_不会当通配符），选中会话显示更新时间；改名使用本人当前版本，冲突后核对最新版本，不自动覆盖。归档和搜索不物理删除历史。
+
+输入框自动增高至180px；Enter换行，Ctrl／⌘+Enter发送，中文输入法组合期间不触发发送。每会话分别保留页面内存草稿；处理中允许起草，受理时不会清空后来输入的新内容。草稿不自动排队、不跨刷新保留。页面内其他会话有草稿时，离开也会提示。
+
+侧栏宽度可拖动或聚焦分隔线后用左右键调整，Home／End选择最小／最大；360～640px，主工作区至少预留800px。保存的只是宽度偏好；小屏仍进入全页。消息更新保留未变化的任务节点；查看历史、选择文字或展开详情时不强制滚动，使用“回到最新”恢复跟随。
+
+模型说明支持有限Markdown，包括列表、代码和表格。解析器markdown-it 15.0.3随服务端固定交付，无CDN；关闭HTML／图片，按允许标签创建DOM，仅接受HTTP(S)链接，不加载模型嵌入。正文超过32000字符或展示预算超限时回退纯文本。表格／代码在自身区域滚动。复制的是原始说明；浏览器不支持或拒绝剪贴板时打开共用详情弹窗，由本人选择复制，不伪装自动复制成功。
+
+预览区区分账号、权限、数据确认／更正与授权操作，直接展示服务端提供的before／after摘要，最多16字段；未提供值明确标为未提供，不推断删除。完整预览与参数仍可展开，批准仍绑定原ticket和版本。状态仅来自queued／running／pending／write_inflight／cancel_requested与回执，不展示模型思维、百分比或无依据阶段。
+
+详见[本轮计划与验证](AGENT_CHAT_UX_PLAN.md)。

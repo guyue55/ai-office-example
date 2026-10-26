@@ -11,6 +11,11 @@ def configure(sub):
     listing.add_argument("--after", default="")
     listing.add_argument("--limit", type=int, default=10)
     listing.add_argument("--archived", action="store_true")
+    listing.add_argument("--q", default="")
+    rename = sub.add_parser("assistant-conversation-rename", help="按当前版本重命名本人会话")
+    rename.add_argument("identifier")
+    rename.add_argument("--version", type=int, required=True)
+    rename.add_argument("--title", required=True)
     detail = sub.add_parser("assistant-conversation", help="读取本人会话与有界历史")
     detail.add_argument("identifier")
     detail.add_argument("--before", default="")
@@ -51,11 +56,15 @@ def execute(client, args):
             return True, client.assistant_conversation_create(args.title)
         case "assistant-conversations":
             return True, client.assistant_conversations(
-                after=args.after, limit=args.limit, archived=args.archived
+                after=args.after, limit=args.limit, archived=args.archived, q=args.q
             )
         case "assistant-conversation":
             return True, client.assistant_conversation(
                 args.identifier, before=args.before, limit=args.limit
+            )
+        case "assistant-conversation-rename":
+            return True, client.assistant_conversation_rename(
+                args.identifier, args.version, args.title
             )
         case "assistant-conversation-archive":
             return True, client.assistant_conversation_archive(

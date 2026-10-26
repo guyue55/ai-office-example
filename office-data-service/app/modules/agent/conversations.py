@@ -59,11 +59,13 @@ class Conversations:
         self.access.audit("agent.conversation.created", row.id, {})
         return conversation_view(row)
 
-    async def listing(self, *, after="", limit=10, page=None, archived=False):
+    async def listing(self, *, after="", limit=10, page=None, archived=False, q=""):
         query = select(AgentConversation).where(
             AgentConversation.owner_id == self.access.actor.id,
             AgentConversation.archived == archived,
         )
+        if q:
+            query = query.where(AgentConversation.title.icontains(q, autoescape=True))
         if page is not None:
             rows, pagination = await numbered_rows(
                 self.db,
@@ -196,4 +198,14 @@ class Conversations:
         row.version += 1
         row.updated_at = datetime.now(UTC)
         self.access.audit("agent.conversation.archived", row.id, {"archived": archived})
+        return conversation_view(row)
+
+    async def rename(self, identifier, version, title):
+        row = await self.owned(identifier, lock=True)
+        require(row.version == version, 409, "constraint_conflict", "会话版本已变化，请刷新")
+        row.title = title.strip()
+        row.version += 1
+        row.updated_at = datetime.now(UTC)
+        # 审计不复制可能含敏感信息的标题正文。
+        self.access.audit("agent.conversation.renamed", row.id, {})
         return conversation_view(row)

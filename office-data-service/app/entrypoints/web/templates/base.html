@@ -11,7 +11,7 @@
 body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color }}; }
 </style>
 {% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}
-<script>try { if (innerWidth >= 1200 && JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').open) document.documentElement.classList.add('assistant-preopen'); } catch (_) {}</script>
+<script>try { if (innerWidth >= 1200 && JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').open) { document.documentElement.classList.add('assistant-preopen'); const value=Number(JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').width)||420; document.documentElement.style.setProperty('--assistant-width',Math.min(640,Math.max(360,Math.min(innerWidth-800,value)))+'px'); } } catch (_) {}</script>
 {% endif %}
 </head>
 <body>
@@ -51,6 +51,8 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 {% if me and 'agent.run' in me.permissions %}
 {% if request.url.path != '/console/assistant/workspace' %}{% include '_assistant_panel.html' %}{% endif %}
 <script>{% include 'assistant-transport.js' %}</script>
+<script src="/assets/assistant/markdown-it-15.0.3.js"></script>
+<script>{% include 'assistant-content.js' %}</script>
 <script>{% include 'assistant-view.js' %}</script>
 <script>{% include 'assistant-shell.js' %}</script>
 {% endif %}

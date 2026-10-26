@@ -30,3 +30,8 @@
 单会话有活动任务时不再发起新任务；用户可选择另一个会话。本人有效权限变化时旧轮次会隐藏，不从本地记录恢复旧内容绕过限制。归档／恢复使用`assistant-conversation-archive <ID> --version <版本>`，恢复加--restore；MCP archive_assistant_conversation。归档不删除记录、不取消活动任务。与外部AI宿主交互时，启动内部模型仍需用户明确选择，审批仍由人确认。
 
 Web全局助手与`/console/assistant/workspace`共用这些操作；收起不取消，浏览器刷新不能自动重发任务或决定。
+
+
+本人会话标题可用 `assistant-conversations --q <标题片段>` 搜索；默认10项，继续按next加载。`assistant-conversation-rename <ID> --version <当前版本> --title <标题>`仅重命名本人会话，MCP为rename_assistant_conversation；409时重新读取版本核对，不盲目覆盖。会话管理不作为内部Agent递归工具，不改变业务权限或审批。
+
+控制台聊天框的草稿按会话隔离但只存在当前页面内存；刷新会丢失。用户看到的Markdown只负责展示，结构化实际回执和待批参数仍是执行核对依据。示例按钮只填入问题，不代用户发送或批准。
