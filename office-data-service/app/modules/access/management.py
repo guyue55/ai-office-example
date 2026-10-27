@@ -254,9 +254,17 @@ class Management:
                     "客户端授权：" + name + (" / " + device if device else "")
                 )
         for row in items:
-            row["actor_name"] = actor_names.get(row["actor_id"], row["actor_id"])
+            row["actor_name"] = (
+                "系统维护"
+                if row["actor_id"] == "system-maintenance"
+                else actor_names.get(row["actor_id"], row["actor_id"])
+            )
             row["action_name"] = describe_audit_action(row["action"])
-            row["resource_name"] = resource_names.get(row["resource_id"], row["resource_id"])
+            row["resource_name"] = (
+                "实例访问地址"
+                if row["action"] == "instance.relocated"
+                else resource_names.get(row["resource_id"], row["resource_id"])
+            )
             row["detail_summary"] = describe_audit_detail(row["action"], row["detail"])
 
     async def create(self, kind: str, body: dict):

@@ -46,3 +46,5 @@ GitHub 仓库与 CI／候选制品／镜像发布边界见 [自动化说明](doc
 Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGENT_RESEARCH.md) · [员工端运行设计](docs/AGENT_DESIGN.md) · [执行计划](docs/AGENT_PLAN.md) · [可选运行时安装](clients/agent/README.md) · [自定义模型配置](docs/AGENT_MODEL_CONFIGURATION.md)。部署及操作见[运行指南](docs/AGENT_OPERATIONS.md)，全局侧栏／会话方案与验收见[助手工作区计划](docs/AGENT_WORKSPACE_PLAN.md)。Agent分支支持控制台全局入口、共享侧栏／全页会话、服务端有界续问和原审批闭环；[聊天交互计划与验收](docs/AGENT_CHAT_UX_PLAN.md)补充会话草稿隔离、受限Markdown、复制降级、搜索改名和可调侧栏。[视觉实施与验收](docs/AGENT_CHAT_VISUAL_IMPLEMENTATION.md)记录紧凑头部、可搜索历史浮层、共享图标／焦点、输入与回执分级，以及独立浏览器到临时PG的真实审批写入测试。这不会自动升级既有交付；框架隔离验收不等于真实供应商已经验收，原v1.0.0交付不因分支开发而自动升级。
 
 控制台与助手的方案、范围和阶段验收见 [UI整体升级计划](docs/UI_UPGRADE_PLAN.md)，后续独立审阅整改见 [UI审阅整改计划](docs/UI_REVIEW_REMEDIATION.md)。页面及共享组件清单维护在 `tests/ui-pages.json`；局部检查通过不代表整体升级完成。
+
+已安装HTTP演示实例因内网IP变化需要恢复时，使用[显式迁址维护入口](docs/INSTANCE_RELOCATION.md)，保留数据与身份映射，不删除实例重新安装。

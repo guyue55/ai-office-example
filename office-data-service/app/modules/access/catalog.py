@@ -29,6 +29,7 @@ DEFINITIONS = {
 PERMISSIONS = {code: definition[1] for code, definition in DEFINITIONS.items()}
 
 AUDIT_ACTIONS = {
+    "instance.relocated": "迁移实例访问地址",
     "agent.conversation.created": "创建助手会话",
     "agent.conversation.renamed": "重命名助手会话",
     "agent.conversation.archived": "归档或恢复助手会话",

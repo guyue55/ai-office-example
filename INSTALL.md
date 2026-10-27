@@ -43,3 +43,5 @@ uv run python scripts/package_client_setup.py --config deploy/.env --output dist
 人工也可执行`bash setup.sh`或`powershell -NoProfile -File .\setup.ps1`。脚本准备局部uv／Python和venv；缺企业地址时交互询问，非交互缺配置明确停止。安装结果在.office/installation.json，使用cli与cli_args执行whoami、capabilities；不要猜全局命令或复制令牌。
 
 首次授权、系统钥匙串／凭证管理器确认由员工本人完成。AI宿主技能发现取决于宿主支持，安装成功不等于已自动注册所有AI工具。通知等外部动作使用宿主连接器，单独授权验收。
+
+显式HTTP演示实例迁址维护入口及备份／恢复边界见[实例迁址维护](docs/INSTANCE_RELOCATION.md)。普通安装重跑仍拒绝静默换址或升级；迁址不替代本人重新登录验收。
