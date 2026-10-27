@@ -967,3 +967,14 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 @media (forced-colors:active) {
   :focus-visible {outline-color:Highlight}
 }
+
+/* 所有操作面板共享遮罩、进入动效及长内容约束；加载不是成功状态。 */
+:root {--overlay-backdrop:#112b3266;--panel-enter:160ms;--loading-ink:#3f6c70}
+.workspace::backdrop,.record-dialog::backdrop,.confirm-dialog::backdrop {background:var(--overlay-backdrop)}
+.confirm-dialog {max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
+.record-dialog[open],.confirm-dialog[open] {animation:modal-in var(--panel-enter) ease-out}
+#workspace-content,#record-dialog-content {overscroll-behavior:contain;scrollbar-gutter:stable}
+.workspace-feedback[data-loading] {display:flex;align-items:center;gap:10px;background:#eef3f5;color:var(--loading-ink)}
+.workspace-feedback[data-loading]::before {content:"";width:14px;height:14px;flex:0 0 14px;border:2px solid #c7d5d8;border-top-color:currentColor;border-radius:50%;animation:control-spin .8s linear infinite}
+@keyframes control-spin {to {transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce) {.record-dialog[open],.confirm-dialog[open],.workspace-feedback[data-loading]::before {animation:none}}

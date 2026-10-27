@@ -19,7 +19,8 @@
     url.pathname.startsWith('/console/access/') || url.pathname.startsWith('/console/links/') ||
     url.pathname === '/console/accounts/new' || url.pathname === '/console/accounts/link' || url.pathname.startsWith('/console/accounts/employees/')
   );
-  const showFeedback = (message, error = false) => {
+  const showFeedback = (message, error = false, loading = false) => {
+    feedback.toggleAttribute('data-loading', loading);
     feedback.textContent = message;
     feedback.className = error ? 'workspace-feedback error-feedback' : 'workspace-feedback';
   };
@@ -64,10 +65,12 @@
     if (busy) return;
     busy = true;
     content.inert = true;
+    content.setAttribute('aria-busy', 'true');
+    reload.disabled = true; back.disabled = true;
     controller = new AbortController();
     const requestController = controller;
     const deadline = setTimeout(() => requestController.abort(), 15000);
-    showFeedback('正在加载，请稍候…');
+    showFeedback('正在加载，请稍候…', false, true);
     try {
       const response = await fetch(url, {
         credentials: 'same-origin', signal: requestController.signal,
@@ -77,17 +80,26 @@
       if (!allowed(finalURL)) {
         throw new Error('登录状态已变化，请关闭面板并重新登录。');
       }
-      const main = parsePage(await response.text());
+      const html = await response.text();
+      // 关闭或新请求已接管时，不允许旧响应绘制新面板。
+      if (controller !== requestController || !panel.open) return;
+      const main = parsePage(html);
       if (!response.ok) throw new Error(main.innerText || main.textContent);
       if (push && currentURL) trail.push({url: currentURL, nodes: Array.from(content.childNodes)});
       paint(main, finalURL.href);
       showFeedback('');
     } catch (error) {
-      if (panel.open) showFeedback(error.name === 'AbortError' ? '加载已取消或超时，可关闭后重试。' : error.message || '加载失败，请稍后重试。', true);
+      if (controller === requestController && panel.open) {
+        reload.hidden = false;
+        showFeedback(error.name === 'AbortError' ? '加载已取消或超时，可刷新配置重试。' : error.message || '加载失败，请稍后重试。', true);
+      }
     } finally {
       clearTimeout(deadline);
-      busy = false;
-      content.inert = false;
+      if (controller === requestController) {
+        controller = null; busy = false;
+        content.inert = false; content.removeAttribute('aria-busy');
+        reload.disabled = false; back.disabled = false;
+      }
     }
   }
   async function refreshList(message, approvedDrafts = new Map()) {
@@ -156,7 +168,9 @@
   panel.addEventListener('cancel', event => { event.preventDefault(); closePanel(); });
   // 不通过点击遮罩关闭编辑面板，避免误触丢失草稿。
   panel.addEventListener('close', () => {
-    controller?.abort();
+    controller?.abort(); controller = null; busy = false;
+    content.inert = false; content.removeAttribute('aria-busy');
+    reload.disabled = false; back.disabled = false;
     if (local) {
       local.source.append(...Array.from(local.holder.childNodes));
       local.source.open = false;
@@ -250,6 +264,7 @@
     } else if (allowed(url) && !document.querySelector('main [data-grant-editor]')) {
       event.preventDefault();
       if (!await mayLeave(document.querySelector('main'))) return;
+      title.textContent = '正在加载'; back.hidden = true; reload.hidden = true; full.hidden = false;
       openPanel(link, url.pathname === '/console/accounts/new');
       currentURL = url.href;
       full.href = url.href;
@@ -340,7 +355,7 @@
     form.setAttribute('aria-busy', 'true');
     const submitButtons = Array.from(form.querySelectorAll('button[type=submit], button:not([type])')).map(button => [button, button.disabled]);
     submitButtons.forEach(([button]) => button.disabled = true);
-    if (inPanel) showFeedback('正在保存，请勿重复提交…');
+    if (inPanel) showFeedback('正在保存，请勿重复提交…', false, true);
     try {
       const response = await fetch(form.getAttribute('action') || location.href, {
         method: 'POST', body, credentials: 'same-origin', signal: saveController.signal, headers: {'Accept': 'text/html'}

@@ -53,11 +53,16 @@ def ui_state():
 
     @app.get("/console/links/employees/person/roles")
     async def grants(request: Request):
+        state["panel_reads"] = state.get("panel_reads", 0) + 1
+        while state.get("panel_delay") and not state.get("panel_release"):
+            await asyncio.sleep(0.01)
         value = context("links.html")
         value["assoc"]["ids"] = ["role"] if state["selected"] else []
         if request.query_params.get("saved"):
             value["notice"] = "保存完成"
-        return TEMPLATES.TemplateResponse(request, "links.html", value)
+        return TEMPLATES.TemplateResponse(
+            request, "links.html", value, status_code=503 if state.get("panel_fail") else 200
+        )
 
     @app.post("/console/links/employees/person/roles")
     async def save_grants(request: Request):
@@ -168,6 +173,7 @@ def ui_state():
     finally:
         state["release"] = True
         state["agent_release"] = True
+        state["panel_release"] = True
         server.should_exit = True
         thread.join(5)
         listener.close()
@@ -593,3 +599,37 @@ def test_shared_disabled_readonly_busy_and_touch_control_states(ui_state):
         assert box["width"] >= 44 and box["height"] >= 44
     finally:
         touch.close()
+
+
+def test_drawer_loading_cancel_reopen_and_failure_retry(ui_state):
+    page, state = ui_state
+    state["panel_delay"] = True
+    trigger = page.get_by_role("link", name="授权角色", exact=True)
+    trigger.click()
+    panel = page.locator("#workspace")
+    expect(panel).to_be_visible()
+    expect(page.locator("#workspace-content")).to_have_attribute("aria-busy", "true")
+    expect(page.locator("#workspace-feedback[data-loading]")).to_contain_text("正在加载")
+    expect(panel).to_have_css("opacity", "1")
+    proof = Path("runtime/agent-research/ui-controls")
+    proof.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(proof / "drawer-loading-review.png"))
+    page.get_by_role("button", name="关闭操作面板", exact=True).click()
+    expect(panel).to_be_hidden()
+    state["panel_delay"] = False
+    state["panel_fail"] = True
+    trigger.click()
+    expect(page.locator("#workspace-feedback")).to_have_class("workspace-feedback error-feedback")
+    expect(page.locator("#workspace-content")).not_to_have_attribute("aria-busy", "true")
+    state["panel_fail"] = False
+    page.get_by_role("button", name="刷新配置", exact=True).click()
+    expect(page.locator("#workspace-content [data-grant-editor]")).to_be_visible()
+    expect(page.locator("#workspace-feedback")).to_be_empty()
+    assert state["panel_reads"] >= 3
+    state["panel_release"] = True
+    expect(page.locator("#workspace-content [data-grant-editor]")).to_be_visible()
+    page.emulate_media(reduced_motion="reduce")
+    assert panel.evaluate("node=>getComputedStyle(node).animationName") == "none"
+    page.get_by_role("button", name="关闭操作面板", exact=True).click()
+    expect(trigger).to_be_focused()
+    assert state["writes"] == 0
