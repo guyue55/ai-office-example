@@ -2,9 +2,11 @@
 
 import asyncio
 import os
+import re
 import socket
 import threading
 import time
+from pathlib import Path
 
 import pytest
 import uvicorn
@@ -63,6 +65,16 @@ def ui_state():
         state["selected"] = "id_role" in form
         state["writes"] += 1
         return RedirectResponse("/console/links/employees/person/roles?saved=1", 303)
+
+    @app.get("/console/roles")
+    async def roles(request: Request):
+        return TEMPLATES.TemplateResponse(request, "roles.html", context("roles.html"))
+
+    @app.get("/console/assistant/workspace")
+    async def workspace(request: Request):
+        return TEMPLATES.TemplateResponse(
+            request, "assistant_workspace.html", context("assistant_workspace.html")
+        )
 
     @app.get("/console/assistant-ui/bootstrap")
     async def bootstrap():
@@ -224,7 +236,8 @@ def test_disabled_state_restored_after_write(ui_state, result):
     assert state["writes"] == (1 if result == "success" else 0)
 
 
-def test_cancel_navigation_keeps_assistant_polling(ui_state):
+@pytest.mark.parametrize("action", ["navigation", "reload"])
+def test_cancel_navigation_keeps_assistant_polling(ui_state, action):
     page, state = ui_state
     page.evaluate(
         "sessionStorage.setItem('office-assistant:catalog-admin',JSON.stringify({id:'conversation',open:true}))"
@@ -234,8 +247,15 @@ def test_cancel_navigation_keeps_assistant_polling(ui_state):
     page.locator("#assistant-input").fill("保留草稿")
     dialogs = []
     page.on("dialog", lambda dialog: (dialogs.append(dialog.type), dialog.dismiss()))
-    page.locator('.shell-nav a[href="/console/roles"]').click()
-    assert dialogs == ["beforeunload"]
+    if action == "navigation":
+        page.locator('.shell-nav a[href="/console/roles"]').click()
+        expect(page.locator("#confirm-title")).to_have_text("离开并放弃助手草稿？")
+        page.locator("[data-confirm-cancel]").click()
+        assert dialogs == []
+    else:
+        # 取消刷新本就不会完成导航，不等待一个注定不会到来的load事件。
+        page.evaluate("location.reload()")
+        assert dialogs == ["beforeunload"]
     assert page.url.endswith("/console/employees")
     previous = state["reads"]
     page.wait_for_function("document.querySelector('#assistant-messages [data-run=turn]') !== null")
@@ -245,3 +265,149 @@ def test_cancel_navigation_keeps_assistant_polling(ui_state):
         page.wait_for_timeout(100)
     assert state["reads"] > previous
     expect(page.locator("#assistant-input")).to_have_value("保留草稿")
+
+
+@pytest.mark.parametrize("full", [False, True])
+def test_confirm_draft_navigation_has_no_second_browser_prompt(ui_state, full):
+    page, state = ui_state
+    if full:
+        page.goto(page.url.replace("/console/employees", "/console/assistant/workspace"))
+    else:
+        page.locator("#assistant-launch").click()
+    page.locator("#assistant-input").fill("不自动持久化的助手草稿")
+    dialogs = []
+    page.on("dialog", lambda dialog: (dialogs.append(dialog.type), dialog.dismiss()))
+    page.locator('.shell-nav a[href="/console/roles"]').click()
+    expect(page.locator("#action-confirm")).to_be_visible()
+    proof = Path("runtime/agent-research/ui-controls")
+    proof.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(proof / f"navigation-{'workspace' if full else 'sidebar'}.png"))
+    expect(page.locator("[data-confirm-cancel]")).to_have_text("继续编辑")
+    page.locator("[data-confirm-cancel]").click()
+    expect(page.locator("#assistant-input")).to_have_value("不自动持久化的助手草稿")
+    page.locator('.shell-nav a[href="/console/roles"]').click()
+    page.locator("[data-confirm-accept]").click()
+    expect(page).to_have_url(re.compile(r"/console/roles$"))
+    assert dialogs == []
+    assert state["writes"] == 0
+    assert "不自动持久化的助手草稿" not in page.evaluate("JSON.stringify(sessionStorage)")
+
+
+def test_filter_navigation_checks_assistant_draft(ui_state):
+    page, _ = ui_state
+    page.locator("#assistant-launch").click()
+    page.locator("#assistant-input").fill("筛选前草稿")
+    page.locator("main input[name=q]").fill("人员查询")
+    page.locator("main form[role=search] button[type=submit]").click()
+    expect(page.locator("#confirm-title")).to_have_text("离开并放弃助手草稿？")
+    page.locator("[data-confirm-cancel]").click()
+    expect(page.locator("#assistant-input")).to_have_value("筛选前草稿")
+    assert "q=" not in page.url
+
+
+def test_cancel_page_size_restores_current_selection(ui_state):
+    page, _ = ui_state
+    page.locator("#assistant-launch").click()
+    page.locator("#assistant-input").fill("分页前草稿")
+    page.get_by_label("每页条数", exact=True).select_option("20")
+    expect(page.locator("#confirm-title")).to_have_text("离开并放弃助手草稿？")
+    page.locator("[data-confirm-cancel]").click()
+    expect(page.get_by_label("每页条数", exact=True)).to_have_value("10")
+    expect(page.locator("#assistant-input")).to_have_value("分页前草稿")
+
+
+def test_native_picker_visuals_keyboard_and_reduced_motion(ui_state):
+    page, _ = ui_state
+    field = page.get_by_label("每页条数", exact=True)
+    field.focus()
+    assert field.evaluate("node=>getComputedStyle(node).outlineWidth") == "2px"
+    assert field.evaluate("node=>getComputedStyle(node).borderRadius") == "8px"
+    enhanced = field.evaluate("node=>getComputedStyle(node).appearance==='base-select'")
+    assert enhanced == page.evaluate(
+        "CSS.supports('appearance','base-select') && CSS.supports('selector(select::picker(select))') && matchMedia('(hover:hover) and (pointer:fine)').matches"
+    )
+    if enhanced:
+        field.click()
+        assert field.evaluate("node=>node.matches(':open')")
+        assert (
+            field.evaluate("node=>getComputedStyle(node,'::picker(select)').borderRadius") == "10px"
+        )
+        proof = Path("runtime/agent-research/ui-controls")
+        proof.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(proof / "native-select.png"))
+        page.keyboard.press("ArrowDown")
+        page.keyboard.press("Enter")
+    else:
+        field.select_option("20")
+    expect(page).to_have_url(re.compile(r"limit=20"))
+    page.emulate_media(reduced_motion="reduce")
+    assert (
+        page.get_by_label("每页条数", exact=True).evaluate(
+            "node=>getComputedStyle(node).transitionDuration"
+        )
+        == "0s"
+    )
+
+
+def test_picker_escape_keeps_parent_assistant_menu(ui_state):
+    page, _ = ui_state
+    page.locator("#assistant-launch").click()
+    page.get_by_role("button", name="更多会话操作", exact=True).click()
+    field = page.get_by_label("侧栏宽度", exact=True)
+    if field.evaluate("node=>getComputedStyle(node).appearance!=='base-select'"):
+        pytest.skip("当前浏览器使用系统原生弹层，另有普通流程回归")
+    field.click()
+    assert field.evaluate("node=>node.matches(':open')")
+    page.keyboard.press("Escape")
+    expect(page.locator("#assistant-options-panel")).to_be_visible()
+    expect(page.locator("#assistant-panel")).to_be_visible()
+    assert not field.evaluate("node=>node.matches(':open')")
+
+
+def test_touch_and_no_script_select_fallbacks(ui_state):
+    page, _ = ui_state
+    browser = page.context.browser
+    for settings in ({"has_touch": True, "is_mobile": True}, {"java_script_enabled": False}):
+        isolated = browser.new_context(viewport={"width": 390, "height": 900}, **settings)
+        try:
+            fallback = isolated.new_page()
+            fallback.goto(page.url)
+            field = fallback.get_by_label("每页条数", exact=True)
+            if settings.get("has_touch"):
+                assert field.evaluate("node=>getComputedStyle(node).appearance") != "base-select"
+            field.select_option("20")
+            if settings.get("java_script_enabled") is False:
+                fallback.locator("[data-page-size-form] button[type=submit]").click()
+            expect(fallback).to_have_url(re.compile("limit=20"))
+        finally:
+            isolated.close()
+
+
+def test_picker_escape_inside_shared_dialog(ui_state):
+    page, _ = ui_state
+    page.evaluate("""() => {
+      const box=document.createElement('div'),label=document.createElement('label');
+      label.textContent='合成选项';const select=document.createElement('select');
+      select.id='dialog-select';label.htmlFor=select.id;
+      for(const name of ['第一项','第二项']){const option=document.createElement('option');option.textContent=name;select.append(option);}
+      box.append(label,select);OfficeUI.present('选择器回归',box);
+    }""")
+    field = page.locator("#dialog-select")
+    if field.evaluate("node=>getComputedStyle(node).appearance!=='base-select'"):
+        pytest.skip("浏览器采用系统选择器")
+    field.click()
+    page.keyboard.press("Escape")
+    expect(page.locator("#record-dialog")).to_be_visible()
+    assert not field.evaluate("node=>node.matches(':open')")
+    page.locator("[data-record-close]").click()
+    expect(page.locator("#record-dialog")).to_be_hidden()
+
+
+def test_same_document_anchor_does_not_discard_draft(ui_state):
+    page, _ = ui_state
+    page.locator("#assistant-launch").click()
+    page.locator("#assistant-input").fill("锚点跳转保留")
+    page.locator(".skip-link").focus()
+    page.keyboard.press("Enter")
+    expect(page.locator("#action-confirm")).not_to_be_visible()
+    expect(page.locator("#assistant-input")).to_have_value("锚点跳转保留")

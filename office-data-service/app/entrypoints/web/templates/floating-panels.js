@@ -48,7 +48,7 @@
       if(control.open&&!panel.contains(event.target)&&!trigger.contains(event.target))control.close(false);
     },true);
     document.addEventListener('keydown',event=>{
-      if(!control.open||event.defaultPrevented||document.querySelector('dialog[open]'))return;
+      if(!control.open||event.defaultPrevented||document.querySelector('dialog[open]')||ui.pickerOpen())return;
       if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();control.close();}
     },true);
     document.addEventListener('focusin',event=>{

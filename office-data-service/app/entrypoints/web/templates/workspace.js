@@ -186,6 +186,8 @@
   const confirmAction = form => window.OfficeUI.confirm(
     form.querySelector('select[name="action"] option:checked')?.dataset.confirmMessage || form.dataset.confirmMessage
   );
+  // 只有真正离开文档才确认助手草稿；抽屉fetch与异步保存不触发离页。
+  const mayNavigate = () => window.OfficeUI.confirmNavigation?.() ?? true;
 
   document.addEventListener('click', async event => {
     const formTrigger = event.target.closest('[data-open-form]');
@@ -212,9 +214,11 @@
         event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     if (panel.open && content.contains(link) && link.hasAttribute('data-workspace-dismiss')) { event.preventDefault(); closePanel(); return; }
     const url = new URL(link.href);
+    // 当前文档锚点只是定位，不离页，不应丢弃或确认助手草稿。
+    if (!panel.open && url.origin === location.origin && url.pathname === location.pathname && url.search === location.search && url.hash) return;
     if (link.hasAttribute('data-workspace-full')) {
       event.preventDefault();
-      if (await mayLeave(content)) { leaving = true; location.assign(url.href); }
+      if (await mayLeave(content) && await mayNavigate()) { leaving = true; location.assign(url.href); }
       return;
     }
     if (panel.open && content.contains(link)) {
@@ -238,7 +242,7 @@
       load(url.href);
     } else if (!link.getAttribute('href').startsWith('#')) {
       event.preventDefault();
-      if (await mayLeave(document.querySelector('main'))) { leaving = true; location.assign(url.href); }
+      if (await mayLeave(document.querySelector('main')) && await mayNavigate()) { leaving = true; location.assign(url.href); }
     }
   });
 
@@ -259,6 +263,7 @@
       // 提交当前表单不是放弃当前草稿；其他表单与上一步草稿仍需保护。
       if (!await mayLeave(root, form)) return;
       if (form.dataset.confirmMessage && !await confirmAction(form)) return;
+      if (!await mayNavigate()) return;
       leaving = true;
       HTMLFormElement.prototype.submit.call(form);
       return;
@@ -279,12 +284,16 @@
         const url = new URL(form.getAttribute('action') || currentURL);
         url.search = new URLSearchParams(new FormData(form)).toString();
         load(url.href);
-      } else { leaving = true; HTMLFormElement.prototype.submit.call(form); }
+      } else if (await mayNavigate()) { leaving = true; HTMLFormElement.prototype.submit.call(form); }
+      else {
+        const size = form.querySelector('[data-current-size]');
+        if (size) size.value = size.dataset.currentSize;
+      }
       return;
     }
     if (!inPanel && !inRecord && !form.dataset.confirmMessage && !form.hasAttribute('data-grant-editor')) {
       event.preventDefault();
-      if (await mayLeave(document.querySelector('main'), form)) {
+      if (await mayLeave(document.querySelector('main'), form) && await mayNavigate()) {
         leaving = true; HTMLFormElement.prototype.submit.call(form);
       }
       return;

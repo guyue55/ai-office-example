@@ -10,6 +10,7 @@
   let local, tipTarget, tipTimer, tipHideTimer, lastFocusKey, confirmationPending = false;
   let focusTip = null, hoverTip = null, overTip = false, pendingTip = null;
   const dismissedTips = new WeakSet();
+  const pickerOpen = () => CSS.supports('selector(select:open)') && !!document.querySelector('select:open');
   const icons = {
     account: ['M3 5h18v14H3Z','M7 9h3v3H7Z','M14 9h4M14 13h4M7 16h11'],
     eye: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12','M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6'],
@@ -176,6 +177,7 @@
   function repositionTip(){overTip=false;syncTip();}
   window.addEventListener('scroll',repositionTip,true);window.addEventListener('resize',repositionTip);
   document.addEventListener('keydown',event=>{
+    if (pickerOpen()) return;
     if(event.key==='Escape'&&(tipTarget||pendingTip)){
       // 同次交互的焦点／悬停均抑制，避免滚动时退回另一个提示而重新弹出。
       [tipTarget,pendingTip,focusTip,hoverTip].filter(Boolean).forEach(target=>dismissedTips.add(target));
@@ -191,6 +193,7 @@
     const previous = document.activeElement;
     const cancel = box.querySelector('[data-confirm-cancel]');
     const accept = box.querySelector('[data-confirm-accept]');
+    cancel.textContent = options.cancel || '取消';
     box.querySelector('#confirm-title').textContent = options.title || '确认操作';
     box.querySelector('#confirm-description').textContent = message;
     accept.textContent = options.accept || (message.startsWith('确认停用') ? '确认停用' : message.startsWith('确认重新启用') ? '确认启用' : message.startsWith('确认撤销') ? '确认撤销' : message.startsWith('确认归档') ? '确认归档' : message.startsWith('确认重试') ? '确认重试' : '确认操作');
@@ -260,7 +263,7 @@
     dialog.addEventListener('close',()=>{holder.replaceChildren();previous?.isConnected&&previous.focus({preventScroll:true});},{once:true});
     dialog.showModal();heading.focus();return true;
   }
-  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present, icon, decorateIcon, iconButton};
+  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present, icon, decorateIcon, iconButton, pickerOpen};
   enhance(document);
   let pending = false;
   new MutationObserver(records => {

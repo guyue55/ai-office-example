@@ -303,6 +303,9 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                 width_picker.press("Home")
                 width_picker.press("ArrowDown")
                 expect(width_picker).to_have_value("420")
+                # 可样式化原生select用Enter提交选项，再Tab离开选择器。
+                if width_picker.evaluate("node=>node.matches(':open')"):
+                    page.keyboard.press("Enter")
                 page.keyboard.press("Tab")
                 expect(page.get_by_role("link", name="展开工作区", exact=True)).to_be_focused()
                 page.keyboard.press("Shift+Tab")

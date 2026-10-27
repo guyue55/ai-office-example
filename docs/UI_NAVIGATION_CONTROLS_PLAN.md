@@ -1,0 +1,35 @@
+# 助手草稿导航与表单控件优化
+
+日期：2026-10-27。发布暂停，保持1.0.0源码版本；本轮不合并main、不创建Tag或Release。
+
+## 核实与设计依据
+
+助手草稿仅在页面内存，整页切换会丢失。现有beforeunload会触发浏览器控制的通用提示；提示需要用户激活且展示受浏览器控制，不能依赖它承担站内交互。输入后点击导航没有明确反馈属于缺陷，并非要求用户先删除文字。
+
+- [MDN beforeunload](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event)：原生离页提示的用途、激活与可靠性边界。
+- [MDN customizable select](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Customizable_select)、[Chrome原生select](https://developer.chrome.com/blog/a-customizable-select)：appearance:base-select与::picker(select)支持原生语义及弹出层样式，不能假设全部浏览器支持。
+- [W3C Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance)：视觉克制不等于取消焦点，应保持可见面积与对比。
+
+按用户指定使用ui-ux-pro-max检索设计系统及焦点／键盘规则。自动推荐中的营销页、深色OLED和外部字体不适用于现有管理工作台，不直接采用。gsap-core建议简单过渡可用CSS；本轮仅颜色／边框／箭头变化，保持无额外运行依赖并尊重减少动态效果。
+
+## 实施计划
+
+1. 共享导航协调：在真正离页前调用助手草稿确认，沿用项目确认弹窗；明确继续编辑与放弃并前往。取消保留草稿和轮询；确认后不再出现第二次浏览器提示。站内链接、GET筛选、原生POST及助手主动刷新都接入，抽屉内异步切换不误当离页。
+2. 刷新／关闭等浏览器操作继续由beforeunload保护；站内确认不意味着持久化草稿，不将草稿上传、写sessionStorage或localStorage。
+3. 统一焦点token：灰青色2px可见边界，轻量背景光晕；键盘焦点与鼠标反馈区分，错误状态仍有独立红色提示，高对比模式不丢边界。
+4. 桌面精细指针且支持base-select时，所有普通单选select统一圆角弹层、间距、悬停、选中与键盘焦点；保持真实select、name、required、disabled及change提交。移动触摸和不支持的浏览器保留原生选择器，不伪造跨浏览器一致性。
+5. 隔离浏览器验证侧栏／完整工作区草稿取消与确认导航、原生刷新取消、筛选切页、真实picker键盘／点击、弹窗内select、错误样式、减少动态效果、全22页布局与现有流程。
+
+## 验收边界
+
+测试不使用真人凭证、不写真实业务数据、不调用模型。当前用户打开的部署实例与源码分开，源码完成不代表镜像已更新。以实际执行结果追加记录。
+
+## 执行结果
+
+已完成共享站内导航确认、焦点token及输入／文本域统一、桌面原生圆角picker和能力回退。取消分页时恢复原数量；当前文档锚点不误判为离页；从BFCache返回或切换会话后重新启用草稿保护。下拉打开期间Esc交给原生picker处理，不穿透关闭助手菜单／弹窗；相同规则用于提示、浮层和助手焦点循环。
+
+- 25项隔离浏览器测试通过：18项状态与控件回归，另7项全页面布局／视觉／账号／表单／助手／悬浮提示测试；22模板与5种宽度覆盖仍通过。基础版原生select键盘行为和可样式化picker的选项提交方式不同，测试沿用真实焦点通过Enter提交选项，再Tab离开，而非重设select焦点后按键。
+- 597项离线测试通过。新增关键UI回归已接入现有Agent CI浏览器步骤；未触发或宣称远端CI通过。
+- 当前内嵌浏览器能力检测支持base-select与picker；本机合成GET预览中，经真实界面操作确认继续编辑保留草稿，批准后切换角色页成功，无二次原生离页提示。预览已关闭，不影响真实实例。
+- 实际渲染截图保留在忽略的runtime/agent-research/ui-controls；没有将截图、运行文件或身份资料加入Git。
+- 保持v1.0.0源码版本；本轮未发版、未推送或更新运行实例镜像。Firefox／Safari各具体版本的原生回退外观没有逐一做真人验证，不承诺系统弹层与增强弹层像素一致。

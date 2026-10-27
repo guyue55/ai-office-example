@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           uv run --extra agent --locked playwright install --with-deps chromium
-          OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_browser.py tests/test_assistant_workspace_browser.py -q
+          OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_browser.py tests/test_assistant_workspace_browser.py tests/test_ui_state_browser.py tests/test_ui_catalog_browser.py tests/test_visual_foundation_browser.py -q
       - name: 独立PG18与共享Agent回执及越权验收
         if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
         shell: bash

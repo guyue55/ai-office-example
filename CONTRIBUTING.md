@@ -64,6 +64,8 @@ OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome uv run --extra a
 
 `test_ui_state_browser.py`仅启动独立合成HTTP应用，验证保存后外壳与助手绑定、其他表单及请求期间草稿、完整页面授权保存、成功／冲突／网络失败后的控件恢复，以及本人取消离页后任务轮询继续；不修改真实授权，不调用模型。设计与执行结果见[UI状态整改](docs/UI_STATE_REMEDIATION_PLAN.md)。
 
+该入口还覆盖侧栏／完整助手页的站内草稿确认、原生刷新取消、分页恢复、圆角原生picker键盘和Esc层级、触摸／无脚本回退，见[导航与控件方案](docs/UI_NAVIGATION_CONTROLS_PLAN.md)。未收到真正离页前不能清理任务轮询；增强样式不能替代原生select的表单与键盘语义。
+
 独立实例的匿名身份登录布局检查：
 
 ```sh

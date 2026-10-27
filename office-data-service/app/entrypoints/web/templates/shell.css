@@ -44,6 +44,7 @@
 .field-error-link:hover {background:transparent;color:#6f211c}
 .field-error {display:block;color:#8c2923;font-size:13px;line-height:1.6;margin-top:5px}
 [aria-invalid=true]:is(input,select,textarea) {border-color:#a83b35}
+[aria-invalid=true]:is(input,select,textarea):focus {border-color:#a83b35;box-shadow:0 0 0 3px #a83b3514}
 
 .task-receipt {padding:14px 0;border-top:1px solid var(--line)}
 .task-receipt .section-head {align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}

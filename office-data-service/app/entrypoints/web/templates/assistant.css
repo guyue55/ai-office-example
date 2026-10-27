@@ -49,7 +49,9 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-latest {position:absolute;right:16px;bottom:10px;background:#fff;border:1px solid var(--line);box-shadow:0 2px 6px #172b3a10;z-index:1}
 .assistant-composer {padding:8px 12px 6px;margin:0;background:#fff;flex-shrink:0}
 .assistant-input-box {border:1px solid var(--control-border);border-radius:12px;padding:8px 10px 6px;min-width:0}
-.assistant-input-box:focus-within {border-color:var(--focus-ring);box-shadow:0 0 0 2px var(--focus-ring)}
+.assistant-input-box {transition:border-color 140ms ease,box-shadow 140ms ease}
+.assistant-input-box:focus-within {border-color:var(--focus-default);box-shadow:0 0 0 3px var(--focus-halo)}
+.assistant-input-box:has(textarea:focus-visible) {outline:2px solid var(--focus-default);outline-offset:2px}
 .assistant-composer textarea {display:block;width:100%;min-height:48px;max-height:180px;resize:none;overflow-y:auto;font:inherit;line-height:1.6;border:0;background:transparent;outline:none!important;box-shadow:none!important;padding:4px 2px;margin:0;border-radius:0;color:var(--ink)}
 .assistant-context {font-size:11px;display:flex;align-items:center;min-height:24px}
 #assistant-context-chip {display:inline-flex;align-items:center;gap:2px;background:var(--bg);border-radius:6px;color:var(--muted);padding-left:7px;max-width:100%}
@@ -110,3 +112,4 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 @media (max-width:700px) {.assistant-user,.assistant-answer,.assistant-composer textarea {font-size:16px}}
 
 body.assistant-modal-open {overflow:hidden}
+@media (forced-colors:active) {.assistant-input-box:focus-within {outline:2px solid Highlight;box-shadow:none}}
