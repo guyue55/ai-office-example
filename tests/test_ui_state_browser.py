@@ -76,12 +76,38 @@ def ui_state():
             request, "assistant_workspace.html", context("assistant_workspace.html")
         )
 
+    @app.get("/console/client-authorizations")
+    async def authorizations(request: Request):
+        value = context("client_authorizations.html")
+        value["listing"]["items"][0]["current"] = True
+        return TEMPLATES.TemplateResponse(request, "client_authorizations.html", value)
+
+    @app.post("/console/client-authorizations/session/change")
+    async def end_session(request: Request):
+        state["writes"] += 1
+        return TEMPLATES.TemplateResponse(
+            request, "signed_out.html", {"authorization_ended": True, "cleanup": "done"}
+        )
+
+    @app.get("/console/signed-out")
+    async def signed_out(request: Request):
+        return TEMPLATES.TemplateResponse(
+            request, "signed_out.html", {"authorization_ended": True, "cleanup": "done"}
+        )
+
     @app.get("/console/assistant-ui/bootstrap")
     async def bootstrap():
         return {
             "code": 0,
             "data": {"capability": {"ready": True}, "conversations": {"items": [], "next": None}},
         }
+
+    @app.post("/console/assistant-ui/action")
+    async def agent_action(request: Request):
+        state["actions"] = state.get("actions", 0) + 1
+        while state.get("agent_pending") and not state.get("agent_release"):
+            await asyncio.sleep(0.01)
+        return {"code": 0, "data": {"id": "conversation"}}
 
     @app.get("/console/assistant-ui/conversations/{identifier}")
     async def conversation(identifier: str):
@@ -99,7 +125,18 @@ def ui_state():
                     {
                         "id": "turn",
                         "prompt": "合成工作",
-                        "status": "running",
+                        "status": "completed" if state.get("completed") else "running",
+                        "result": {
+                            "receipts": [
+                                {
+                                    "status": "received",
+                                    "operation": "data",
+                                    "result": {"changed": True},
+                                }
+                            ]
+                        }
+                        if state.get("completed")
+                        else None,
                         "created_at": "2026-10-27T00:00:00Z",
                         "version": 1,
                     }
@@ -129,6 +166,8 @@ def ui_state():
             finally:
                 browser.close()
     finally:
+        state["release"] = True
+        state["agent_release"] = True
         server.should_exit = True
         thread.join(5)
         listener.close()
@@ -411,3 +450,107 @@ def test_same_document_anchor_does_not_discard_draft(ui_state):
     page.keyboard.press("Enter")
     expect(page.locator("#action-confirm")).not_to_be_visible()
     expect(page.locator("#assistant-input")).to_have_value("锚点跳转保留")
+
+
+@pytest.mark.parametrize("assistant_draft", [False, True])
+def test_assistant_business_refresh_has_one_confirmation_per_draft(ui_state, assistant_draft):
+    page, state = ui_state
+    state["completed"] = True
+    page.evaluate(
+        "sessionStorage.setItem('office-assistant:catalog-admin',JSON.stringify({id:'conversation',open:true}))"
+    )
+    page.reload()
+    expect(page.get_by_role("button", name="刷新业务页面", exact=True)).to_be_visible()
+    page.locator(".pending-queue > summary").click()
+    page.locator(".claim-name").fill("未保存的人员资料")
+    if assistant_draft:
+        page.locator("#assistant-input").fill("未发送的助手草稿")
+    dialogs = []
+    page.on("dialog", lambda dialog: (dialogs.append(dialog.type), dialog.dismiss()))
+    page.evaluate("window.refreshProbe=true")
+    page.get_by_role("button", name="刷新业务页面", exact=True).click()
+    expect(page.locator("#confirm-title")).to_have_text("刷新业务页面？")
+    page.locator("[data-confirm-accept]").click()
+    if assistant_draft:
+        expect(page.locator("#confirm-title")).to_have_text("离开并放弃助手草稿？")
+        page.locator("[data-confirm-accept]").click()
+    page.wait_for_function("window.refreshProbe===undefined", timeout=3000)
+    assert dialogs == []
+    expect(page.locator(".claim-name")).to_have_value("")
+
+
+@pytest.mark.parametrize("target", ["navigation", "filter"])
+def test_pending_write_blocks_page_exit_until_receipt(ui_state, target):
+    page, state = ui_state
+    state["delay"] = True
+    page.locator("form[data-confirm-message] button[type=submit]").click()
+    page.locator("[data-confirm-accept]").click()
+    expect(page.locator("form[data-confirm-message]")).to_have_attribute("aria-busy", "true")
+    if target == "navigation":
+        page.locator('.shell-nav a[href="/console/roles"]').click()
+    else:
+        page.locator("main input[name=q]").fill("等候保存")
+        page.locator("main form[role=search] button[type=submit]").click()
+    expect(page.locator("#ui-notifications")).to_contain_text("操作正在提交")
+    assert page.url.endswith("/console/employees")
+    state["release"] = True
+    expect(page.locator("#ui-notifications")).to_contain_text("保存完成")
+    page.locator('.shell-nav a[href="/console/roles"]').click()
+    expect(page).to_have_url(re.compile(r"/console/roles$"))
+    assert state["writes"] == 1
+
+
+def test_browser_refresh_during_write_can_be_cancelled_without_losing_receipt(ui_state):
+    page, state = ui_state
+    state["delay"] = True
+    page.locator("form[data-confirm-message] button[type=submit]").click()
+    page.locator("[data-confirm-accept]").click()
+    expect(page.locator("form[data-confirm-message]")).to_have_attribute("aria-busy", "true")
+    dialogs = []
+    page.on("dialog", lambda dialog: (dialogs.append(dialog.type), dialog.dismiss()))
+    page.evaluate("location.reload()")
+    assert dialogs == ["beforeunload"]
+    state["release"] = True
+    expect(page.locator("#ui-notifications")).to_contain_text("保存完成")
+    assert state["writes"] == 1
+
+
+def test_pending_agent_submission_blocks_exit_but_running_task_does_not(ui_state):
+    page, state = ui_state
+    state["agent_pending"] = True
+    page.locator("#assistant-launch").click()
+    page.locator("#assistant-input").fill("合成受理验证")
+    expect(page.locator("[data-assistant-send]")).to_be_enabled()
+    page.locator("[data-assistant-send]").click()
+    page.locator('.shell-nav a[href="/console/roles"]').click()
+    expect(page.locator("#ui-notifications")).to_contain_text("助手操作正在提交")
+    assert page.url.endswith("/console/employees")
+    state["agent_release"] = True
+    expect(page.locator("#assistant-input")).to_have_value("")
+    expect(page.locator('[data-run="turn"]')).to_be_visible()
+    page.locator('.shell-nav a[href="/console/roles"]').click()
+    expect(page).to_have_url(re.compile(r"/console/roles$"))
+    assert state["actions"] == 2
+
+
+def test_ending_current_authorization_confirms_draft_before_write(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/client-authorizations"))
+    page.locator("#assistant-launch").click()
+    page.locator("#assistant-input").fill("退出前的草稿")
+    dialogs = []
+    page.on("dialog", lambda dialog: (dialogs.append(dialog.type), dialog.dismiss()))
+    page.locator("summary").filter(has_text="停用授权").click()
+    page.locator("#record-dialog-content input[name=reason]").fill("合成退出验证")
+    page.locator("#record-dialog-content button[type=submit]").click()
+    page.locator("[data-confirm-accept]").click()
+    expect(page.locator("#confirm-title")).to_have_text("离开并放弃助手草稿？")
+    page.locator("[data-confirm-cancel]").click()
+    assert state["writes"] == 0
+    page.locator("#record-dialog-content button[type=submit]").click()
+    page.locator("[data-confirm-accept]").click()
+    expect(page.locator("#confirm-title")).to_have_text("离开并放弃助手草稿？")
+    page.locator("[data-confirm-accept]").click()
+    expect(page).to_have_url(re.compile(r"/console/signed-out$"))
+    assert state["writes"] == 1
+    assert dialogs == []

@@ -66,6 +66,7 @@
   function clearPoll(){clearTimeout(state.timer);state.timer=null;}
   function rememberDraft(){drafts.set(state.id,input.value);}
   ui.confirmNavigation=async()=>{
+    if(state.busy){ui.notify('助手操作正在提交，请等待回执后再切换页面。',true);return false;}
     rememberDraft();
     if(!Array.from(drafts.values()).some(value=>value.trim()))return true;
     const accepted=await ui.confirm('离开会丢失当前页面中尚未发送的助手草稿。已受理的任务仍会继续，可在任务记录中查看。',{title:'离开并放弃助手草稿？',accept:'放弃草稿并前往',cancel:'继续编辑',danger:true});
@@ -196,7 +197,7 @@
     pageName:code=>pages[code]||'未关联页面',
     async fillDraft(prompt){if(input.value.trim()&&!await ui.confirm('替换当前尚未发送的草稿？',{title:'填入示例',accept:'替换草稿'}))return;input.value=prompt;rememberDraft();sizeInput();updateControls();input.focus();},
     showDetails(turn){const box=view.el('div');box.append(view.fields({status:view.labels.statuses[turn.status]||turn.status,created_at:turn.created_at,updated_at:turn.updated_at,version:turn.version}));if(turn.result?.usage)box.append(view.detail('模型用量',turn.result.usage));const link=view.el('a','打开完整任务记录');link.href='/console/assistant/'+encodeURIComponent(turn.id);box.append(link);ui.present('任务详情',box);},
-    async refreshBusiness(){const main=document.querySelector('main');if(window.OfficeForms?.dirty(main)&&!await ui.confirm('当前页面有未保存的修改。刷新会丢失这些内容，是否继续？',{title:'刷新业务页面？',accept:'放弃修改并刷新'}))return;if(await ui.confirmNavigation())location.reload();},
+    async refreshBusiness(){await ui.reloadPage();},
     async decide(turn,approve){if(!await ui.confirm(approve?'请核对本次完整预览。批准仅适用于此操作，后续写入仍需确认。':'拒绝本次操作？助手不会执行该提案。',{title:approve?'批准本次操作？':'拒绝操作',accept:approve?'批准本次操作':'拒绝操作'}))return;await withAction(()=>api.action('decide',{identifier:turn.id,version:turn.version,proposal_id:turn.pending.ticket,approve}));},
     async stop(turn){if(!await ui.confirm('已完成的操作不会撤回，在途写入可能需要核对实际数据。',{title:'停止任务？',accept:'停止任务'}))return;await withAction(()=>api.action('cancel',{identifier:turn.id,version:turn.version}));}
   };
@@ -258,7 +259,7 @@
   document.addEventListener('keydown',event=>{if(!event.defaultPrevented&&!ui.pickerOpen()&&event.key==='Escape'&&root.contains(document.activeElement)&&!document.querySelector('dialog[open]')&&!root.hidden&&!full){event.preventDefault();close();}});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearPoll();else if(!root.hidden){state.polls=0;loadConversation();}});
   // 用户可能取消离页；轮询清理只在实际pagehide执行，不能提前停在旧状态。
-  window.addEventListener('beforeunload',event=>{rememberDraft();if(!navigationApproved&&Array.from(drafts.values()).some(value=>value.trim())){event.preventDefault();event.returnValue='';}});
+  window.addEventListener('beforeunload',event=>{rememberDraft();if(!navigationApproved&&(state.busy||Array.from(drafts.values()).some(value=>value.trim()))){event.preventDefault();event.returnValue='';}});
   window.addEventListener('pagehide',clearPoll);window.addEventListener('pageshow',event=>{navigationApproved=false;if(event.persisted&&!root.hidden){state.polls=0;bootstrap();}});
   let wasOpen=false;try{wasOpen=JSON.parse(sessionStorage.getItem(storeKey)||'{}').open;}catch(_){}
   updateContext();if(full)open();else if(wasOpen&&innerWidth>=1200)open();

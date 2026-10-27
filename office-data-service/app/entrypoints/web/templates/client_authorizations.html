@@ -2,7 +2,7 @@
 {% block content %}
 {% macro authorization_action(item, action, label, message) %}
 <details class="inline-edit"><summary data-action-kind="{{ action }}">{{ label }}</summary>
-<form method="post" action="/console/client-authorizations/{{ item.id }}/change" class="form-stack" data-native-submit data-confirm-message="{{ message }}">
+<form method="post" action="/console/client-authorizations/{{ item.id }}/change" class="form-stack" data-native-submit data-confirm-message="{{ message }}" {% if item.current and action in ['disable','archive'] %}data-ends-session{% endif %}>
 <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ item.version }}"><input type="hidden" name="action" value="{{ action }}">
 <p class="muted">{{ message }}</p>
 <label>原因<input type="text" name="reason" required minlength="2" maxlength="200" placeholder="填写原因，便于审计核对"></label>

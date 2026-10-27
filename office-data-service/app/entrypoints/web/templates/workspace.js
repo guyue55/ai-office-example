@@ -188,6 +188,19 @@
   );
   // 只有真正离开文档才确认助手草稿；抽屉fetch与异步保存不触发离页。
   const mayNavigate = () => window.OfficeUI.confirmNavigation?.() ?? true;
+  const pendingWrite = () => {
+    if (!writing) return false;
+    window.OfficeUI.notify('操作正在提交，请等待回执后再切换页面。', true);
+    return true;
+  };
+  // 助手刷新也使用同一离页许可，避免业务草稿再次触发原生警告。
+  window.OfficeUI.reloadPage = async () => {
+    if (pendingWrite()) return;
+    if (dirty(document.querySelector('main')) && !await window.OfficeUI.confirm('当前页面有未保存的修改。刷新会丢失这些内容，是否继续？', {title:'刷新业务页面？', accept:'放弃修改并刷新'})) return;
+    if (!await mayNavigate()) return;
+    leaving = true;
+    location.reload();
+  };
 
   document.addEventListener('click', async event => {
     const formTrigger = event.target.closest('[data-open-form]');
@@ -196,6 +209,7 @@
       : event.target.closest('[data-form-dialog] > summary');
     if (summary && !panel.open) {
       event.preventDefault();
+      if (pendingWrite()) return;
       if (!await mayLeave(document.querySelector('main'))) return;
       const source = summary.parentElement;
       const holder = document.createElement('div');
@@ -216,6 +230,7 @@
     const url = new URL(link.href);
     // 当前文档锚点只是定位，不离页，不应丢弃或确认助手草稿。
     if (!panel.open && url.origin === location.origin && url.pathname === location.pathname && url.search === location.search && url.hash) return;
+    if (writing) { event.preventDefault(); pendingWrite(); return; }
     if (link.hasAttribute('data-workspace-full')) {
       event.preventDefault();
       if (await mayLeave(content) && await mayNavigate()) { leaving = true; location.assign(url.href); }
@@ -257,6 +272,13 @@
     if(event.defaultPrevented)return;
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
+    if (writing) {
+      event.preventDefault();
+      const size = form.querySelector('[data-current-size]');
+      if (size) size.value = size.dataset.currentSize;
+      pendingWrite();
+      return;
+    }
     if (form.hasAttribute('data-native-submit') && !form.hasAttribute('data-async-dialog')) {
       event.preventDefault();
       const root = panel.open && content.contains(form) ? content : document.querySelector('main');
@@ -303,6 +325,8 @@
     if (!await mayLeave(document.querySelector('main'), form)) return;
     if (inPanel && !await mayLeave(content, form)) return;
     if (form.dataset.confirmMessage && !await confirmAction(form)) return;
+    // 当前授权结束会立即离页；须在发送停用请求之前核对助手草稿。
+    if (form.hasAttribute('data-ends-session') && !await mayNavigate()) return;
     if (busy) return;
     const approvedDrafts = captureDirty(document.querySelector('main'), form);
     const submitter = event.submitter;
@@ -330,7 +354,7 @@
         const errorText = main.querySelector('.card')?.textContent.trim() || '操作未成功，请核对后重试。';
         throw new Error(errorText);
       }
-      if (main.querySelector('h2')?.textContent.trim() === '登录授权已结束') { location.assign('/console/signed-out'); return; }
+      if (main.querySelector('h2')?.textContent.trim() === '登录授权已结束') { leaving = true; location.assign('/console/signed-out'); return; }
       if (!main.querySelector('.notice')) throw new Error('未取得保存确认。请重新登录或刷新核对，勿重复提交。');
       // 已取得保存回执的当前表单不再是未保存草稿；发送期间禁止继续修改。
       remember(form);
@@ -385,8 +409,9 @@
     const workspaceDirty = panel.open && (dirty(content) || draftInTrail());
     const recordDialog = document.getElementById('record-dialog');
     const recordDirty = recordDialog?.open && dirty(document.getElementById('record-dialog-content'));
-    if (!leaving && (workspaceDirty || dirty(document.querySelector('main')) || recordDirty)) {
+    if (!leaving && (writing || workspaceDirty || dirty(document.querySelector('main')) || recordDirty)) {
       event.preventDefault(); event.returnValue = '';
     }
   });
+  window.addEventListener('pageshow', () => { leaving = false; });
 })();
