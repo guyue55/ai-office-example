@@ -48,3 +48,5 @@ Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGE
 控制台与助手的方案、范围和阶段验收见 [UI整体升级计划](docs/UI_UPGRADE_PLAN.md)，后续独立审阅整改见 [UI审阅整改计划](docs/UI_REVIEW_REMEDIATION.md)。页面及共享组件清单维护在 `tests/ui-pages.json`；局部检查通过不代表整体升级完成。
 
 已安装HTTP演示实例因内网IP变化需要恢复时，使用[显式迁址维护入口](docs/INSTANCE_RELOCATION.md)，保留数据与身份映射，不删除实例重新安装。
+
+Agent前端下一阶段研究见[前端路线、产品范围与验证计划](docs/COPILOTKIT_FRONTEND_RESEARCH.md)：包含CopilotKit示例核查、替代UI候选、模型配置前置、状态／审批边界和阶段验收。目前为研究草案，不表示已引入React、AG-UI或第三方Runtime。
