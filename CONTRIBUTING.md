@@ -57,9 +57,12 @@ PG测试创建本轮临时容器并执行正式迁移；需要Docker服务。浏
 
 ```sh
 OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome uv run --extra agent --frozen pytest tests/test_ui_catalog_browser.py tests/test_account_flow_browser.py tests/test_form_validation_browser.py tests/test_assistant_workspace_browser.py -q
+OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome uv run --extra agent --frozen pytest tests/test_ui_state_browser.py -q
 ```
 
 `OFFICE_TEST_BROWSER_CHANNEL=chrome`仅选择本机已安装Chrome；也可省略并安装Playwright匹配版本的Chromium。浏览器缺失属于测试环境未就绪，不能记为功能通过。
+
+`test_ui_state_browser.py`仅启动独立合成HTTP应用，验证保存后外壳与助手绑定、其他表单及请求期间草稿、完整页面授权保存、成功／冲突／网络失败后的控件恢复，以及本人取消离页后任务轮询继续；不修改真实授权，不调用模型。设计与执行结果见[UI状态整改](docs/UI_STATE_REMEDIATION_PLAN.md)。
 
 独立实例的匿名身份登录布局检查：
 

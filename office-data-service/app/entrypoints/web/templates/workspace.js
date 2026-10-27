@@ -2,7 +2,7 @@
   'use strict';
   const panel = document.getElementById('workspace');
   if (!panel || !window.HTMLDialogElement || !panel.showModal) return;
-  const {setup, remember, dirty} = window.OfficeForms;
+  const {setup, remember, dirty, captureDirty} = window.OfficeForms;
   const content = panel.querySelector('#workspace-content');
   const feedback = panel.querySelector('#workspace-feedback');
   const title = panel.querySelector('#workspace-title');
@@ -10,7 +10,7 @@
   const back = panel.querySelector('[data-workspace-back]');
   const reload = panel.querySelector('[data-workspace-reload]');
   let opener, local, currentURL, trail = [], busy = false, writing = false, changed = false, leaving = false;
-  let controller, savedMessage;
+  let controller, savedMessage, savedDrafts;
 
   const draftInTrail = () => trail.some(view => view.nodes.some(node => node.nodeType === 1 && dirty(node)));
   const mayLeave = async (root, ignoredForm = null) => (!dirty(root, ignoredForm) && !(root === content && draftInTrail())) ||
@@ -32,12 +32,13 @@
     document.body.classList.add('workspace-open');
     title.focus();
   }
-  function parsePage(html) {
+  function parsePage(html, {preserveShell = false} = {}) {
     const documentCopy = new DOMParser().parseFromString(html, 'text/html');
     const main = documentCopy.querySelector('main');
     if (!main) throw new Error('页面内容不可用，请在完整页面中核对。');
     // 仅导入服务端页面内容，不执行响应里的脚本或外部资源声明。
-    main.querySelectorAll('script, style, link, .assistant-launchbar, .shell-context').forEach(node => node.remove());
+    main.querySelectorAll('script, style, link').forEach(node => node.remove());
+    if (!preserveShell) main.querySelectorAll('.assistant-launchbar, .shell-context').forEach(node => node.remove());
     return main;
   }
   function paint(main, url) {
@@ -89,10 +90,15 @@
       content.inert = false;
     }
   }
-  async function refreshList(message) {
+  async function refreshList(message, approvedDrafts = new Map()) {
     const focusHref = opener?.getAttribute('href');
     const root = document.querySelector('main');
     const originURL = location.href;
+    // 请求期间新产生的草稿仍属于员工，不能因另一项操作已成功而覆盖。
+    if (dirty(root, null, approvedDrafts)) {
+      window.OfficeUI.notify((message || '操作已提交。') + ' 当前页面有未保存的修改，列表未自动刷新；请保存草稿后刷新核对。');
+      return;
+    }
     const refreshController = new AbortController();
     const refreshDeadline = setTimeout(() => refreshController.abort(), 15000);
     // 保存后刷新期间阻止在旧DOM中继续输入，避免响应覆盖刚输入的搜索或编辑。
@@ -104,9 +110,14 @@
       if (!response.ok || new URL(response.url).pathname !== location.pathname) {
         throw new Error('列表状态更新失败，请刷新核对最新配置。');
       }
-      const main = parsePage(await response.text());
+      const main = parsePage(await response.text(), {preserveShell: true});
       if (location.href !== originURL || leaving) return;
       const scroll = window.scrollY;
+      // 保留现有节点及其监听器；抽屉裁剪不能用于替换整个页面外壳。
+      for (const selector of ['.assistant-launchbar', '.shell-context']) {
+        const original = root.querySelector(selector), incoming = main.querySelector(selector);
+        if (original && incoming) incoming.replaceWith(original);
+      }
       document.querySelector('main').replaceChildren(...Array.from(main.childNodes));
       setup(document.querySelector('main'));
       root.inert = false;
@@ -154,8 +165,8 @@
     content.replaceChildren();
     document.body.classList.remove('workspace-open');
     opener?.focus({preventScroll: true});
-    if (changed) refreshList(savedMessage);
-    savedMessage = null;
+    if (changed) refreshList(savedMessage, savedDrafts);
+    savedMessage = null; savedDrafts = undefined;
     changed = false; currentURL = null; trail = [];
     showFeedback('');
   });
@@ -280,15 +291,22 @@
     }
     event.preventDefault();
     if (busy) return;
+    if (!await mayLeave(document.querySelector('main'), form)) return;
+    if (inPanel && !await mayLeave(content, form)) return;
     if (form.dataset.confirmMessage && !await confirmAction(form)) return;
+    if (busy) return;
+    const approvedDrafts = captureDirty(document.querySelector('main'), form);
     const submitter = event.submitter;
     const body = new URLSearchParams(new FormData(form));
     if (submitter?.name) body.append(submitter.name, submitter.value);
     busy = true; writing = true;
     const saveController = new AbortController();
     const saveDeadline = setTimeout(() => saveController.abort(), 30000);
+    const originalInert = form.inert;
+    form.inert = true;
     form.setAttribute('aria-busy', 'true');
-    form.querySelectorAll('button[type=submit], button:not([type])').forEach(button => button.disabled = true);
+    const submitButtons = Array.from(form.querySelectorAll('button[type=submit], button:not([type])')).map(button => [button, button.disabled]);
+    submitButtons.forEach(([button]) => button.disabled = true);
     if (inPanel) showFeedback('正在保存，请勿重复提交…');
     try {
       const response = await fetch(form.getAttribute('action') || location.href, {
@@ -305,7 +323,10 @@
       }
       if (main.querySelector('h2')?.textContent.trim() === '登录授权已结束') { location.assign('/console/signed-out'); return; }
       if (!main.querySelector('.notice')) throw new Error('未取得保存确认。请重新登录或刷新核对，勿重复提交。');
+      // 已取得保存回执的当前表单不再是未保存草稿；发送期间禁止继续修改。
+      remember(form);
       savedMessage = main.querySelector('.notice').textContent.trim();
+      savedDrafts = approvedDrafts;
       changed = true;
       if (inPanel) {
         if (local) local.holder.querySelector('form')?.reset();
@@ -321,8 +342,8 @@
         showFeedback('已保存。关闭面板后列表会更新。');
       } else {
         if (inRecord) { form.reset(); document.getElementById('record-dialog').close(); }
-        await refreshList(savedMessage);
-        savedMessage = null;
+        await refreshList(savedMessage, approvedDrafts);
+        savedMessage = null; savedDrafts = undefined;
         changed = false;
       }
     } catch (error) {
@@ -346,7 +367,8 @@
       clearTimeout(saveDeadline);
       busy = false; writing = false;
       form.removeAttribute('aria-busy');
-      form.querySelectorAll('button').forEach(button => button.disabled = false);
+      form.inert = originalInert;
+      submitButtons.forEach(([button, disabled]) => button.disabled = disabled);
     }
   });
   window.addEventListener('beforeunload', event => {

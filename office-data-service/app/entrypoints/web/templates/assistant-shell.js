@@ -249,7 +249,8 @@
   launch?.addEventListener('click',()=>root.hidden?open():close());$('[data-assistant-close]').addEventListener('click',close);
   document.addEventListener('keydown',event=>{if(!event.defaultPrevented&&event.key==='Escape'&&root.contains(document.activeElement)&&!document.querySelector('dialog[open]')&&!root.hidden&&!full){event.preventDefault();close();}});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearPoll();else if(!root.hidden){state.polls=0;loadConversation();}});
-  window.addEventListener('beforeunload',event=>{rememberDraft();if(Array.from(drafts.values()).some(value=>value.trim())){event.preventDefault();event.returnValue='';}clearPoll();});
+  // 用户可能取消离页；轮询清理只在实际pagehide执行，不能提前停在旧状态。
+  window.addEventListener('beforeunload',event=>{rememberDraft();if(Array.from(drafts.values()).some(value=>value.trim())){event.preventDefault();event.returnValue='';}});
   window.addEventListener('pagehide',clearPoll);window.addEventListener('pageshow',event=>{if(event.persisted&&!root.hidden){state.polls=0;bootstrap();}});
   let wasOpen=false;try{wasOpen=JSON.parse(sessionStorage.getItem(storeKey)||'{}').open;}catch(_){}
   updateContext();if(full)open();else if(wasOpen&&innerWidth>=1200)open();

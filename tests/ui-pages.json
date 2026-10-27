@@ -107,7 +107,8 @@
       "coverage": "全页面浏览器巡视",
       "tests": [
         "e2e_page_review.py",
-        "test_ui_catalog_browser.py"
+        "test_ui_catalog_browser.py",
+        "test_ui_state_browser.py"
       ]
     },
     {
@@ -123,7 +124,8 @@
       "coverage": "全页面浏览器巡视",
       "tests": [
         "e2e_page_review.py",
-        "test_ui_catalog_browser.py"
+        "test_ui_catalog_browser.py",
+        "test_ui_state_browser.py"
       ]
     },
     {
@@ -180,7 +182,8 @@
       "tests": [
         "test_assistant_workspace_browser.py",
         "test_assistant_workspace_web.py",
-        "test_ui_catalog_browser.py"
+        "test_ui_catalog_browser.py",
+        "test_ui_state_browser.py"
       ]
     }
   ],

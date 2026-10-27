@@ -7,7 +7,11 @@
   const remember = form => snapshots.set(form, JSON.stringify(formValue(form)));
   const dirtyForm = form => snapshots.has(form) &&
     snapshots.get(form) !== JSON.stringify(formValue(form));
-  const dirty = (root, ignoredForm = null) => Array.from(root.querySelectorAll('form')).some(form => form !== ignoredForm && dirtyForm(form));
+  // 仅比较已明确允许放弃的那一版草稿；请求期间继续编辑会再次被识别。
+  const captureDirty = (root, ignoredForm = null) => new Map(Array.from(root.querySelectorAll('form'))
+    .filter(form => form !== ignoredForm && dirtyForm(form)).map(form => [form, JSON.stringify(formValue(form))]));
+  const dirty = (root, ignoredForm = null, approved = new Map()) => Array.from(root.querySelectorAll('form'))
+    .some(form => form !== ignoredForm && dirtyForm(form) && approved.get(form) !== JSON.stringify(formValue(form)));
   const initialized = new WeakSet();
   function setup(root) {
     // 所有可编辑写入表单都保护草稿；GET筛选、隐藏字段与密码值不进入快照。
@@ -38,5 +42,5 @@
       choices.forEach(choice => choice.addEventListener('change', updateSummary));
     });
   }
-  window.OfficeForms = {setup, remember, dirty};
+  window.OfficeForms = {setup, remember, dirty, captureDirty};
 })();
