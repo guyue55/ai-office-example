@@ -5,7 +5,7 @@
   const labels = JSON.parse(document.getElementById('assistant-labels').textContent);
   const active = new Set(['queued','running','awaiting_confirmation']);
   const outcomes=Object.fromEntries(Object.entries(labels.outcomes).filter(([phase])=>!active.has(phase)));
-  const names = {name:'名称', id:'编号', version:'版本', before:'变更前', after:'变更后', values:'字段值', operation:'操作', status:'状态', schema_revision:'字段定义版本', project_id:'数据容器编号', complete:'覆盖完整', next:'下一页', count:'数量', total:'总数', archived:'已归档', permissions:'权限', items:'数据项', warning:'提示', warnings:'提示', message:'说明', active:'启用'};
+  const names = {name:'名称', username:'登录账号', email:'工作邮箱', mode:'凭证方式', role_ids:'角色标识', kind:'操作类型', identifier:'目标标识', remote_id:'登录账号标识', id:'编号', version:'版本', before:'变更前', after:'变更后', values:'字段值', operation:'操作', status:'状态', schema_revision:'字段定义版本', project_id:'数据容器编号', complete:'覆盖完整', next:'下一页', count:'数量', total:'总数', archived:'已归档', permissions:'权限', items:'数据项', warning:'提示', warnings:'提示', message:'说明', active:'启用'};
   function el(tag, text, cls) {const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (cls) node.className = cls; return node;}
   function button(text, action, kind='secondary') {const node = el('button', text, kind); node.type='button'; node.addEventListener('click', action); return node;}
   function fields(value) {
@@ -52,11 +52,11 @@
     }
     return [...new Set(items)];
   }
-  function renderWelcome(controls) {
+  function renderWelcome(controls,{ready=true,loading=false}={}) {
     const box=el('div',undefined,'assistant-welcome');box.dataset.placeholder='true';
-    box.append(el('span','开始一项工作','assistant-eyebrow'),el('h3','今天需要完成什么？'),el('p','可查询获准数据、整理信息并预览操作。涉及写入时，会请您核对确认。','muted'));
+    box.append(el('span','开始一项工作','assistant-eyebrow'),el('h3',loading?'正在准备助手':ready?'今天需要完成什么？':'助手当前不可用'),el('p','可查询获准数据、整理信息并预览操作。涉及写入时，会请您核对确认。','muted'));
     const prompts=el('div',undefined,'assistant-starters');
-    for(const [label,prompt] of [['了解我的权限','请说明我当前具备哪些权限，以及可以进行哪些操作。'],['查阅数据容器','请查询我可以访问的数据容器，说明返回结果的覆盖范围，不要修改数据。']])prompts.append(button(label,()=>controls.fillDraft(prompt),'assistant-prompt'));
+    for(const [label,prompt] of [['了解我的权限','请说明我当前具备哪些权限，以及可以进行哪些操作。'],['查阅数据容器','请查询我可以访问的数据容器，说明返回结果的覆盖范围，不要修改数据。']]){const starter=button(label,()=>controls.fillDraft(prompt),'assistant-prompt');starter.disabled=!ready;prompts.append(starter);}
     box.append(prompts,el('p','仅提交获准资料；页面关联只说明讨论位置。','small muted'));return box;
   }
   function renderTurn(turn, controls) {
@@ -104,5 +104,5 @@
     if(outcomes[outcome]&&outcome!=='completed')section.append(el('p',outcomes[outcome],outcome==='cancelled'?'small muted':'assistant-warning'));
     return section;
   }
-  api.view={el,button,renderTurn,renderWelcome,active,labels,fields,detail,outcomes};
+  api.view={el,button,renderTurn,renderWelcome,active,labels,fields,detail,outcomes,preview};
 })();

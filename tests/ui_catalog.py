@@ -12,6 +12,31 @@ from app.modules.access.catalog import (
     describe_permission,
 )
 
+PAGE_PATHS = {
+    "access_detail.html": "/console/access/employees/person",
+    "account_credential.html": "/console/accounts/operations/operation/credential",
+    "account_detail.html": "/console/accounts/employees/person",
+    "account_link.html": "/console/accounts/link",
+    "account_new.html": "/console/accounts/new",
+    "account_operation.html": "/console/accounts/operations/operation",
+    "account_operations.html": "/console/accounts/operations",
+    "account_preview.html": "/console/accounts/submit",
+    "account_security.html": "/console/security",
+    "audit.html": "/console/audit",
+    "client_authorizations.html": "/console/client-authorizations",
+    "dashboard.html": "/console/dashboard",
+    "employees.html": "/console/employees",
+    "error.html": "/console/roles",
+    "links.html": "/console/links/employees/person/roles",
+    "permission_sets.html": "/console/permission-sets",
+    "permissions.html": "/console/permissions",
+    "roles.html": "/console/roles",
+    "signed_out.html": "/console/signed-out",
+    "assistant.html": "/console/assistant",
+    "assistant_task.html": "/console/assistant/task",
+    "assistant_workspace.html": "/console/assistant/workspace",
+}
+
 
 def context(template):
     now = datetime(2026, 10, 26, 8, tzinfo=UTC)
@@ -68,6 +93,7 @@ def context(template):
         },
     }
     value = {
+        "page_template": template,
         "me": {
             "id": "catalog-admin",
             "name": "隔离巡视管理员",
@@ -155,6 +181,23 @@ def context(template):
             "account_operations.html": "operations",
         }.get(template, ""),
     }
+    if template == "account_preview.html":
+        value["preview"] = {
+            "effects": ["修改指定资料，不改动角色或凭证"],
+            "request": {
+                "kind": "update",
+                "identifier": "person",
+                "version": 2,
+                "name": "更新后的业务姓名",
+                "email": "new@example.invalid",
+            },
+            "confirmation_digest": "catalog-digest",
+        }
+        value["target"] = {
+            "name": person["name"],
+            "version": 2,
+            "account": {"username": "catalog-person", "email": "old@example.invalid"},
+        }
     if template in {"roles.html", "permission_sets.html"}:
         value["items"] = [role]
     if template == "permissions.html":

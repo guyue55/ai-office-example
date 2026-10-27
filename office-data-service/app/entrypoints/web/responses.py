@@ -11,10 +11,12 @@ from fastapi.templating import Jinja2Templates
 from app.application.codebook import legacy_code
 from app.common.errors import DomainError
 from app.common.product import PRODUCT
+from app.entrypoints.web.navigation import page_location
 from app.modules.access.session_errors import SessionEnded
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 TEMPLATES.env.globals["product"] = PRODUCT
+TEMPLATES.env.globals["page_location"] = page_location
 TEMPLATES.env.trim_blocks = True
 TEMPLATES.env.lstrip_blocks = True
 TEMPLATES.env.policies["json.dumps_kwargs"] = {"sort_keys": True, "ensure_ascii": False}

@@ -33,12 +33,28 @@ def register_accounts(
         )
         return me
 
-    async def preview(request, command, key=None):
+    async def preview(request, command, key=None, target=None):
         result = await operate(request, "account.preview", {"request": command})
+        if command.get("identifier"):
+            target = await operate(request, "account.detail", {"identifier": command["identifier"]})
+            require(
+                target["version"] == command["version"],
+                409,
+                "version_conflict",
+                "资料已更新，请返回重新核对",
+            )
+            if command["kind"] == "update":
+                require(
+                    target.get("account") is not None,
+                    409,
+                    "constraint_conflict",
+                    "原登录资料暂时无法核实，请刷新资料后重新核对",
+                )
         return await render(
             request,
             "account_preview.html",
             preview=result,
+            target=target,
             request_json=json.dumps(result["request"], ensure_ascii=False),
             key=key or uuid4().hex,
         )
@@ -103,6 +119,21 @@ def register_accounts(
     async def link_preview(request: Request):
         form = dict(await request.form())
         csrf(request, form)
+        # 显示身份从服务端搜索结果取得；隐藏字段只作查询线索，不作身份事实。
+        lookup = str(form.get("lookup", ""))
+        found = await operate(request, "account.search", {"q": lookup})
+        target = next(
+            (item for item in found["items"] if item["id"] == str(form.get("remote_id", ""))),
+            None,
+        )
+        if target is None:
+            raise DomainError(409, "constraint_conflict", "目标账号无法核实，请重新搜索并关联")
+        require(
+            not target.get("linked_employee_id"),
+            409,
+            "constraint_conflict",
+            "账号已关联人员，请刷新核对",
+        )
         return await preview(
             request,
             {
@@ -111,6 +142,7 @@ def register_accounts(
                 "name": str(form.get("name", "")),
                 "role_ids": None if form.get("default_role") == "on" else [],
             },
+            target=target,
         )
 
     @router.get("/console/accounts/employees/{identifier}")

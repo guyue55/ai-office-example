@@ -3,7 +3,7 @@
 {% block content %}
 {% set values = form_values|default({}) %}
 <header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>新建员工</h2><p class="muted">一次完成登录开户与基础授权。额外职责可在开通后通过「授权角色」调整。</p></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
-<section class="card"><form class="form-stack" method="post" data-native-submit action="/console/accounts/new">
+<section class="card form-card"><form class="form-stack" method="post" data-native-submit action="/console/accounts/new">
 {% if form_error %}<div class="form-errors" tabindex="-1" role="alert" data-server-form-error><strong>请核对开通信息</strong><p>{{ form_error }}</p></div>{% endif %}
 <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ key }}">
 <label>姓名<input type="text" name="name" value="{{ values.get('name','') }}" required maxlength="100" autocomplete="off"></label>

@@ -108,3 +108,5 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 @media (prefers-reduced-motion:reduce) {.assistant-panel * {scroll-behavior:auto!important;transition:none!important}}
 
 @media (max-width:700px) {.assistant-user,.assistant-answer,.assistant-composer textarea {font-size:16px}}
+
+body.assistant-modal-open {overflow:hidden}

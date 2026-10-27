@@ -120,6 +120,7 @@ def web_router(application):
         identity = await application.call(principal, "me", {}, request.state.trace_id)
         context.update(
             me=identity,
+            page_template=template,
             assistant_statuses=STATUSES,
             assistant_outcomes=OUTCOMES,
             assistant_operations=OPERATIONS,

@@ -82,10 +82,14 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 assert page.locator("#assistant-messages img").count() == 0
                 assert page.locator("#assistant-messages script").count() == 0
                 assert page.locator("body").evaluate("node => node.scrollWidth <= innerWidth")
+                page.set_viewport_size({"width": 390, "height": 1000})
+                expect(page.locator("#assistant-panel")).to_have_attribute("aria-modal", "true")
                 page.get_by_role("button", name="批准本次操作", exact=True).click()
                 expect(page.locator("#action-confirm")).to_be_visible()
                 page.locator("[data-confirm-cancel]").click()
                 assert not any(name == "agent.decide" for name, _ in calls)
+                page.set_viewport_size({"width": 1440, "height": 1000})
+                expect(page.locator("main")).to_have_js_property("inert", False)
                 # 两个页面先读取同一预览，然后验证重复决定不会变成第二次执行。
                 other = context.new_page()
                 other.goto(base + "/console/assistant/workspace")

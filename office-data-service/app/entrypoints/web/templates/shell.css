@@ -72,3 +72,7 @@
 
 /* 多列管理表局部滚动，避免窄屏把姓名与状态压成逐字竖排。 */
 @media(max-width:700px) {.table-wrap > .management-table {min-width:680px}}
+
+/* 短表单保持可阅读宽度，不扩展成满屏空卡片。 */
+.form-card {max-width:820px}
+.account-preview-facts {margin-block:20px}

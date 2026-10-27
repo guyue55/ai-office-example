@@ -13,6 +13,32 @@
   const path=location.pathname.split('/')[2],page=Object.hasOwn(pages,path)?path:'';
   const state={id:'',conversation:null,turns:[],conversations:new Map(),next:'',listNext:'',ready:false,loading:false,busy:false,failures:0,polls:0,timer:null,blocked:false,version:0,epoch:'',intent:null,actionError:''};
   let width=420,followLatest=true,lastAnnouncement='';
+  // 仅全覆盖视图按模态处理；桌面并排侧栏保留原页面可操作性。
+  const covered=matchMedia('(max-width:700px)'),backgroundState=new Map();
+  function modalBoundary(){
+    const modal=!full&&!root.hidden&&covered.matches;
+    if(modal){
+      for(const node of document.querySelectorAll('main,.shell-nav,.mobile-shell,.skip-link')){
+        if(!backgroundState.has(node))backgroundState.set(node,node.inert);
+        node.inert=true;
+      }
+      root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
+    }else{
+      for(const [node,inert] of backgroundState)node.inert=inert;
+      backgroundState.clear();root.removeAttribute('role');root.removeAttribute('aria-modal');
+    }
+    document.body.classList.toggle('assistant-modal-open',modal);
+    if(modal&&!root.contains(document.activeElement))input.focus({preventScroll:true});
+  }
+  covered.addEventListener('change',modalBoundary);
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Tab'||event.defaultPrevented||!root.matches('[aria-modal=true]')||document.querySelector('dialog[open],[role=dialog]:popover-open'))return;
+    const nodes=Array.from(root.querySelectorAll('button,a[href],input,select,textarea,[tabindex]')).filter(node=>!node.disabled&&node.tabIndex>=0&&!node.closest('[hidden],[inert]')&&node.getClientRects().length);
+    const first=nodes[0],last=nodes.at(-1);
+    if(!first){event.preventDefault();return;}
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  });
   try{state.id=JSON.parse(sessionStorage.getItem(storeKey)||'{}').id||'';}catch(_){}
   ui.decorateIcon($('[data-assistant-menu]'),'more','更多会话操作');
   ui.decorateIcon($('[data-assistant-close]'),'collapse','收起智能助手');
@@ -62,8 +88,9 @@
     const working=state.turns.some(turn=>view.active.has(turn.status));
     const reason=state.blocked?'当前身份或权限不可用':!state.ready?'助手尚未就绪':state.busy?'正在提交操作':state.loading?'正在同步会话':state.conversation?.archived?'请先恢复归档会话':working?'本轮任务仍在进行，可以先起草下一条':!input.value.trim()?'请输入工作要求':'';
     send.disabled=!!reason;input.disabled=state.blocked;
-    const hint=$('#assistant-input-hint');hint.textContent=reason||'Enter 换行 · Ctrl / ⌘ + Enter 发送';
-    hint.classList.toggle('sr-only',!working&&!state.blocked&&!state.conversation?.archived);
+    input.placeholder=state.ready?'描述您希望完成的工作……':'可先起草，助手就绪后才能发送。';
+    const hint=$('#assistant-input-hint');hint.textContent=!state.ready&&!state.blocked?'当前不能发送；可在此保留本页草稿。':reason||'Enter 换行 · Ctrl / ⌘ + Enter 发送';
+    hint.classList.toggle('sr-only',state.ready&&!working&&!state.blocked&&!state.conversation?.archived);
     rename.disabled=state.busy||state.loading||!state.conversation||state.blocked;
     archive.disabled=rename.disabled||working;archive.textContent=state.conversation?.archived?'恢复会话':'归档会话';
     $('[data-assistant-new]').disabled=state.busy||state.loading||state.blocked;
@@ -105,7 +132,7 @@
     }
     let cursor=messages.firstElementChild;
     state.turns.forEach(turn=>{const node=rendered.get(turn.id).node;if(node!==cursor)messages.insertBefore(node,cursor);cursor=node.nextElementSibling;});
-    if(!state.turns.length)messages.append(view.renderWelcome(controls));
+    if(!state.turns.length)messages.append(view.renderWelcome(controls,{ready:state.ready,loading:state.loading}));
     earlier.hidden=!state.next||state.turns.length>=50;
     if(state.turns.length>=50&&state.next){const note=view.el('p','当前界面最多展示50轮；可通过有界接口继续查询服务器历史。','small muted');note.dataset.placeholder='true';messages.prepend(note);}
     if(followLatest&&nearBottom&&!openPreview&&!selecting)jumpLatest();
@@ -217,8 +244,8 @@
     resize.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();setWidth(event.key==='Home'?360:event.key==='End'?640:width+(event.key==='ArrowLeft'?20:-20));save();}});
     window.addEventListener('resize',()=>setWidth(width));
   }
-  function open(){root.hidden=false;document.body.classList.toggle('assistant-open',!full);launch?.setAttribute('aria-expanded','true');save();bootstrap();sizeInput();input.focus();}
-  function close(){if(full)return;ui.closePopovers();clearPoll();document.documentElement.classList.remove('assistant-preopen');root.hidden=true;document.body.classList.remove('assistant-open');launch?.setAttribute('aria-expanded','false');save();launch?.focus();}
+  function open(){root.hidden=false;modalBoundary();document.body.classList.toggle('assistant-open',!full);launch?.setAttribute('aria-expanded','true');save();bootstrap();sizeInput();input.focus();}
+  function close(){if(full)return;ui.closePopovers();clearPoll();document.documentElement.classList.remove('assistant-preopen');root.hidden=true;modalBoundary();document.body.classList.remove('assistant-open');launch?.setAttribute('aria-expanded','false');save();launch?.focus();}
   launch?.addEventListener('click',()=>root.hidden?open():close());$('[data-assistant-close]').addEventListener('click',close);
   document.addEventListener('keydown',event=>{if(!event.defaultPrevented&&event.key==='Escape'&&root.contains(document.activeElement)&&!document.querySelector('dialog[open]')&&!root.hidden&&!full){event.preventDefault();close();}});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearPoll();else if(!root.hidden){state.polls=0;loadConversation();}});

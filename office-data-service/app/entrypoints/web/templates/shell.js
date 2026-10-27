@@ -3,9 +3,6 @@
   const toggle=document.querySelector('[data-navigation-toggle]');
   const nav=document.querySelector('.shell-nav');
   if(!toggle||!nav)return;
-  const current=document.getElementById('shell-current-page');
-  const active=nav.querySelector('[aria-current=page]');
-  if(current&&active)current.textContent=active.textContent.trim();
   function setOpen(open,{restore=false}={}) {
     document.documentElement.classList.toggle('navigation-open',open);
     toggle.setAttribute('aria-expanded',String(open));

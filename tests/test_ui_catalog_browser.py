@@ -13,7 +13,7 @@ from app.entrypoints.web.responses import TEMPLATES
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from playwright.sync_api import expect, sync_playwright
-from ui_catalog import context
+from ui_catalog import PAGE_PATHS, context
 
 pytestmark = pytest.mark.live
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,18 +24,15 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
         pytest.skip("需OFFICE_AGENT_BROWSER_TESTS=1，仅隔离模板上下文")
     inventory = json.loads((ROOT / "tests/ui-pages.json").read_text())
     templates = {row["template"] for row in inventory["pages"]}
+    assert set(PAGE_PATHS) == templates
     app = FastAPI()
 
     @app.get("/catalog/{template}")
     async def catalog(request: Request, template: str):
         assert template in templates
         value = context(template)
-        # 模板根据路径避免重复挂载完整工作区；此代理仅改变渲染上下文。
-        path = (
-            "/console/assistant/workspace"
-            if template == "assistant_workspace.html"
-            else "/console/catalog"
-        )
+        # 使用对应页面路径渲染导航与工作区，仍只有合成展示上下文。
+        path = PAGE_PATHS[template]
         view_request = Request({**request.scope, "path": path, "raw_path": path.encode()})
         return TEMPLATES.TemplateResponse(view_request, template, value)
 
@@ -124,6 +121,39 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                             page.screenshot(
                                 path=str(proof / f"{template}-{width}.png"), animations="disabled"
                             )
+                    if template == "employees.html":
+                        page.set_viewport_size({"width": 390, "height": 1000})
+                        page.locator("#assistant-launch").click()
+                        panel = page.locator("#assistant-panel")
+                        expect(panel).to_have_attribute("aria-modal", "true")
+                        assert page.locator("main").evaluate("node=>node.inert")
+                        expect(panel.get_by_role("heading", name="助手当前不可用")).to_be_visible()
+                        expect(
+                            panel.get_by_role("button", name="了解我的权限", exact=True)
+                        ).to_be_disabled()
+                        expect(page.locator("#assistant-input-hint")).to_be_visible()
+                        page.locator("#assistant-input").fill("未启用时起草，不自动发送")
+                        last = panel.locator(".assistant-footnote button")
+                        last.focus()
+                        page.keyboard.press("Tab")
+                        assert panel.evaluate("node=>node.contains(document.activeElement)")
+                        page.set_viewport_size({"width": 1440, "height": 1000})
+                        expect(page.locator("main")).to_have_js_property("inert", False)
+                        assert panel.get_attribute("aria-modal") is None
+                        expect(page.locator("#assistant-input")).to_have_value(
+                            "未启用时起草，不自动发送"
+                        )
+                        page.set_viewport_size({"width": 390, "height": 1000})
+                        expect(panel).to_have_attribute("aria-modal", "true")
+                        page.locator("#assistant-input").fill("")
+                        panel.get_by_role("button", name="收起智能助手").click()
+                        expect(panel).to_be_hidden()
+                        expect(page.locator("main")).to_have_js_property("inert", False)
+                        expect(page.locator("#assistant-launch")).to_be_focused()
+                    if template == "assistant_task.html":
+                        expect(page.locator("#task-preview-summary")).to_contain_text("变更前")
+                        expect(page.locator("#task-preview-summary")).to_contain_text("合成候选")
+                        expect(page.get_by_text("完整服务器预览", exact=True)).to_be_visible()
                     page.emulate_media(reduced_motion="reduce")
                     if template != "assistant_workspace.html":
                         assert (
