@@ -41,3 +41,33 @@ def test_anthropic_disables_environment_telemetry_and_closes_client(monkeypatch)
 
     asyncio.run(scenario())
     assert len(observed) == 1 and observed[0].is_closed()
+
+
+def test_managed_key_injection_does_not_read_host_key(monkeypatch):
+    from office_agent import providers
+
+    observed = []
+    factory = providers.AsyncOpenAI
+
+    def client(**kwargs):
+        observed.append(kwargs["api_key"])
+        return factory(**kwargs)
+
+    def forbidden(_config):
+        raise AssertionError("托管密钥不应读取宿主秘密引用")
+
+    monkeypatch.setattr(providers, "AsyncOpenAI", client)
+    monkeypatch.setattr(providers, "model_key", forbidden)
+    config = AgentConfig(
+        service_url="https://office.example",
+        model_url="https://model.invalid/v1",
+        model="fixture",
+        approved_model_data=True,
+    )
+
+    async def scenario():
+        async with providers.configured_model(config, key="synthetic-managed-key"):
+            pass
+
+    asyncio.run(scenario())
+    assert observed == ["synthetic-managed-key"]

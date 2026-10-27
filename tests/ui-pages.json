@@ -185,6 +185,14 @@
         "test_ui_catalog_browser.py",
         "test_ui_state_browser.py"
       ]
+    },
+    {
+      "template": "model_settings.html",
+      "coverage": "独立浏览器和临时PG保存、确认取消、启停、合成连接及普通员工拒绝",
+      "tests": [
+        "test_model_configuration.py",
+        "test_model_settings_browser.py"
+      ]
     }
   ],
   "components": [

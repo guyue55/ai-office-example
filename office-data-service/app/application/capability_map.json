@@ -316,5 +316,25 @@
     "sdk": "assistant_conversation_rename",
     "cli": "assistant-conversation-rename",
     "mode": "direct"
+  },
+  "agent.config.get": {
+    "mode": "server-admin",
+    "reason": "仅HTTP和Web人工管理；密钥不进入模型工具、MCP或员工SDK"
+  },
+  "agent.config.save": {
+    "mode": "server-admin",
+    "reason": "仅HTTP和Web人工管理；密钥不进入模型工具、MCP或员工SDK"
+  },
+  "agent.config.apply": {
+    "mode": "server-admin",
+    "reason": "仅HTTP和Web人工管理；密钥不进入模型工具、MCP或员工SDK"
+  },
+  "agent.config.disable": {
+    "mode": "server-admin",
+    "reason": "仅HTTP和Web人工管理；密钥不进入模型工具、MCP或员工SDK"
+  },
+  "agent.config.test": {
+    "mode": "server-admin",
+    "reason": "仅HTTP和Web人工管理；密钥不进入模型工具、MCP或员工SDK"
   }
 }

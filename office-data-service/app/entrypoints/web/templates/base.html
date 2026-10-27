@@ -39,6 +39,7 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 <a href="/console/audit" {% if location.section == 'audit' %}class="active" aria-current="page"{% endif %}>{{ icon('M10 3H4v18h16v-6M14 3h7v7M21 3l-9 9') }}<span>审计</span></a>
 {% endif %}
 {% if me and 'session.read.all' in me.permissions %}<a href="/console/client-authorizations?scope=all" {% if '/client-authorizations' in request.url.path %}class="active" aria-current="page"{% endif %}>{{ icon('M2 3h20v14H2ZM8 21h8M12 17v4') }}<span>客户端授权</span></a>{% endif %}
+{% if me and 'agent.config.read' in me.permissions %}<div class="nav-label">系统设置</div><a href="/console/model-settings" {% if location.section == 'model-settings' %}class="active" aria-current="page"{% endif %}>{{ icon('M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3M12 19v3M2 12h3M19 12h3') }}<span>智能助手配置</span></a>{% endif %}
 {% if me %}
 {% include '_account_menu.html' %}{% endif %}
 </nav>

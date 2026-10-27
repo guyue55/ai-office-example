@@ -23,6 +23,7 @@ from app.entrypoints.web.assistant_ui import register_assistant_ui
 from app.entrypoints.web.authentication import WebAuthentication, bind_identity
 from app.entrypoints.web.client_sessions import register_client_sessions
 from app.entrypoints.web.login_gate import LoginGate
+from app.entrypoints.web.model_settings import register_model_settings
 from app.entrypoints.web.responses import COOKIE, LOGIN_COOKIE, TEMPLATES, web_error_response
 from app.entrypoints.web.session import LoginRequired, SessionStore, new_csrf
 from app.entrypoints.web.tables import table_query
@@ -592,6 +593,7 @@ def web_router(application):
             },
         )
 
+    register_model_settings(router, operate, render, require_csrf, notify)
     register_assistant_ui(router, operate, render, require_csrf)
     register_assistant(router, operate, render, require_csrf, form_version, notify)
     register_client_sessions(router, operate, render, require_csrf, form_version, notify, store)

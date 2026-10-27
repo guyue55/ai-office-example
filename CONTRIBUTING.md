@@ -73,3 +73,13 @@ OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome OFFICE_UI_PUBLIC
 ```
 
 该入口仅打开登录页，不填写或读取凭证，不创建账号；检查刷新后布局位置和五种宽度，不能据此宣称所有瞬态布局偏移为零。开户／关联／授予角色流程使用隔离替身验证，不修改真实用户授权。
+
+
+模型管理变更额外验收（仅创建临时PG，不使用已有实例）：
+
+```bash
+OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_configuration_postgres.py tests/test_model_configuration_upgrade.py -q
+OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_settings_browser.py -q
+```
+
+第一项包含0013已有库升级、重复执行权限不重复增加与运行账号不能修改历史配置；第二项含真实Web保存、确认取消、密钥不回填、合成模型测试及启停。浏览器与模型身份仍为隔离夹具，不读取真实密钥或调用付费模型。Linux CI的Agent任务已登记这两层，远端结果需实际触发后确认。

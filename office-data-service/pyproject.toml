@@ -12,6 +12,7 @@ dependencies = [
     "psycopg[binary]>=3.3,<4",
     "alembic>=1.16,<2",
     "pyjwt[crypto]>=2.12,<3",
+    "cryptography>=46,<51",
     "pycasbin==2.8.0",
     "mcp==2.3.0",
     "httpx>=0.28,<1",

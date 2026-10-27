@@ -13,6 +13,7 @@ from app.modules.access.catalog import (
 )
 
 PAGE_PATHS = {
+    "model_settings.html": "/console/model-settings",
     "access_detail.html": "/console/access/employees/person",
     "account_credential.html": "/console/accounts/operations/operation/credential",
     "account_detail.html": "/console/accounts/employees/person",
@@ -240,4 +241,23 @@ def context(template):
                 "cleanup": "not_requested",
             }
         ]
+    if template == "model_settings.html":
+        from app.modules.agent.model_configuration import ModelLimits
+
+        value.update(
+            configuration={
+                "version": 0,
+                "draft_revision": None,
+                "active_revision": None,
+                "source": "external",
+                "installed": True,
+                "ready": False,
+                "secret_store_ready": True,
+                "secret_set": False,
+                "message": "合成巡视尚未配置模型",
+                "allowed_urls": ["https://model.invalid/v1"],
+            },
+            limits=ModelLimits().model_dump(),
+            draft={},
+        )
     return value

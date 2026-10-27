@@ -15,6 +15,7 @@ class RunSummary(Versioned):
 
 
 class RunView(RunSummary):
+    model_revision: int | None = None
     conversation_id: str | None = None
     context_page: str = ""
     history_hidden: bool = False

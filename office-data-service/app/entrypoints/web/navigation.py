@@ -1,6 +1,7 @@
 """页面归属与位置名称；服务端、无脚本导航与位置栏共用一份定义。"""
 
 SECTIONS = {
+    "model-settings": "智能助手配置",
     "dashboard": "仪表盘",
     "employees": "人员管理",
     "roles": "角色",

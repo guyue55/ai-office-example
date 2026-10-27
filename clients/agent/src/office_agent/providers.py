@@ -45,8 +45,10 @@ def model_key(config: AgentConfig) -> str:
 
 
 @asynccontextmanager
-async def configured_model(config: AgentConfig):
-    key = await asyncio.to_thread(model_key, config)
+async def configured_model(config: AgentConfig, *, key: str | None = None):
+    # 托管服务显式注入解密后的本修订密钥；独立员工仍只读原秘密引用。
+    if key is None:
+        key = await asyncio.to_thread(model_key, config)
     timeout = min(config.request_timeout, config.limits.seconds)
 
     async def isolate_headers(request: httpx2.Request):

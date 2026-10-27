@@ -38,7 +38,7 @@ def create_app(settings: Settings | None = None):
     async def lifespan(app):
         try:
             await application.account_service().runner.start()
-            if settings.agent_config_file is not None:
+            if settings.agent_config_file is not None or settings.agent_secret_key_file is not None:
                 await application.agent_service().start()
             async with server.session_manager.run():
                 yield

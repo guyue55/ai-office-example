@@ -524,3 +524,48 @@ def test_verify_waits_for_restarting_identity_without_weakening_issuer(tmp_path,
     monkeypatch.setattr(server, "write", lambda path, value, uid, gid: None)
     server.verify_phase()
     assert len(attempts) == 2
+
+
+def test_new_install_generates_independent_model_key_once(tmp_path, monkeypatch):
+    """仅写本轮临时目录；不创建容器或接触已有实例。"""
+    import base64
+
+    from app.infrastructure.config import Settings
+
+    layout = module("deploy/installer/layout.py")
+    monkeypatch.setattr(layout.os, "chown", lambda *args: None)
+    original_read = Path.read_text
+
+    def read(path, *args, **kwargs):
+        if str(path) == "/input/database-init.sh":
+            return "# synthetic installer fixture\n"
+        return original_read(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read)
+    options = {
+        "public_url": "http://192.168.1.10:18880",
+        "listen_address": "192.168.1.10",
+        "allow_lan_http_demo": True,
+    }
+    args = (
+        tmp_path,
+        "/synthetic/instance",
+        "/synthetic/source",
+        options,
+        "synthetic-candidate",
+        999,
+        999,
+        1000,
+        0,
+    )
+    layout.prepare(*args)
+    key = tmp_path / "service/secrets/model_encryption_key"
+    original = key.read_bytes()
+    assert len(base64.urlsafe_b64decode(original)) == 32
+    assert not key.stat().st_mode & 0o077
+    assert original != (tmp_path / "service/secrets/web_session_secret").read_bytes()
+    config = Settings.load(str(tmp_path / "service/service.json"))
+    assert config.agent_secret_key_file == key
+    assert config.agent_model_urls == []
+    layout.prepare(*args)
+    assert key.read_bytes() == original  # 重入安装绝不换掉已生成的根密钥。

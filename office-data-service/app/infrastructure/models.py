@@ -264,6 +264,7 @@ class AgentRun(Entity):
         ),
         Index("ix_agent_run_owner_created", "owner_id", "created_at", "id"),
     )
+    model_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
     conversation_id: Mapped[str | None] = mapped_column(
         ForeignKey("agent_conversation.id"), nullable=True, index=True
     )
@@ -295,3 +296,23 @@ class AgentConversation(Entity):
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ModelConfiguration(Base):
+    """唯一配置选择器；停用不回退外部文件，修订以不可变记录保留。"""
+
+    __tablename__ = "model_configuration"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=0)
+    draft_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    active_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source: Mapped[str] = mapped_column(String(20), default="external")
+
+
+class ModelConfigurationRevision(Base):
+    __tablename__ = "model_configuration_revision"
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    config: Mapped[dict] = mapped_column(JSONB)
+    secret_ciphertext: Mapped[str | None] = mapped_column(String(12000), nullable=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

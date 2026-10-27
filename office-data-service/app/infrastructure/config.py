@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from app.common.product import PRODUCT
 
@@ -67,6 +67,8 @@ class Settings(BaseModel):
     operation_timeout: float = Field(default=15, gt=0, le=120)
     auth_workers: int = Field(default=8, ge=1, le=64)
     agent_config_file: Path | None = None
+    agent_secret_key_file: Path | None = None
+    agent_model_urls: list[str] = Field(default_factory=list, max_length=20)
     agent_max_running: int = Field(default=8, ge=1, le=64)
     agent_max_per_user: int = Field(default=2, ge=1, le=8)
     client_id: str = PRODUCT["client_id"]
@@ -78,6 +80,35 @@ class Settings(BaseModel):
     web_session_limit: int = Field(default=2048, ge=1, le=10000)
     web_pending_limit: int = Field(default=256, ge=1, le=10000)
     web_login_protection: LoginProtection = Field(default_factory=LoginProtection)
+
+    @field_validator("agent_model_urls")
+    @classmethod
+    def model_destinations(cls, values: list[str]):
+        for value in values:
+            url = urlparse(value)
+            if (
+                not url.hostname
+                or url.username
+                or url.password
+                or url.query
+                or url.fragment
+                or (
+                    url.scheme != "https"
+                    and not (url.scheme == "http" and url.hostname in {"127.0.0.1", "localhost"})
+                )
+            ):
+                raise ValueError("模型出口须为无凭证的HTTPS base URL，本机隔离验收可用HTTP")
+        return list(dict.fromkeys(value.rstrip("/") for value in values))
+
+    @model_validator(mode="after")
+    def independent_model_key(self):
+        if (
+            self.agent_secret_key_file
+            and self.web_session_secret_file
+            and self.agent_secret_key_file.resolve() == self.web_session_secret_file.resolve()
+        ):
+            raise ValueError("模型加密根密钥必须独立于Web会话密钥")
+        return self
 
     @field_validator("web_session_secret_file")
     @classmethod
@@ -128,7 +159,12 @@ class Settings(BaseModel):
         config_file = Path(path).expanduser().resolve()
         data = json.loads(config_file.read_text())
         if isinstance(data, dict):
-            for name in ("database_password_file", "web_session_secret_file", "agent_config_file"):
+            for name in (
+                "database_password_file",
+                "web_session_secret_file",
+                "agent_config_file",
+                "agent_secret_key_file",
+            ):
                 value = data.get(name)
                 if isinstance(value, str):
                     reference = Path(value).expanduser()

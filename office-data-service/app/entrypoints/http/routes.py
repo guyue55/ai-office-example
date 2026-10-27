@@ -21,6 +21,7 @@ from app.modules.access.authentication import Principal
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import EmployeeUpdate, GrantUpdate, Links, Named, NewEmployee
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
+from app.modules.agent.model_configuration import ModelApply, ModelSave, ModelTest, ModelVersion
 from app.modules.agent.schemas import (
     ConversationArchive,
     ConversationCreate,
@@ -150,6 +151,30 @@ def router(application, *, registry, prefix="/api/v2"):
         )
 
     agent = group(tags=["智能助手"])
+
+    @agent.get("/agent/configuration", response_model=OPERATION_OUTPUTS["agent.config.get"])
+    async def model_configuration(request: Request, principal: Actor):
+        return await invoke(request, principal, "agent.config.get")
+
+    @agent.post("/agent/configuration/draft", response_model=OPERATION_OUTPUTS["agent.config.save"])
+    async def save_model_configuration(request: Request, principal: Actor, args: ModelSave):
+        return await invoke(request, principal, "agent.config.save", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/apply", response_model=OPERATION_OUTPUTS["agent.config.apply"]
+    )
+    async def apply_model_configuration(request: Request, principal: Actor, args: ModelApply):
+        return await invoke(request, principal, "agent.config.apply", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/disable", response_model=OPERATION_OUTPUTS["agent.config.disable"]
+    )
+    async def disable_model_configuration(request: Request, principal: Actor, args: ModelVersion):
+        return await invoke(request, principal, "agent.config.disable", args.model_dump())
+
+    @agent.post("/agent/configuration/test", response_model=OPERATION_OUTPUTS["agent.config.test"])
+    async def test_model_configuration(request: Request, principal: Actor, args: ModelTest):
+        return await invoke(request, principal, "agent.config.test", args.model_dump())
 
     @agent.post(
         "/agent/conversations",

@@ -45,7 +45,8 @@ jobs:
         shell: bash
         run: |
           docker pull pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
-          OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --locked pytest tests/test_agent_postgres.py tests/test_agent_records_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py -q
+          OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --locked pytest tests/test_agent_postgres.py tests/test_agent_records_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_model_configuration_postgres.py tests/test_model_configuration_upgrade.py -q
+          OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_settings_browser.py -q
       - name: 构建独立包与普通客户端依赖
         run: |
           uv build --project clients/agent --out-dir dist/agent

@@ -1383,6 +1383,1196 @@
         ]
       }
     },
+    "/api/v2/agent/configuration": {
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Model Configuration",
+        "operationId": "model_configuration_api_v2_agent_configuration_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/draft": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Save Model Configuration",
+        "operationId": "save_model_configuration_api_v2_agent_configuration_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/apply": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Apply Model Configuration",
+        "operationId": "apply_model_configuration_api_v2_agent_configuration_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelApply"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/disable": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Disable Model Configuration",
+        "operationId": "disable_model_configuration_api_v2_agent_configuration_disable_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelVersion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/test": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Test Model Configuration",
+        "operationId": "test_model_configuration_api_v2_agent_configuration_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelTestResult_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
     "/api/v2/agent/conversations": {
       "post": {
         "tags": [
@@ -16302,6 +17492,370 @@
         ],
         "title": "Meta"
       },
+      "ModelApply": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "revision"
+        ],
+        "title": "ModelApply"
+      },
+      "ModelDraft": {
+        "properties": {
+          "api": {
+            "type": "string",
+            "enum": [
+              "openai-completions",
+              "openai-responses",
+              "anthropic-messages"
+            ],
+            "title": "Api",
+            "default": "openai-completions"
+          },
+          "model_url": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Model Url"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model"
+          },
+          "anthropic_auth": {
+            "type": "string",
+            "enum": [
+              "bearer",
+              "x-api-key"
+            ],
+            "title": "Anthropic Auth",
+            "default": "bearer"
+          },
+          "request_timeout": {
+            "type": "number",
+            "maximum": 300.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Request Timeout",
+            "default": 30
+          },
+          "approved_model_data": {
+            "type": "boolean",
+            "title": "Approved Model Data",
+            "default": false
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ModelLimits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model_url",
+          "model"
+        ],
+        "title": "ModelDraft"
+      },
+      "ModelLimits": {
+        "properties": {
+          "requests": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Requests",
+            "default": 8
+          },
+          "tools": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Tools",
+            "default": 20
+          },
+          "pages": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Pages",
+            "default": 10
+          },
+          "seconds": {
+            "type": "integer",
+            "maximum": 600.0,
+            "minimum": 1.0,
+            "title": "Seconds",
+            "default": 120
+          },
+          "tokens": {
+            "type": "integer",
+            "maximum": 200000.0,
+            "minimum": 256.0,
+            "title": "Tokens",
+            "default": 32000
+          },
+          "input_bytes": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 128.0,
+            "title": "Input Bytes",
+            "default": 16000
+          },
+          "result_bytes": {
+            "type": "integer",
+            "maximum": 200000.0,
+            "minimum": 128.0,
+            "title": "Result Bytes",
+            "default": 32000
+          },
+          "output_bytes": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 128.0,
+            "title": "Output Bytes",
+            "default": 32000
+          },
+          "pending_writes": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Pending Writes",
+            "default": 8
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ModelLimits"
+      },
+      "ModelSave": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/ModelDraft"
+          },
+          "secret_action": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "replace",
+              "clear"
+            ],
+            "title": "Secret Action",
+            "default": "keep"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8192,
+                "minLength": 1,
+                "format": "password",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "draft"
+        ],
+        "title": "ModelSave"
+      },
+      "ModelStatus": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "draft_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Revision"
+          },
+          "active_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Revision"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "external",
+              "managed",
+              "disabled"
+            ],
+            "title": "Source"
+          },
+          "installed": {
+            "type": "boolean",
+            "title": "Installed"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "secret_store_ready": {
+            "type": "boolean",
+            "title": "Secret Store Ready"
+          },
+          "secret_set": {
+            "type": "boolean",
+            "title": "Secret Set"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allowed_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Urls"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "draft_revision",
+          "active_revision",
+          "source",
+          "installed",
+          "ready",
+          "secret_store_ready",
+          "secret_set",
+          "draft",
+          "allowed_urls",
+          "message"
+        ],
+        "title": "ModelStatus"
+      },
+      "ModelTest": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "acknowledge_cost": {
+            "type": "boolean",
+            "const": true,
+            "title": "Acknowledge Cost"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "revision",
+          "acknowledge_cost"
+        ],
+        "title": "ModelTest"
+      },
+      "ModelTestResult": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "passed",
+          "message"
+        ],
+        "title": "ModelTestResult"
+      },
+      "ModelVersion": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "ModelVersion"
+      },
       "MyRoleOutput": {
         "properties": {
           "id": {
@@ -17449,6 +19003,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "model_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Revision"
           },
           "conversation_id": {
             "anyOf": [
@@ -18613,6 +20178,70 @@
           "message"
         ],
         "title": "Success[IdentityOutput]"
+      },
+      "Success_ModelStatus_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModelStatus"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[ModelStatus]"
+      },
+      "Success_ModelTestResult_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModelTestResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[ModelTestResult]"
       },
       "Success_Page_ConfirmationOutput__": {
         "properties": {

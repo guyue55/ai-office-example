@@ -1,6 +1,10 @@
 """已实现动作的中文目录；初始化与各入口展示共用，不提供角色授权捷径。"""
 
 DEFINITIONS = {
+    "agent.config.read": ("查看模型配置", "查看脱敏模型配置与运行状态", "智能助手配置"),
+    "agent.config.manage": ("管理模型草稿", "保存模型配置及保留、替换或清除密钥", "智能助手配置"),
+    "agent.config.apply": ("启停模型配置", "启用或停用服务端助手模型", "智能助手配置"),
+    "agent.config.test": ("测试模型连接", "明确确认可能计费后测试模型连接", "智能助手配置"),
     "agent.run": ("使用智能助手", "使用已启用的AI能力，仍受本人业务权限与预算限制", "智能助手"),
     "audit.read": ("查看业务与安全审计", "查阅全企业业务审计与已识别人员的权限拒绝事件", "审计"),
     "employee.update": (
@@ -29,6 +33,10 @@ DEFINITIONS = {
 PERMISSIONS = {code: definition[1] for code, definition in DEFINITIONS.items()}
 
 AUDIT_ACTIONS = {
+    "agent.config.saved": "保存模型配置草稿",
+    "agent.config.applied": "启用模型配置",
+    "agent.config.disabled": "停用模型配置",
+    "agent.config.tested": "测试模型连接",
     "instance.relocated": "迁移实例访问地址",
     "agent.conversation.created": "创建助手会话",
     "agent.conversation.renamed": "重命名助手会话",

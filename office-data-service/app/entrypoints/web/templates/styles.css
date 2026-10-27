@@ -977,3 +977,9 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 .workspace-feedback[data-loading]::before {content:"";width:14px;height:14px;flex:0 0 14px;border:2px solid #c7d5d8;border-top-color:currentColor;border-radius:50%;animation:control-spin .8s linear infinite}
 @keyframes control-spin {to {transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce) {.record-dialog[open],.confirm-dialog[open],.workspace-feedback[data-loading]::before {animation:none}}
+
+/* 描述列表：复用标签／值布局，长地址可折行，窄屏仍保留成对关系。 */
+.description-list {display:grid;grid-template-columns:minmax(100px,160px) minmax(0,1fr);gap:12px 20px;margin:16px 0 20px;line-height:1.6;}
+.description-list dt {color:var(--muted);}
+.description-list dd {margin:0;overflow-wrap:anywhere;min-width:0;}
+@media (max-width:540px) {.description-list {grid-template-columns:minmax(80px,110px) minmax(0,1fr);gap:10px 12px;}}

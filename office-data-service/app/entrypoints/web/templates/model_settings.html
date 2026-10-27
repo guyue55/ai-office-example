@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}智能助手配置 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">系统设置</p><h2>智能助手配置</h2><p class="muted">管理服务端助手的模型连接。员工不会获得这里保存的密钥。</p></div></header>
+<section class="card"><h3>运行状态</h3><dl class="description-list"><dt>运行依赖</dt><dd>{{ '已安装' if configuration.installed else '未安装可选 Agent 运行依赖，请联系运维' }}</dd><dt>配置来源</dt><dd>{{ {'external':'外部文件（只读；保存草稿不会替换）','managed':'控制台托管','disabled':'已停用（不会自动回退）'}[configuration.source] }}</dd><dt>已保存修订</dt><dd>{{ configuration.draft_revision or '暂无' }}</dd><dt>当前生效修订</dt><dd>{{ configuration.active_revision or '无托管修订' }}</dd><dt>助手可用</dt><dd>{{ '已就绪' if configuration.ready else '未就绪' }}</dd><dt>密钥存储</dt><dd>{{ '已就绪' if configuration.secret_store_ready else '未就绪：运维需配置专用加密根密钥' }}</dd></dl>{% if configuration.active %}<p>当前使用：<strong>{{ configuration.active.model }}</strong> · {{ configuration.active.api }} · {{ configuration.active.model_url }}</p>{% endif %}{% if configuration.message %}<p class="hint" role="status">{{ configuration.message }}</p>{% endif %}</section>
+<section class="card"><h3>模型连接草稿</h3><p class="muted">保存仅做本地格式与出口检查，不发起模型请求。启用前请核对数据使用许可；base URL 不含完整的 chat/completions、responses 或 messages 路径。</p>
+{% if 'agent.config.manage' in me.permissions %}
+<form method="post" action="/console/model-settings/save" class="form-stack" data-native-submit data-confirm-message="保存新的模型草稿？不会立即启用或发起模型调用。">
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ configuration.version }}">
+<label for="model-api">API 协议</label><select id="model-api" name="api">{% for value,label in [('openai-completions','OpenAI · Chat Completions'),('openai-responses','OpenAI · Responses'),('anthropic-messages','Anthropic · Messages')] %}<option value="{{ value }}" {% if draft.get('api','openai-completions') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<label for="model-url">模型 base URL</label><select id="model-url" name="model_url" required><option value="">请选择运维已允许的地址</option>{% for url in configuration.allowed_urls %}<option value="{{ url }}" {% if draft.get('model_url') == url %}selected{% endif %}>{{ url }}</option>{% endfor %}</select>{% if not configuration.allowed_urls %}<p class="muted">尚未允许模型出口，请运维设置 agent_model_urls 后重启服务。</p>{% endif %}
+<label for="model-name">模型名称</label><input type="text" id="model-name" name="model" value="{{ draft.get('model','') }}" maxlength="200" required autocomplete="off" placeholder="供应商提供的准确模型标识">
+<label for="model-auth">鉴权方式</label><select id="model-auth" name="anthropic_auth"><option value="bearer" {% if draft.get('anthropic_auth','bearer') == 'bearer' %}selected{% endif %}>Bearer（OpenAI 及兼容 Anthropic 网关）</option><option value="x-api-key" {% if draft.get('anthropic_auth') == 'x-api-key' %}selected{% endif %}>x-api-key（仅 Anthropic）</option></select>
+<label for="model-timeout">单次请求超时（秒）</label><input id="model-timeout" name="request_timeout" type="number" min="1" max="300" step="0.1" value="{{ draft.get('request_timeout',30) }}" required>
+<label for="model-secret-action">密钥操作（草稿{{ '已设置' if configuration.secret_set else '未设置' }}）</label><select id="model-secret-action" name="secret_action"><option value="keep" {% if configuration.secret_set %}selected{% endif %}>保留草稿已有密钥</option><option value="replace" {% if not configuration.secret_set %}selected{% endif %}>替换为新密钥</option><option value="clear">清除草稿密钥</option></select>
+<label for="model-secret">新密钥（仅替换时填写）</label><input id="model-secret" name="secret" type="password" maxlength="8192" autocomplete="new-password" spellcheck="false" placeholder="不会读取或回填已有密钥"><p class="muted">清除草稿密钥不会修改当前生效修订；停用使用下方独立操作。</p>
+<label class="check-option"><input type="checkbox" name="approved_model_data" {% if draft.get('approved_model_data') %}checked{% endif %}>已确认该模型端点获准处理助手任务数据（启用必需）</label>
+<details><summary>任务预算</summary><div class="form-stack">{% set names={'requests':'模型请求次数','tools':'工具调用次数','pages':'查询页数','seconds':'任务总时限（秒）','tokens':'总 Token 预算','input_bytes':'输入字节上限','result_bytes':'工具结果字节上限','output_bytes':'输出字节上限','pending_writes':'待确认写入数量'} %}{% for key,value in limits.items() %}<label for="limit-{{ key }}">{{ names[key] }}</label><input id="limit-{{ key }}" name="limit_{{ key }}" type="number" min="1" value="{{ draft.get('limits',{}).get(key,value) }}" required>{% endfor %}</div></details>
+<div><button type="submit">保存草稿</button></div></form>
+{% else %}<p class="muted">您只有查看权限，修改需要模型草稿管理权限。已保存协议：{{ draft.get("api","暂无") }}；模型：{{ draft.get("model","暂无") }}；地址：{{ draft.get("model_url","暂无") }}。</p>{% endif %}</section>
+<section class="card"><h3>测试与生效</h3>{% if configuration.draft_revision %}<p>已保存修订 {{ configuration.draft_revision }}：{{ draft.model }} · {{ draft.api }} · {{ draft.model_url }}</p><p class="muted">以下操作使用已保存修订，不使用上方尚未保存的表单修改。</p>{% endif %}<p class="muted">保存不等于启用，连接通过也不代表全部业务工具可用。运行中或待确认任务存在时不能启停配置。</p>
+{% if configuration.draft_revision and 'agent.config.test' in me.permissions %}<form method="post" action="/console/model-settings/test" class="form-stack" data-native-submit data-confirm-message="将向模型发送一次固定合成提示，可能产生费用。确认测试？"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ configuration.version }}"><input type="hidden" name="revision" value="{{ configuration.draft_revision }}"><label class="check-option"><input type="checkbox" name="acknowledge_cost" required>确认可能计费，仅发送合成测试内容，不读取业务资料</label><div><button type="submit" class="secondary">测试草稿连接</button></div></form>{% endif %}
+{% if 'agent.config.apply' in me.permissions %}<div class="actions">{% if configuration.draft_revision %}<form method="post" action="/console/model-settings/apply" data-native-submit data-confirm-message="启用当前草稿？新任务将使用此修订及对应密钥。"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ configuration.version }}"><input type="hidden" name="revision" value="{{ configuration.draft_revision }}"><button type="submit">启用修订 {{ configuration.draft_revision }}</button></form>{% endif %}<form method="post" action="/console/model-settings/disable" data-native-submit data-confirm-message="停用服务端助手？将停止受理新任务，不会自动回退外部文件。"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ configuration.version }}"><button type="submit" class="secondary">停用助手</button></form></div>{% endif %}</section>
+{% endblock %}
+{% block scripts %}<script>
+(() => {
+ const action = document.querySelector('#model-secret-action');
+ const key = document.querySelector('#model-secret');
+ const protocol = document.querySelector('#model-api');
+ const auth = document.querySelector('#model-auth');
+ if (!action) return;
+ function secretState() { key.disabled = action.value !== 'replace'; key.required = action.value === 'replace'; if (key.disabled) key.value = ''; }
+ function protocolState() { auth.querySelector('[value="x-api-key"]').disabled = protocol.value !== 'anthropic-messages'; if (protocol.value !== 'anthropic-messages') auth.value = 'bearer'; }
+ action.addEventListener('change',secretState); protocol.addEventListener('change',protocolState);
+ secretState(); protocolState();
+})();
+</script>{% endblock %}

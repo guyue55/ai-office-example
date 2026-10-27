@@ -27,6 +27,7 @@ from app.modules.access.outputs import (
     RoleOutput,
 )
 from app.modules.access.session_schemas import SessionPage, SessionView
+from app.modules.agent.model_configuration import ModelStatus, ModelTestResult
 from app.modules.agent.outputs import (
     AgentCapability,
     ConversationSummary,
@@ -51,6 +52,11 @@ OPERATION_OUTPUTS: dict[str, type[BaseModel]] = {
     "agent.conversation.get": ConversationView,
     "agent.conversation.archive": ConversationSummary,
     "agent.conversation.rename": ConversationSummary,
+    "agent.config.get": ModelStatus,
+    "agent.config.save": ModelStatus,
+    "agent.config.apply": ModelStatus,
+    "agent.config.disable": ModelStatus,
+    "agent.config.test": ModelTestResult,
     "agent.capabilities": AgentCapability,
     "agent.start": RunView,
     "agent.list": AccessPage[RunSummary],

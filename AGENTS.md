@@ -23,7 +23,7 @@
 | 开发、检查、活体验收 | [CONTRIBUTING.md](CONTRIBUTING.md)、[验收记录与边界](docs/ACCEPTANCE.md) |
 | 控制台与助手整体体验升级 | [整体UI方案及阶段清单](docs/UI_UPGRADE_PLAN.md)、tests/ui-pages.json；局部通过不能代替全部阶段完成 |
 | Agent前端选型／CopilotKit示例研究 | [路线与证据核查](docs/COPILOTKIT_FRONTEND_RESEARCH.md)；含产品范围、模型配置前置、交互数据流及阶段门槛；仍为研究草案，不代表已接入AG-UI或新前端 |
-| 模型协议与管理员配置 | [三协议与文件格式](docs/AGENT_MODEL_CONFIGURATION.md)、[管理闭环复核方案](docs/MODEL_CONFIGURATION_MANAGEMENT.md)；协议已实现不代表控制台管理已完成 |
+| 模型协议与管理员配置 | [三协议与文件格式](docs/AGENT_MODEL_CONFIGURATION.md)、[管理闭环复核方案](docs/MODEL_CONFIGURATION_MANAGEMENT.md)、[管理操作与恢复](docs/MODEL_CONFIGURATION_OPERATIONS.md)；协议、保存、应用与供应商可用分别验收；托管模式需迁移、独立秘密和允许出口 |
 | 追溯模板来源与实现 | [来源](docs/SOURCE.md)、[实现记录](docs/IMPLEMENTATION.md) |
 | 通过 AI 操作真实服务 | [SKILL.md](office-skills/SKILL.md)、[RULES.md](office-skills/RULES.md)，再按情境读 references |
 
@@ -188,3 +188,5 @@ uv sync --frozen
 后续发现可复用问题时，将短规则更新到本文，命令和分支步骤更新到[操作手册](docs/OPERATIONS.md)，逐次事实更新到验收记录；保持三者一致，不将本机IP、秘密路径、凭证或一次性测试状态固化为模板默认值。
 
 - 面板加载／重试修改须同时测试普通抽屉与紧凑开户弹窗，覆盖403／5xx、取消重开及成功恢复；设置hidden=false不证明可见，必须检查CSS最终效果。错误提示不能直接展示整份main，失败标题不能继续显示加载中；保留有界错误和显式只读重试。
+
+- 托管模型配置管理只面向人工HTTP/Web；不可把密钥操作注册为Agent/MCP工具。保存不等于应用，测试必须明确费用确认。新增迁移与独立根密钥／允许出口需同步部署和恢复说明；不读取旧密钥填表、不覆盖根密钥来修复解密失败。

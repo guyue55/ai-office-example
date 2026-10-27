@@ -34,9 +34,11 @@ def docker(*args, stdin=None):
 
 
 @pytest.fixture(scope="module")
-def isolated_query_db(tmp_path_factory):
+def isolated_query_db(tmp_path_factory, request):
     if os.environ.get("OFFICE_QUERY_PG_TESTS") != "1":
         pytest.skip("需OFFICE_QUERY_PG_TESTS=1，创建本轮临时PG18，不使用既有实例")
+    target_revision = getattr(request, "param", "head")
+    assert target_revision in {"head", "0013"}, "隔离夹具只支持已知迁移目标"
     folder = tmp_path_factory.mktemp("query-pg")
     for name in ("postgres_password", "owner_password", "app_password", "identity_password"):
         path = folder / name
@@ -118,7 +120,7 @@ def isolated_query_db(tmp_path_factory):
                 "-c",
                 "office-data-service/alembic.ini",
                 "upgrade",
-                "head",
+                target_revision,
             ],
             check=False,
             cwd=ROOT,

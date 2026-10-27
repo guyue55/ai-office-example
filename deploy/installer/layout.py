@@ -1,5 +1,6 @@
 """专属新实例配置、受限秘密与Compose；不接管已有目录或数据。"""
 
+import base64
 import hashlib
 import ipaddress
 import json
@@ -218,6 +219,10 @@ def _prepare(root, host_root, source, value, image, pg_uid, pg_gid, kc_uid, kc_g
     write(root / "credentials/initial_password", passwords["first_admin"], 0, 0)
     write(root / "service/secrets/app_password", passwords["app"])
     write(root / "service/secrets/web_session_secret", passwords["web_session"])
+    write(
+        root / "service/secrets/model_encryption_key",
+        base64.urlsafe_b64encode(secrets.token_bytes(32)).decode(),
+    )
     write(root / "maintenance/secrets/owner_password", passwords["owner"])
     external = config.get("external_database")
     if external:
@@ -252,6 +257,8 @@ def _prepare(root, host_root, source, value, image, pg_uid, pg_gid, kc_uid, kc_g
             "database_user": external["user"] if external else "office_app",
             "database_password_file": "secrets/app_password",
             "web_session_secret_file": "secrets/web_session_secret",
+            "agent_secret_key_file": "secrets/model_encryption_key",
+            "agent_model_urls": [],
         },
     )
     write(

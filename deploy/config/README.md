@@ -24,3 +24,5 @@
 资源配置包含数据库连接池／语句及锁超时、轻量登录保护和Web近期认证期限；具体字段及约束以app/infrastructure/config.py为准，不在文档重复维护默认值。身份期限修改须先完成客户端升级和独立验收，不在服务启动时自动覆盖身份服务策略。
 
 本目录秘密文件0600等检查针对Linux服务部署，不适用于要求Windows员工安装服务端或模拟POSIX权限。Windows客户端凭证使用OS安全后端；企业私有CA及强制代理仍需分别核对浏览器和SDK信任，见[平台说明](../../office-skills/references/platforms.md)。
+
+可选托管模型配置：`agent_secret_key_file`引用独立Fernet根密钥，不能使用Web会话密钥；`agent_model_urls`是运维允许的精确base URL，默认空。新安装器生成专用秘密，已有实例显式补配并执行0014迁移。具体步骤、备份与权限见[模型管理运维](../../docs/MODEL_CONFIGURATION_OPERATIONS.md)。

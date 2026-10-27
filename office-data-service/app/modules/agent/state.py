@@ -18,6 +18,7 @@ def run_view(row, *, detail=True):
     }
     if detail:
         result.update(
+            model_revision=row.model_revision,
             pending=row.pending,
             result=row.result,
             write_inflight=row.write_inflight,

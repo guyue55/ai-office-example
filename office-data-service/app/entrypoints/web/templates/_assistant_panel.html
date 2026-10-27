@@ -26,7 +26,7 @@
     <p id="assistant-history-status" class="small muted" role="status" aria-live="polite"></p>
     <div id="assistant-conversations" class="assistant-conversations" role="list" aria-label="本人会话"></div>
     <button type="button" class="ui-text-action small" data-assistant-more hidden>更多会话</button>
-  </section>
+  {% if 'agent.config.read' in me.permissions %}<a class="small" href="/console/model-settings">智能助手配置</a>{% endif %}</section>
   <section id="assistant-options-panel" popover="manual" class="ui-floating-panel assistant-options-panel" role="dialog" aria-label="会话操作" tabindex="-1">
     {% if not assistant_full %}<div class="assistant-width-choice"><label for="assistant-width">侧栏宽度</label><select id="assistant-width"><option value="360">紧凑</option><option value="420" selected>标准</option><option value="640">宽</option><option value="" disabled>自定义</option></select></div>{% endif %}
     <button type="button" data-floating-dismiss data-assistant-rename disabled>重命名会话</button>
