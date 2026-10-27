@@ -877,7 +877,7 @@ wheels = [
 
 [[package]]
 name = "office-agent"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "clients/agent" }
 dependencies = [
     { name = "anthropic" },
@@ -901,7 +901,7 @@ dev = [
 
 [[package]]
 name = "office-api-contracts"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "packages/api-contracts" }
 dependencies = [
     { name = "pydantic" },
@@ -929,7 +929,7 @@ provides-extras = ["fastapi", "httpx", "mcp"]
 
 [[package]]
 name = "office-client"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "clients/python" }
 dependencies = [
     { name = "httpx" },
@@ -946,7 +946,7 @@ requires-dist = [
 
 [[package]]
 name = "office-data-service"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "office-data-service" }
 dependencies = [
     { name = "alembic" },
@@ -988,7 +988,7 @@ provides-extras = ["agent"]
 
 [[package]]
 name = "office-foundation"
-version = "1.0.0"
+version = "1.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "office-api-contracts", extra = ["fastapi", "httpx", "mcp"] },

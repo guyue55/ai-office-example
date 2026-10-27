@@ -1,6 +1,6 @@
 [project]
 name = "office-api-contracts"
-version = "1.0.0"
+version = "1.1.0"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 description = "可复用的强类型接口契约与协议适配"

@@ -1,12 +1,12 @@
 [project]
 name = "office-agent"
-version = "1.0.0"
+version = "1.1.0"
 description = "复用企业办公受控服务的独立员工端 Agent"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.13,<3.15"
-dependencies = ["office-client==1.0.0", "pydantic-ai-slim[openai,anthropic]==2.61.0", "anthropic>=2.3,<3"]
+dependencies = ["office-client==1.1.0", "pydantic-ai-slim[openai,anthropic]==2.61.0", "anthropic>=2.3,<3"]
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]

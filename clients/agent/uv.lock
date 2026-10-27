@@ -586,7 +586,7 @@ wheels = [
 
 [[package]]
 name = "office-agent"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
@@ -617,7 +617,7 @@ dev = [
 
 [[package]]
 name = "office-api-contracts"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "../../packages/api-contracts" }
 dependencies = [
     { name = "pydantic" },
@@ -639,7 +639,7 @@ provides-extras = ["fastapi", "httpx", "mcp"]
 
 [[package]]
 name = "office-client"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "../python" }
 dependencies = [
     { name = "httpx" },

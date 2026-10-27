@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+VERSION = (ROOT / "VERSION").read_text().strip()
+TAG = "v" + VERSION
 
 
 @pytest.fixture
@@ -32,7 +34,7 @@ def source(tmp_path):
         "pyproject.toml",
         "uv.lock",
         "contracts/openapi.json",
-        "releases/v1.0.0.md",
+        f"releases/{TAG}.md",
         "office-data-service/pyproject.toml",
         "clients/python/pyproject.toml",
         "clients/agent/pyproject.toml",
@@ -48,18 +50,18 @@ def source(tmp_path):
 
 
 def test_release_requires_matching_version_tag_and_packages(release, source):
-    assert release.validate_versions(source, "v1.0.0") == "1.0.0"
+    assert release.validate_versions(source, TAG) == VERSION
     with pytest.raises(ValueError, match="标签"):
-        release.validate_versions(source, "v1.0.1")
+        release.validate_versions(source, "v999.0.0")
     project = source / "clients/python/pyproject.toml"
-    project.write_text(project.read_text().replace('version = "1.0.0"', 'version = "1.0.1"'))
+    project.write_text(project.read_text().replace(f'version = "{VERSION}"', 'version = "999.0.0"'))
     with pytest.raises(ValueError, match="工作区版本"):
-        release.validate_versions(source, "v1.0.0")
+        release.validate_versions(source, TAG)
 
 
 def test_release_rejects_stale_independent_agent_version(release, source):
     path = source / "clients/agent/src/office_agent/__init__.py"
-    path.write_text(path.read_text().replace('"1.0.0"', '"0.9.0"'))
+    path.write_text(path.read_text().replace(f'"{VERSION}"', '"0.9.0"'))
     with pytest.raises(ValueError, match="Agent模块版本"):
         release.validate_versions(source)
 
@@ -69,7 +71,8 @@ def test_release_rejects_stale_lock_and_contract(release, source):
     original = lock.read_text()
     lock.write_text(
         original.replace(
-            'name = "office-client"\nversion = "1.0.0"', 'name = "office-client"\nversion = "0.1.0"'
+            f'name = "office-client"\nversion = "{VERSION}"',
+            'name = "office-client"\nversion = "0.1.0"',
         )
     )
     with pytest.raises(ValueError, match="锁文件"):
@@ -89,5 +92,5 @@ def test_release_will_not_overwrite_existing_artifacts(release, source):
     marker = output / "keep.txt"
     marker.write_text("existing")
     with pytest.raises(ValueError, match="输出已存在"):
-        release.build(source, output, "v1.0.0")
+        release.build(source, output, TAG)
     assert marker.read_text() == "existing"

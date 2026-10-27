@@ -42,7 +42,7 @@ docker build --build-arg OFFICE_AGENT=1 -f deploy/Dockerfile -t office-agent:loc
 2. 将模型密钥放到实例`service/secrets/model_key`；宿主Linux下按服务UID/GID（默认10001）设置所有者与0600权限，目录保持受限。密钥不交给员工或AI。
 3. 管理员确认资料处理政策后设置`approved_model_data=true`。该开关不代表系统能够识别或脱敏全部敏感资料。外部模型不应接收未经许可的个人或财务数据。
 4. 在实例`service/service.json`添加`"agent_config_file":"agent.toml"`。该目录已只读挂载到容器`/etc/office`，无需新开端口或把秘密写进Compose环境。
-5. 按原升级流程先备份、执行正式迁移至`0012_agent_runs`，再使用已构建的Agent镜像重启本实例。不要对已有实例重新执行全新安装以冒充升级。原数据库／身份服务不因模型配置而重建。
+5. 按原升级流程先备份、执行全部正式迁移至当前head（本版为`0013`，对应agent_conversations，并包含0012的任务表迁移），再使用已构建的Agent镜像重启本实例。不要对已有实例重新执行全新安装以冒充升级。原数据库／身份服务不因模型配置而重建。
 6. 控制台访问`/console/assistant`，或调用`assistant-capabilities`核对`installed/configured/ready`。依赖、密钥引用或配置缺失时拒绝受理503007，原数据功能继续可用；`ready`不代表供应商可用、余额充足或模型效果已验收。
 
 代码启动入口固定单工作进程；当前不支持多个独立执行器共同接管任务。不要通过自定义多worker命令绕过此约束。后续需要横向扩容时应先实施执行租约和调度所有权。

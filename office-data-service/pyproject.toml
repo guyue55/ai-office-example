@@ -1,6 +1,6 @@
 [project]
 name = "office-data-service"
-version = "1.0.0"
+version = "1.1.0"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.13,<3.15"
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-agent = ["office-agent==1.0.0"]
+agent = ["office-agent==1.1.0"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

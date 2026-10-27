@@ -3,7 +3,7 @@
   "info": {
     "title": "企业智能办公平台",
     "description": "企业数据治理与AI工具协作基座",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "paths": {
     "/health/live": {
