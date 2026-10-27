@@ -41,7 +41,7 @@ button,.button {
   cursor:pointer;
   font-weight:600
 }
-button:hover,.button:hover {
+button:where(:not(:disabled)):hover,.button:where(:not(:disabled)):hover {
   background:#095e58;
   text-decoration:none
 }
@@ -655,7 +655,19 @@ body.workspace-open { overflow:hidden; }
 .candidate-summary { display:block; color:var(--muted); font-size:12px; }
 .grant-footer { position:sticky; bottom:-24px; margin:0 -20px -20px; padding:16px 20px; background:white; border-top:1px solid var(--line); z-index:1; }
 .grant-footer #grant-status { margin:8px 0 0; max-height:110px; overflow:auto; }
-button:disabled { opacity:.55; cursor:wait; }
+/* 禁用与提交中分开表达；不改变控件真实disabled和表单提交语义。 */
+button:disabled { opacity:.55; cursor:not-allowed; }
+[aria-busy=true] button:disabled {cursor:wait}
+input:not([type=hidden]):disabled,select:disabled,textarea:disabled {
+  background:#f0f3f5;color:#657782;border-color:#c7d1d7;cursor:not-allowed;opacity:1
+}
+input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number])[readonly],textarea[readonly] {
+  background:#f5f7f9;color:var(--ink)
+}
+input::placeholder,textarea::placeholder {color:var(--muted);opacity:1}
+button,.button {transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease}
+button.secondary:not(:disabled):hover,.button.secondary:not(:disabled):hover {background:#f0f5f5;border-color:#596f7b}
+button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {background:#fff3f1!important;border-color:#c78079!important}
 [data-form-dialog] > summary { color:var(--accent); font-weight:600; }
 @keyframes workspace-in { from { transform:translateX(24px); opacity:0; } to { transform:translateX(0); opacity:1; } }
 @keyframes modal-in { from { transform:translateY(8px); opacity:0; } to { transform:translateY(0); opacity:1; } }
@@ -749,9 +761,10 @@ button:disabled { opacity:.55; cursor:wait; }
   stroke-linecap:round;
   stroke-linejoin:round
 }
-.ui-enhanced .action-cell .icon-action:hover {
+.ui-enhanced .action-cell .icon-action:not(:disabled):hover {
   background:#e8f3f1
 }
+.ui-enhanced .action-cell .icon-action:disabled {opacity:.55;cursor:not-allowed}
 .icon-action:focus-visible {
   outline:2px solid var(--focus-ring);
   outline-offset:2px
@@ -918,12 +931,12 @@ button:disabled { opacity:.55; cursor:wait; }
 .ui-icon-button,.ui-text-action {display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;color:var(--ink);border-radius:6px;min-height:32px;padding:6px;cursor:pointer;text-decoration:none;flex-shrink:0;font:inherit}
 .ui-icon-button {width:32px;height:32px}
 .ui-icon-button svg,.ui-text-action svg {width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.ui-icon-button:hover,.ui-text-action:hover {background:var(--soft);color:var(--ink)}
+.ui-icon-button:not(:disabled):hover,.ui-text-action:not(:disabled):hover {background:var(--soft);color:var(--ink)}
 .ui-icon-button:focus-visible,.ui-text-action:focus-visible {outline:2px solid var(--focus-ring);outline-offset:2px}
-.ui-icon-button:disabled,.ui-text-action:disabled {opacity:.45;cursor:default}
+.ui-icon-button:disabled,.ui-text-action:disabled {opacity:.55;cursor:not-allowed}
 .ui-floating-panel {position:fixed;inset:auto;margin:0;box-sizing:border-box;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;color:var(--ink);box-shadow:0 12px 32px #172b3a20}
 .ui-floating-panel:not(:popover-open):not([data-floating-open]) {display:none}
-@media (pointer:coarse) {.ui-icon-button {width:40px;height:40px}.ui-text-action {min-height:40px}}
+@media (pointer:coarse) {.ui-icon-button,.ui-enhanced .action-cell .icon-action {width:44px;height:44px;min-width:44px}.ui-text-action,button,.button,.list-filters button,.pagination-numbered button,.search-form button,.actions button {min-height:44px}.page-links>a,.page-links>span {min-width:44px;height:44px}}
 
 /* 原生单选增强：保留表单与键盘语义；触摸或不支持的浏览器使用系统选择器。 */
 @supports (appearance:base-select) and selector(select::picker(select)) {
@@ -949,7 +962,7 @@ button:disabled { opacity:.55; cursor:wait; }
   }
 }
 @media (prefers-reduced-motion:reduce) {
-  input,select,textarea,select::picker-icon {transition:none!important}
+  button,.button,input,select,textarea,select::picker-icon {transition:none!important}
 }
 @media (forced-colors:active) {
   :focus-visible {outline-color:Highlight}

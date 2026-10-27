@@ -556,3 +556,40 @@ def test_ending_current_authorization_confirms_draft_before_write(ui_state):
     expect(page).to_have_url(re.compile(r"/console/signed-out$"))
     assert state["writes"] == 1
     assert dialogs == []
+
+
+def test_shared_disabled_readonly_busy_and_touch_control_states(ui_state):
+    page, _ = ui_state
+    field = page.get_by_role("searchbox", name="搜索", exact=True)
+    field.evaluate("node=>node.readOnly=true")
+    field.click()
+    expect(field).to_have_css("background-color", "rgb(245, 247, 249)")
+    assert field.evaluate("node=>document.activeElement===node")
+    field.evaluate("node=>{node.readOnly=false;node.disabled=true}")
+    expect(field).to_be_disabled()
+    field.hover(force=True)
+    assert field.evaluate("node=>getComputedStyle(node).cursor") == "not-allowed"
+    button = page.get_by_role("button", name="搜索", exact=True)
+    button.evaluate("node=>node.disabled=true")
+    background = button.evaluate("node=>getComputedStyle(node).backgroundColor")
+    button.hover(force=True)
+    assert button.evaluate("node=>getComputedStyle(node).backgroundColor") == background
+    assert button.evaluate("node=>getComputedStyle(node).cursor") == "not-allowed"
+    button.evaluate("node=>node.form.setAttribute('aria-busy','true')")
+    assert button.evaluate("node=>getComputedStyle(node).cursor") == "wait"
+    page.emulate_media(reduced_motion="reduce")
+    assert button.evaluate("node=>getComputedStyle(node).transitionDuration") == "0s"
+    # 触屏上下文检验实际共享图标尺寸，不能以桌面截图推断。
+    touch = page.context.browser.new_context(
+        has_touch=True, is_mobile=True, viewport={"width": 390, "height": 844}
+    )
+    try:
+        touch_page = touch.new_page()
+        touch_page.goto(page.url)
+        assert touch_page.evaluate("matchMedia('(pointer:coarse)').matches")
+        icon = touch_page.locator(".action-cell .icon-action").first
+        expect(icon).to_be_visible()
+        box = icon.bounding_box()
+        assert box["width"] >= 44 and box["height"] >= 44
+    finally:
+        touch.close()

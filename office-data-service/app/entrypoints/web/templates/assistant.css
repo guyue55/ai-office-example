@@ -106,10 +106,12 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-table-scroll table {width:max-content;min-width:100%;font-size:12px}
 @media (max-width:1200px) {body.assistant-open main,.assistant-preopen main {margin-right:0}.assistant-panel:not(.assistant-full) {width:min(420px,100%)}}
 @media (max-width:700px) {.assistant-panel:not(.assistant-full) {width:100%}.assistant-full {height:calc(100dvh - 120px);min-height:360px}.assistant-header {padding:10px 12px 6px}.assistant-full .assistant-messages,.assistant-full .assistant-composer {padding-inline:12px}}
-@media (hover:none),(pointer:coarse) {.assistant-message-actions {opacity:1;height:44px}#assistant-context-chip .ui-icon-button,.assistant-footnote .ui-icon-button {width:40px;height:40px;padding:10px}.assistant-context .ui-text-action {min-height:40px}.assistant-tools .ui-text-action {min-height:40px}.assistant-topicbar .ui-text-action {min-height:40px}}
+@media (hover:none),(pointer:coarse) {.assistant-message-actions {opacity:1;height:44px}#assistant-context-chip .ui-icon-button,.assistant-footnote .ui-icon-button {width:44px;height:44px;padding:10px}.assistant-context .ui-text-action {min-height:44px}.assistant-tools .ui-text-action {min-height:44px}.assistant-topicbar .ui-text-action {min-height:44px}}
 @media (prefers-reduced-motion:reduce) {.assistant-panel * {scroll-behavior:auto!important;transition:none!important}}
 
 @media (max-width:700px) {.assistant-user,.assistant-answer,.assistant-composer textarea {font-size:16px}}
 
 body.assistant-modal-open {overflow:hidden}
 @media (forced-colors:active) {.assistant-input-box:focus-within {outline:2px solid Highlight;box-shadow:none}}
+
+@media (pointer:coarse) {.assistant-compose-actions button,.assistant-options-panel > :is(button,a) {min-height:44px}}
