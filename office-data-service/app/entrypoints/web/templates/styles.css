@@ -705,7 +705,6 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 .form-stack > label:not(.check-option) { display:grid; gap:8px; font-weight:500; }
 .form-stack > label:not(.check-option) > input,.form-stack > label > select { width:100%; box-sizing:border-box; }
 .check-option { display:flex; align-items:center; gap:8px; }
-.workspace.is-compact [data-workspace-reload] { display:none; }
 .workspace.is-compact #workspace-content > .page-header { display:none; }
 .workspace.is-compact #workspace-content > .card { padding:0; margin:0; border:0; background:transparent; }
 .workspace.is-compact .form-stack { gap:12px; }

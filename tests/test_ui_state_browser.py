@@ -71,6 +71,15 @@ def ui_state():
         state["writes"] += 1
         return RedirectResponse("/console/links/employees/person/roles?saved=1", 303)
 
+    @app.get("/console/accounts/new")
+    async def new_account(request: Request):
+        return TEMPLATES.TemplateResponse(
+            request,
+            "account_new.html",
+            context("account_new.html"),
+            status_code=state.get("panel_status", 503) if state.get("panel_fail") else 200,
+        )
+
     @app.get("/console/roles")
     async def roles(request: Request):
         return TEMPLATES.TemplateResponse(request, "roles.html", context("roles.html"))
@@ -632,4 +641,28 @@ def test_drawer_loading_cancel_reopen_and_failure_retry(ui_state):
     assert panel.evaluate("node=>getComputedStyle(node).animationName") == "none"
     page.get_by_role("button", name="关闭操作面板", exact=True).click()
     expect(trigger).to_be_focused()
+    assert state["writes"] == 0
+
+
+@pytest.mark.parametrize("status", [403, 503])
+def test_compact_dialog_failure_has_visible_retry(ui_state, status):
+    page, state = ui_state
+    state["panel_fail"] = True
+    state["panel_status"] = status
+    page.get_by_role("link", name="新建员工", exact=True).click()
+    expect(page.locator("#workspace.is-compact")).to_be_visible()
+    expect(page.locator("#workspace-feedback")).to_have_class("workspace-feedback error-feedback")
+    expect(page.locator("#workspace-title")).to_have_text("加载未完成")
+    expect(page.locator("#workspace-feedback")).to_contain_text(
+        "无权访问" if status == 403 else "HTTP 503"
+    )
+    expect(page.locator("#workspace-feedback")).not_to_contain_text("登录账号")
+    retry = page.get_by_role("button", name="刷新配置", exact=True)
+    expect(retry).to_be_visible()
+    state["panel_fail"] = False
+    retry.click()
+    expect(page.locator('#workspace-content input[name="username"]')).to_be_visible()
+    expect(page.locator("#workspace-feedback")).to_be_empty()
+    expect(retry).to_be_hidden()
+    page.get_by_role("button", name="关闭操作面板", exact=True).click()
     assert state["writes"] == 0

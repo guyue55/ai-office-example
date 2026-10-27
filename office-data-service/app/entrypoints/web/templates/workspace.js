@@ -46,7 +46,7 @@
     currentURL = url;
     full.href = url;
     full.hidden = false;
-    reload.hidden = false;
+    reload.hidden = new URL(url).pathname === '/console/accounts/new';
     title.textContent = main.querySelector('[data-panel-title]')?.dataset.panelTitle || main.querySelector('h2')?.textContent.trim() || '管理操作';
     // 服务端页面中的 ?q / ?after 相对链接必须以抽屉页面为基准，
     // 不能错误解析成背后人员列表的 URL。
@@ -84,12 +84,17 @@
       // 关闭或新请求已接管时，不允许旧响应绘制新面板。
       if (controller !== requestController || !panel.open) return;
       const main = parsePage(html);
-      if (!response.ok) throw new Error(main.innerText || main.textContent);
+      if (!response.ok) {
+        const detail = main.querySelector('[role=alert],.error-feedback')?.textContent.trim();
+        const message = response.status === 403 ? '无权访问此内容，请核对当前权限。' : '页面暂时无法加载（HTTP ' + response.status + '），请刷新配置重试。';
+        throw new Error(detail ? detail.slice(0, 500) : message);
+      }
       if (push && currentURL) trail.push({url: currentURL, nodes: Array.from(content.childNodes)});
       paint(main, finalURL.href);
       showFeedback('');
     } catch (error) {
       if (controller === requestController && panel.open) {
+        if (!content.hasChildNodes()) title.textContent = '加载未完成';
         reload.hidden = false;
         showFeedback(error.name === 'AbortError' ? '加载已取消或超时，可刷新配置重试。' : error.message || '加载失败，请稍后重试。', true);
       }
