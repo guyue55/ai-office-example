@@ -23,6 +23,7 @@
 | 开发、检查、活体验收 | [CONTRIBUTING.md](CONTRIBUTING.md)、[验收记录与边界](docs/ACCEPTANCE.md) |
 | 控制台与助手整体体验升级 | [整体UI方案及阶段清单](docs/UI_UPGRADE_PLAN.md)、tests/ui-pages.json；局部通过不能代替全部阶段完成 |
 | Agent前端选型／CopilotKit示例研究 | [路线与证据核查](docs/COPILOTKIT_FRONTEND_RESEARCH.md)；含产品范围、模型配置前置、交互数据流及阶段门槛；仍为研究草案，不代表已接入AG-UI或新前端 |
+| 模型协议与管理员配置 | [三协议与文件格式](docs/AGENT_MODEL_CONFIGURATION.md)、[管理闭环复核方案](docs/MODEL_CONFIGURATION_MANAGEMENT.md)；协议已实现不代表控制台管理已完成 |
 | 追溯模板来源与实现 | [来源](docs/SOURCE.md)、[实现记录](docs/IMPLEMENTATION.md) |
 | 通过 AI 操作真实服务 | [SKILL.md](office-skills/SKILL.md)、[RULES.md](office-skills/RULES.md)，再按情境读 references |
 

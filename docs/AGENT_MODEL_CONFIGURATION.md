@@ -2,6 +2,10 @@
 
 2026-10-26。员工独立Agent与服务端内部Agent使用同一个配置模型、供应商工厂及执行引擎；企业业务授权与模型密钥继续分离。协议适配完成不等于某个供应商、模型或企业网关已经真实验收。
 
+## 能力状态（2026-10-27复核）
+
+三协议／文件配置已有实现，管理员Web设置与动态应用闭环尚未实现。不能将协议支持等同于控制台可配置。历史提交、BeefTV参考、35项本轮复验及补齐方案统一见[模型配置管理复核](MODEL_CONFIGURATION_MANAGEMENT.md)。本文继续作为运行协议与文件格式说明，不重复定义管理接口。
+
 ## 选型依据
 
 Pydantic AI提供[OpenAI Chat／Responses模型](https://pydantic.dev/docs/ai/models/openai/)、[兼容接口接入](https://pydantic.dev/docs/ai/models/compatible-apis/)和[Anthropic模型](https://github.com/pydantic/pydantic-ai/blob/main/docs/models/anthropic.md)。本项目固定Pydantic AI 2.61.0，实际核对安装签名并使用官方异步SDK，不自行重写模型请求与工具消息转换。
