@@ -26,7 +26,7 @@ uv run python scripts/export_contracts.py --check
 ## 2. 发版前准备
 
 1. 确定版本、交付范围、兼容影响、迁移与回退策略。区分产品版本、API 路径、响应契约版本及数据库迁移号，不联动盲改。
-2. 更新 VERSION、根项目和三个工作区 pyproject.toml 的产品版本及 `releases/v<版本>.md`；运行 `uv lock` 并审核锁文件差异，再 `uv sync --frozen` 更新本地包元数据，最后用 `scripts/export_contracts.py` 从真实模型生成 OpenAPI。版本校验以 prepare_release.py 的 PROJECTS 和实际发行名为准，不手改契约快照；锁定依赖发生非预期升级时先查明原因。
+2. 更新 VERSION、根项目和当前四个工作区 pyproject.toml 的产品版本及 `releases/v<版本>.md`；运行 `uv lock` 与 `uv lock --project clients/agent` 并审核两份锁文件差异，再按需要使用 `uv sync --extra agent --frozen` 更新本地包元数据，最后用 `scripts/export_contracts.py` 从真实模型生成 OpenAPI。版本校验以 prepare_release.py 的 PROJECTS 和实际发行名为准，不手改契约快照；锁定依赖发生非预期升级时先查明原因。
 3. 完成相关门禁并提交全部发布源码；最终目标提交应通过远程 CI。运行 `python3 scripts/configure_template.py --check`，核对品牌生成物和许可／NOTICE；发布源码与全历史不得带入客户、旧品牌或内部记录。
 4. 检查已有 Tag／Release；已经发布的版本不覆盖、不移动 Tag、不替换同名资产，修复使用新版本。检查远端失败时区分不存在、权限错误与网络错误。
 5. Release 说明写清能力、变更、迁移／兼容、已知限制和验证范围；不粘贴凭证、客户日志、回调、内部目录或未脱敏截图。
@@ -54,7 +54,7 @@ uv run python scripts/check_client_install.py --wheel-dir "$task_candidate"
 
 在候选目录校验摘要：Linux 可用 `sha256sum --check SHA256SUMS`；macOS 可用 `shasum -a 256 --check SHA256SUMS`；Windows 用 Python hashlib 或对应的受验证校验工具。不能只验证文件存在。
 
-确认三个工作区发行包均齐全，其中契约库实际名为 `office-api-contracts`。源码包、员工包、技能包的用途不同，员工电脑不交付服务器秘密。许可证范围按本仓库来源和第三方声明核查。
+按prepare_release.py的PROJECTS与verify_release.py核对实际清单；当前为原三个发行包及office-agent，各含wheel／sdist。契约库实际名为 `office-api-contracts`。历史v1.0.0无Agent资产；新候选按agent_runtime标记校验，不把旧15份资产清单套到新17份资产上。源码包、员工包、技能包的用途不同，员工电脑不交付服务器秘密。许可证范围按本仓库来源和第三方声明核查。
 
 隔离客户端安装检查仅验证候选入口与内容，不证明真人登录、系统钥匙串、AI 宿主发现或业务上线。`scripts/install_client.py` 不指定 `--tool-root` 时会使用用户工具目录；不得当成无副作用的自检。
 
@@ -106,3 +106,13 @@ backup_check.py 与 recovery_drill.py 是本机开发环境辅助，后者有 `-
 本仓库为公开通用模板；新企业实例默认保持私有。模板更新、公开范围变更和历史重建须单独明确范围，禁止导入旧来源仓库的历史。
 
 显式HTTP演示实例迁址维护入口及备份／恢复边界见[实例迁址维护](INSTANCE_RELOCATION.md)。普通安装重跑仍拒绝静默换址或升级；迁址不替代本人重新登录验收。
+
+## 8. 跨会话接手与候选更新
+
+按AGENTS.md“跨环境发版与验收经验”执行。接手时先记录HEAD、工作区、VERSION、候选两个manifest的source_commit，以及远端Tag／Release／CI状态；只有同一来源才能合并证据，其他提交或环境明确单列。
+
+- 生成器因实例足迹阻断时保留现场。仅版本更新可在不含runtime和秘密的隔离源码副本中运行原生成器，审核只有预期版本输出后回填源码并--check；不得用该方法迁移真实品牌／身份或隐藏配置漂移。
+- 原生刷新、取消导航及延迟写入需浏览器行为断言；普通服务与可选Agent镜像需分别验证。数据库隔离测试仅创建本轮临时资源，不指向在用实例。
+- 普通客户端使用check_client_install.py。可选Agent使用clients/agent/scripts/verify_install.py：先将同一候选内office-agent、office-client和office-api-contracts三份wheel复制到新的临时目录，再以--wheels传该目录。校验器会拒绝额外包；不能直接传完整发布目录。脚本会安装临时依赖并执行测试，需可用Python／uv和依赖来源，不读取原授权、不更新全局工具。
+- 文档或代码再次提交后，候选来源已变，应新建目录重建并用verify_release.py复核；若仅文档变化可保留先前代码／镜像／安装测试证据，但明确其SHA及范围。最终main合并候选必须重新消费验收。
+- 本地macOS成功不替代远端Linux／Windows矩阵；缺工具或网络时记录未完成阶段，不宣称通过，也不绕过工作流保护。各次验收记录存docs，敏感运行证据留忽略目录；最终SHA和候选路径可在交付报告记录，无需为了自引用SHA反复改写发布文件。
