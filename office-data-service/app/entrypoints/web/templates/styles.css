@@ -82,6 +82,14 @@ input:is([type=text],[type=search],[type=email],[type=password],[type=date],[typ
   border-color:var(--focus-default);
   box-shadow:0 0 0 3px var(--focus-halo)
 }
+/* 输入类控件只保留一圈可见焦点，避免边框、光晕和外描边叠成多层。 */
+input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number]):focus-visible,select:focus-visible,textarea:focus-visible {
+  outline-offset:0;
+  box-shadow:none
+}
+@media (hover:hover) {
+  input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number]):not(:disabled):not(:focus):not([aria-invalid=true]):hover,select:not(:disabled):not(:focus):not([aria-invalid=true]):hover,textarea:not(:disabled):not(:focus):not([aria-invalid=true]):hover {border-color:#596f7b}
+}
 h1,h2,h3,p {
   margin-top:0
 }

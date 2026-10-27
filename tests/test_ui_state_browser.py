@@ -361,6 +361,8 @@ def test_native_picker_visuals_keyboard_and_reduced_motion(ui_state):
     field.focus()
     assert field.evaluate("node=>getComputedStyle(node).outlineWidth") == "2px"
     assert field.evaluate("node=>getComputedStyle(node).borderRadius") == "8px"
+    assert field.evaluate("node=>getComputedStyle(node).outlineOffset") == "0px"
+    assert field.evaluate("node=>getComputedStyle(node).boxShadow") == "none"
     enhanced = field.evaluate("node=>getComputedStyle(node).appearance==='base-select'")
     assert enhanced == page.evaluate(
         "CSS.supports('appearance','base-select') && CSS.supports('selector(select::picker(select))') && matchMedia('(hover:hover) and (pointer:fine)').matches"
