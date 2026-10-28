@@ -139,6 +139,7 @@ def isolated_query_db(tmp_path_factory, request):
         settings = Settings(
             **common, database_user="office_app", database_password_file=folder / "app_password"
         )
+        (folder / "container-name").write_text(name)
         yield settings
     finally:
         try:

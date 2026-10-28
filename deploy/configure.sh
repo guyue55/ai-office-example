@@ -46,6 +46,9 @@ case "$ANSWER" in
   *) echo '请选择1或2。' >&2; exit 2 ;;
 esac
 [[ "$LISTEN" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || { echo '必须填写服务器IPv4地址。' >&2; exit 2; }
+ask '服务类型：0=普通数据服务，1=含智能助手运行能力（仍需配置模型）' 0; AGENT="$ANSWER"
+[[ "$AGENT" == 0 || "$AGENT" == 1 ]] || { echo '请选择0或1。' >&2; exit 2; }
+ask '业务镜像（留空则从交付源码构建）' ''; IMAGE="$ANSWER"
 ask '实例目录（相对交付目录；不要与旧实例共用）' runtime/instance; INSTANCE="$ANSWER"
 ask '初始管理员登录名' admin; ADMIN="$ANSWER"
 ask '初始管理员显示名称' 企业管理员; NAME="$ANSWER"
@@ -57,6 +60,7 @@ TEMP="$(mktemp "${DEST}.tmp.XXXXXX")"
 trap 'rm -f "$TEMP"' EXIT
 chmod 600 "$TEMP"
 {
+  printf 'OFFICE_AGENT=%s\nOFFICE_IMAGE=%s\n' "$AGENT" "$IMAGE"
   printf 'OFFICE_DEPLOYMENT_MODE=%s\nOFFICE_PUBLIC_URL=%s\nOFFICE_LISTEN_ADDRESS=%s\nOFFICE_INSTANCE_DIR=%s\nOFFICE_ADMIN_USERNAME=%s\nOFFICE_ADMIN_NAME=%s\n' "$MODE" "$URL" "$LISTEN" "$INSTANCE" "$ADMIN" "$NAME"
   if [[ "$MODE" == https ]]; then printf 'OFFICE_CERTIFICATE_FILE=%s\nOFFICE_PRIVATE_KEY_FILE=%s\n' "$CERT" "$KEY"; fi
 } > "$TEMP"

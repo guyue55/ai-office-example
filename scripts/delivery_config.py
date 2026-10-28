@@ -21,6 +21,7 @@ KEYS = {
     "OFFICE_DEPLOYMENT_MODE",
     "OFFICE_INSTANCE_DIR",
     "OFFICE_IMAGE",
+    "OFFICE_AGENT",
     "OFFICE_LISTEN_ADDRESS",
     "OFFICE_CERTIFICATE_FILE",
     "OFFICE_PRIVATE_KEY_FILE",
@@ -52,6 +53,8 @@ def read_env(path):
         if not isinstance(value, str) or any(c in value for c in "\r\n$`"):
             raise ValueError("配置只支持单行字面量，不展开变量或执行命令")
         values[key] = value
+    if values.get("OFFICE_AGENT", "0") not in {"0", "1"}:
+        raise ValueError("OFFICE_AGENT须为0或1")
     mode = values.get("OFFICE_DEPLOYMENT_MODE", "https")
     if mode not in {"https", "lan-http-demo"}:
         raise ValueError("未知部署模式")
@@ -122,3 +125,40 @@ def server_settings(values):
             "identity_password_file": values["OFFICE_IDENTITY_DATABASE_PASSWORD_FILE"],
         }
     return result
+
+
+def image_selection(values, environment):
+    """配置与显式环境不可冲突；不把缺省0提前当成用户选择。"""
+    result = {}
+    for key in ("OFFICE_AGENT", "OFFICE_IMAGE"):
+        configured = values.get(key, "")
+        supplied = environment.get(key, "")
+        if configured and supplied and configured != supplied:
+            raise ValueError(key + "环境与交付配置冲突")
+        result[key] = supplied or configured
+    result["OFFICE_AGENT"] = result["OFFICE_AGENT"] or "0"
+    if result["OFFICE_AGENT"] not in {"0", "1"}:
+        raise ValueError("OFFICE_AGENT须为0或1")
+    image = result["OFFICE_IMAGE"]
+    if image and (image.startswith("-") or any(c.isspace() or ord(c) < 32 for c in image)):
+        raise ValueError("镜像引用格式无效")
+    return result
+
+
+if __name__ == "__main__":
+    import os
+    import sys
+
+    try:
+        source = Path(sys.argv[1])
+        values = (
+            {}
+            if source.read_text(encoding="utf-8-sig").lstrip().startswith("{")
+            else read_env(source)
+        )
+        selected = image_selection(values, os.environ)
+        print(selected["OFFICE_AGENT"])
+        print(selected["OFFICE_IMAGE"])
+    except (ValueError, OSError, IndexError):
+        print("交付配置或镜像选择无效，请检查OFFICE_AGENT／OFFICE_IMAGE及配置格式", file=sys.stderr)
+        sys.exit(2)

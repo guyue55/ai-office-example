@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           docker pull pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
-          OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --locked pytest tests/test_agent_postgres.py tests/test_agent_records_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_model_configuration_postgres.py tests/test_model_configuration_upgrade.py tests/test_model_test_lifecycle_postgres.py -q
+          OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --locked pytest tests/test_agent_postgres.py tests/test_agent_records_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_model_configuration_postgres.py tests/test_model_backup_restore_postgres.py tests/test_model_configuration_upgrade.py tests/test_model_test_lifecycle_postgres.py -q
           OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_settings_browser.py -q
       - name: 构建独立包与普通客户端依赖
         run: |
@@ -133,6 +133,12 @@ jobs:
             dist/build-manifest.json
           retention-days: 7
   container:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {variant: base, agent: '0'}
+          - {variant: agent, agent: '1'}
     needs: quality
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -150,9 +156,10 @@ jobs:
           file: deploy/Dockerfile
           load: true
           push: false
+          build-args: OFFICE_AGENT=${{ matrix.agent }}
           tags: office-data-service:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=service-${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=service-${{ matrix.variant }}
         env:
           # 不再上传额外的构建记录；镜像／数据库验收仍由后续步骤执行。
           DOCKER_BUILD_RECORD_UPLOAD: "false"
@@ -160,7 +167,7 @@ jobs:
       - name: 独立PG18受控聚合与撤权取消验收
         run: OFFICE_QUERY_PG_TESTS=1 uv run --frozen pytest tests/test_query_postgres.py tests/test_postgres_readiness.py -q
       - name: 全新临时数据库迁移与容器验收
-        run: uv run --frozen python scripts/docker_smoke.py --image office-data-service:ci
+        run: uv run --frozen python scripts/docker_smoke.py --image office-data-service:ci --expect-agent ${{ matrix.agent }}
   windows-client:
     needs: quality
     runs-on: windows-2025

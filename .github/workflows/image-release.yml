@@ -21,6 +21,12 @@ jobs:
     if: github.ref == 'refs/heads/main' && vars.ENABLE_IMAGE_RELEASE == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {variant: base, agent: '0', suffix: ''}
+          - {variant: agent, agent: '1', suffix: '-agent'}
     environment: image-release
     permissions:
       contents: read
@@ -66,9 +72,10 @@ jobs:
           file: deploy/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: OFFICE_AGENT=${{ matrix.agent }}
           tags: |
-            ${{ steps.release.outputs.image }}:${{ steps.release.outputs.version }}
-            ${{ steps.release.outputs.image }}:sha-${{ github.sha }}
+            ${{ steps.release.outputs.image }}:${{ steps.release.outputs.version }}${{ matrix.suffix }}
+            ${{ steps.release.outputs.image }}:sha-${{ github.sha }}${{ matrix.suffix }}
           labels: |
             org.opencontainers.image.title=${{ steps.release.outputs.title }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -82,6 +89,9 @@ jobs:
       - name: 保存公开镜像来源与摘要
         env:
           IMAGE_NAME: ${{ steps.release.outputs.image }}
+          IMAGE_VARIANT: ${{ matrix.variant }}
+          IMAGE_SUFFIX: ${{ matrix.suffix }}
+          IMAGE_AGENT: ${{ matrix.agent }}
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
@@ -91,7 +101,10 @@ jobs:
           Path('image-release.json').write_text(json.dumps({
               'image': os.environ['IMAGE_NAME'],
               'digest': os.environ['IMAGE_DIGEST'],
-              'tag': os.environ['RELEASE_TAG'],
+              'tag': os.environ['RELEASE_TAG'].removeprefix('v') + os.environ['IMAGE_SUFFIX'],
+              'release_tag': os.environ['RELEASE_TAG'],
+              'variant': os.environ['IMAGE_VARIANT'],
+              'build_args': {'OFFICE_AGENT': os.environ['IMAGE_AGENT']},
               'source_commit': os.environ['GITHUB_SHA'],
               'platforms': ['linux/amd64', 'linux/arm64'],
               'notice': '构建来源；公开可拉取性与运行验收须独立验证'
@@ -99,7 +112,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: image-release-${{ github.run_id }}
+          name: image-release-${{ matrix.variant }}-${{ github.run_id }}
           path: image-release.json
           if-no-files-found: error
           retention-days: 30

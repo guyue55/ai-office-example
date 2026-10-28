@@ -354,6 +354,7 @@ class AgentCoordinator:
             )
         finally:
             if attempt_id is not None:
+                assert actor_id is not None  # 两个标识在登记测试时同时赋值。
                 persisted = await self.tests.finish(
                     attempt_id, actor_id, payload["revision"], trace_id, result
                 )

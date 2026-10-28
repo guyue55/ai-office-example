@@ -2,6 +2,9 @@
 
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -569,3 +572,49 @@ def test_new_install_generates_independent_model_key_once(tmp_path, monkeypatch)
     assert config.agent_model_urls == []
     layout.prepare(*args)
     assert key.read_bytes() == original  # 重入安装绝不换掉已生成的根密钥。
+
+
+def test_image_selection_unifies_file_and_environment(tmp_path):
+    from delivery_config import image_selection, read_env
+
+    path = tmp_path / "delivery.env"
+    path.write_text(
+        "OFFICE_PUBLIC_URL=https://office.example\nOFFICE_AGENT=1\nOFFICE_IMAGE=example/service:agent\n"
+    )
+    values = read_env(path)
+    assert image_selection(values, {}) == {
+        "OFFICE_AGENT": "1",
+        "OFFICE_IMAGE": "example/service:agent",
+    }
+    assert image_selection({}, {})["OFFICE_AGENT"] == "0"
+    for environment in [{"OFFICE_AGENT": "0"}, {"OFFICE_IMAGE": "other/image"}]:
+        with pytest.raises(ValueError, match="冲突"):
+            image_selection(values, environment)
+    for value in ["2", "true", "-1"]:
+        with pytest.raises(ValueError):
+            image_selection({"OFFICE_AGENT": value}, {})
+
+
+def test_bootstrap_image_selection_does_not_execute_env(tmp_path):
+    config = tmp_path / "delivery.env"
+    config.write_text(
+        "OFFICE_PUBLIC_URL=https://office.example.invalid\nOFFICE_AGENT=1\nOFFICE_IMAGE=ghcr.io/example/service:1-agent\n"
+    )
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/delivery_config.py"), str(config)],
+        env={**os.environ, "OFFICE_AGENT": "", "OFFICE_IMAGE": ""},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0
+    assert result.stdout.splitlines() == ["1", "ghcr.io/example/service:1-agent"]
+    config.write_text("OFFICE_AGENT=$(touch injected)\n")
+    rejected = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/delivery_config.py"), str(config)],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert rejected.returncode == 2 and not (tmp_path / "injected").exists()
