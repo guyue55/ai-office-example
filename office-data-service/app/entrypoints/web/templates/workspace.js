@@ -306,6 +306,7 @@
       if (!await mayLeave(root, form)) return;
       if (form.dataset.confirmMessage && !await confirmAction(form)) return;
       if (!await mayNavigate()) return;
+      form.dispatchEvent(new CustomEvent('office:submit-approved', {bubbles:true}));
       leaving = true;
       HTMLFormElement.prototype.submit.call(form);
       return;

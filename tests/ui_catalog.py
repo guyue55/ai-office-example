@@ -258,6 +258,7 @@ def context(template):
                 "allowed_urls": ["https://model.invalid/v1"],
             },
             limits=ModelLimits().model_dump(),
+            budget_fields=ModelLimits.model_json_schema()["properties"],
             draft={},
         )
     return value

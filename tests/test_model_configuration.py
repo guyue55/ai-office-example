@@ -132,3 +132,32 @@ def test_managed_limits_match_existing_runtime_contract():
     for key in a:
         for limit in ("minimum", "maximum", "type"):
             assert a[key].get(limit) == b[key].get(limit)
+
+
+def test_model_settings_readonly_and_missing_prerequisites(web):  # noqa: F811
+    async def operation(principal, name, payload, trace, **kwargs):
+        if name == "me":
+            return {"name": "配置观察员", "permissions": ["agent.config.read"]}
+        assert name == "agent.config.get"
+        return {
+            "version": 0,
+            "source": "external",
+            "draft_revision": None,
+            "active_revision": None,
+            "draft": None,
+            "active": None,
+            "installed": False,
+            "ready": False,
+            "secret_set": False,
+            "secret_store_ready": False,
+            "allowed_urls": [],
+            "message": "尚未配置",
+        }
+
+    web.application.call.side_effect = operation
+    response = web.client.get("/console/model-settings")
+    assert response.status_code == 200
+    assert "您可以查看配置" in response.text and "需要运维准备" in response.text
+    assert 'action="/console/model-settings/save"' not in response.text
+    assert 'name="secret"' not in response.text
+    assert "配置独立加密根密钥" in response.text

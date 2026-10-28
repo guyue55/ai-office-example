@@ -16,6 +16,7 @@ def register_model_settings(router, operate, render, csrf, notify):
             "model_settings.html",
             configuration=status,
             limits=ModelLimits().model_dump(),
+            budget_fields=ModelLimits.model_json_schema()["properties"],
             draft=status["draft"] or {},
         )
 

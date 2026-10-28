@@ -1,0 +1,54 @@
+/* 设置页布局复用全站卡片、字段、按钮与焦点；容器查询兼容助手并排。 */
+.settings-page {container:settings-page / inline-size;}
+.settings-layout {display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:24px;}
+.settings-editor {container:settings-editor / inline-size;min-width:0;}
+.settings-layout .card {margin:0;min-width:0;}
+.settings-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
+.settings-heading h3 {margin:0;}
+.settings-section {border:0;border-top:1px solid var(--line);padding:20px 0 0;margin:0 0 24px;min-width:0;}
+.settings-section legend {padding:0 12px 0 0;font-size:14px;font-weight:600;color:var(--ink);}
+.settings-section legend .badge {margin-left:6px;font-weight:400;}
+.settings-fields {display:grid;grid-template-columns:minmax(0,1fr);gap:20px 16px;align-items:start;}
+.settings-field {display:grid;align-content:start;gap:8px;min-width:0;}
+.settings-field[hidden] {display:none;}
+.settings-field label {margin:0;line-height:1.5;font-size:14px;}
+.settings-field input,.settings-field select {width:100%;box-sizing:border-box;min-height:40px;}
+.settings-field small,.settings-help {font-size:12px;color:var(--muted);line-height:1.7;}
+.settings-field small {display:block;}
+.settings-help {margin:12px 0 0;overflow-wrap:anywhere;}
+.settings-help li+li {margin-top:6px;}
+.settings-wide {grid-column:1 / -1;}
+.settings-disclosure {border-top:1px solid var(--line);padding:16px 0;margin-top:16px;}
+.settings-disclosure summary {font-size:14px;line-height:1.6;}
+.settings-disclosure summary .muted {font-size:12px;font-weight:400;margin-left:8px;}
+.settings-disclosure .settings-fields {margin-top:20px;}
+.settings-consent {padding:16px 0;border-top:1px solid var(--line);}
+.settings-layout .check-option {align-items:flex-start;font-size:13px;line-height:1.7;}
+.settings-layout .check-option input {flex:0 0 17px;margin:3px 0 0;}
+.settings-consent .settings-help {margin:6px 0 0 25px;}
+.settings-footer {display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:8px;}
+.settings-footer .muted {font-size:12px;}
+.settings-side {display:grid;gap:20px;min-width:0;}
+.settings-side h3 {margin:0 0 16px;}
+.settings-side .settings-heading {margin-bottom:0;}
+.settings-facts {grid-template-columns:90px minmax(0,1fr);gap:10px 12px;font-size:13px;}
+.settings-summary {display:grid;gap:6px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.6;}
+.settings-summary strong {font-size:14px;overflow-wrap:anywhere;}
+.settings-address {overflow-wrap:anywhere;}
+.settings-inline-note {background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7;margin:12px 0 0;color:var(--ink);}
+.settings-inline-note[hidden] {display:none;}
+.settings-action-form {display:grid;gap:12px;margin-top:16px;}
+.settings-action-form button {justify-self:start;}
+.settings-action-group {display:grid;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line);}
+.settings-action-group form button,.settings-action-form button {min-width:144px;max-width:100%;}
+.settings-layout form[aria-busy=true] button {cursor:wait;}
+@container settings-editor (min-width:500px) {.settings-fields {grid-template-columns:repeat(2,minmax(0,1fr));}}
+@container settings-editor (min-width:660px) {.settings-budget {grid-template-columns:repeat(3,minmax(0,1fr));}}
+@container settings-page (min-width:940px) {.settings-layout {grid-template-columns:minmax(0,1fr) 300px;}}
+@container settings-page (min-width:650px) and (max-width:939px) {.settings-side {grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;}}
+
+.settings-header > .badge {align-self:flex-start;}
+.settings-unit {display:inline;font-size:12px;font-weight:400;color:var(--muted);}
+
+/* 首帧按服务端状态隐藏增强字段，避免脚本初始化时跳动；无脚本仍完整展示。 */
+.js .settings-field[data-model-auth=hidden],.js .settings-field[data-model-secret=keep],.js .settings-field[data-model-secret=clear] {display:none;}
