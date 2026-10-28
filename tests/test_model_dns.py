@@ -162,6 +162,7 @@ def test_doh_configuration_requires_explicit_valid_domain_scope(tmp_path):
         "public_url": "https://app.invalid",
     }
     valid = {
+        "agent_model_doh_scope": "domains",
         "agent_model_doh_url": "https://dns.invalid/query",
         "agent_model_doh_domains": ["model.invalid"],
     }
@@ -248,3 +249,175 @@ def test_explicit_internal_permission_does_not_allow_benchmark_ranges():
     assert permitted_ip("10.0.0.2", internal=True)
     for ip in ("198.18.0.1", "198.19.255.254", "2001:2::1", "::ffff:198.18.1.2"):
         assert not permitted_ip(ip, internal=True)
+
+
+def test_automatic_doh_needs_no_vendor_domain_list_and_preserves_old_scope(tmp_path):
+    from app.infrastructure.config import Settings
+
+    base = {
+        "database_user": "fixture",
+        "database_password_file": tmp_path / "unused",
+        "issuer": "https://id.invalid",
+        "audience": "https://app.invalid/mcp",
+        "public_url": "https://app.invalid",
+    }
+    automatic = Settings(**base, agent_model_doh_url="https://dns.invalid/query")
+    assert automatic.agent_model_doh_scope == "auto" and automatic.agent_model_doh_domains == []
+    legacy = Settings(
+        **base,
+        agent_model_doh_url="https://dns.invalid/query",
+        agent_model_doh_domains=["model.invalid"],
+    )
+    assert legacy.agent_model_doh_scope == "domains"
+
+
+def test_automatic_resolution_for_any_public_vendor_and_fail_closed(monkeypatch):
+    import app.infrastructure.model_egress as egress
+
+    async def scenario():
+        calls, system_calls = [], []
+        ips = ["198.18.1.2"]
+        failing = [False]
+
+        class Resolver:
+            def __init__(self, url):
+                pass
+
+            async def __call__(self, host, port, **kwargs):
+                calls.append(host)
+                return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", port))]
+
+            async def aclose(self):
+                pass
+
+        async def system(host, port, **kwargs):
+            system_calls.append(host)
+            if failing[0]:
+                raise socket.gaierror("synthetic")
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, port)) for ip in ips]
+
+        monkeypatch.setattr(egress, "DohResolver", Resolver)
+        monkeypatch.setattr(asyncio.get_running_loop(), "getaddrinfo", system)
+        config = SimpleNamespace(
+            agent_model_urls=[],
+            agent_model_url_policy="public",
+            agent_model_doh_url="https://dns.invalid/query",
+            agent_model_doh_domains=[],
+            agent_model_doh_scope="auto",
+        )
+        for host in ("vendor-one.invalid", "vendor-two.invalid"):
+            transport = model_transport(
+                config,
+                "https://" + host,
+                inner=httpx2.MockTransport(lambda request: httpx2.Response(200)),
+            )
+            async with httpx2.AsyncClient(transport=transport) as client:
+                assert (await client.get("https://" + host)).status_code == 200
+        assert calls == ["vendor-one.invalid", "vendor-two.invalid"]
+        calls.clear()
+        ips[:] = ["8.8.8.8"]
+        transport = model_transport(
+            config,
+            "https://normal.invalid",
+            inner=httpx2.MockTransport(lambda request: httpx2.Response(200)),
+        )
+        async with httpx2.AsyncClient(transport=transport) as client:
+            assert (await client.get("https://normal.invalid")).status_code == 200
+        assert not calls
+        for values in (["127.0.0.1"], ["8.8.8.8", "10.0.0.1"], ["198.18.1.2", "169.254.169.254"]):
+            ips[:] = values
+            transport = model_transport(
+                config,
+                "https://private.invalid",
+                inner=httpx2.MockTransport(lambda request: httpx2.Response(200)),
+            )
+            async with httpx2.AsyncClient(transport=transport) as client:
+                with pytest.raises(ModelEgressError):
+                    await client.get("https://private.invalid")
+        assert not calls
+        failing[0] = True
+        for host in ("public.invalid", "model.lan"):
+            transport = model_transport(
+                config,
+                "https://" + host,
+                inner=httpx2.MockTransport(lambda request: httpx2.Response(200)),
+            )
+            async with httpx2.AsyncClient(transport=transport) as client:
+                if host.endswith(".lan"):
+                    with pytest.raises(ModelEgressError):
+                        await client.get("https://" + host)
+                else:
+                    assert (await client.get("https://" + host)).status_code == 200
+        assert calls == ["public.invalid"]
+
+    asyncio.run(scenario())
+
+
+def test_automatic_doh_failure_never_sends_model_request(monkeypatch):
+    import app.infrastructure.model_egress as egress
+
+    async def scenario():
+        sent = []
+
+        class Resolver:
+            def __init__(self, url):
+                pass
+
+            async def __call__(self, host, port, **kwargs):
+                raise ModelEgressError("dns")
+
+            async def aclose(self):
+                pass
+
+        async def system(host, port, **kwargs):
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("198.18.1.2", port))]
+
+        monkeypatch.setattr(egress, "DohResolver", Resolver)
+        monkeypatch.setattr(asyncio.get_running_loop(), "getaddrinfo", system)
+        config = SimpleNamespace(
+            agent_model_urls=[],
+            agent_model_url_policy="public",
+            agent_model_doh_url="https://dns.invalid/query",
+            agent_model_doh_domains=[],
+            agent_model_doh_scope="auto",
+        )
+
+        async def serve(request):
+            sent.append(request)
+            return httpx2.Response(200)
+
+        async with httpx2.AsyncClient(
+            transport=model_transport(
+                config, "https://any-vendor.invalid", inner=httpx2.MockTransport(serve)
+            )
+        ) as client:
+            with pytest.raises(ModelEgressError) as caught:
+                await client.get("https://any-vendor.invalid")
+            assert caught.value.category == "dns"
+        assert sent == []
+
+    asyncio.run(scenario())
+
+
+def test_automatic_mode_keeps_explicit_internal_model_on_system_dns(monkeypatch):
+    async def scenario():
+        async def system(host, port, **kwargs):
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.2", port))]
+
+        monkeypatch.setattr(asyncio.get_running_loop(), "getaddrinfo", system)
+        config = SimpleNamespace(
+            agent_model_urls=["https://model.company.invalid"],
+            agent_model_url_policy="public",
+            agent_model_doh_url="https://dns.invalid/query",
+            agent_model_doh_domains=[],
+            agent_model_doh_scope="auto",
+        )
+        transport = model_transport(
+            config,
+            "https://model.company.invalid",
+            inner=httpx2.MockTransport(lambda request: httpx2.Response(200)),
+        )
+        async with httpx2.AsyncClient(transport=transport) as client:
+            assert (await client.get("https://model.company.invalid")).status_code == 200
+
+    asyncio.run(scenario())

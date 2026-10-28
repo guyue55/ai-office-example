@@ -68,14 +68,60 @@ def model_transport(settings, value, *, resolver=None, inner=None, max_response_
 
     class Transport(httpx2.AsyncBaseTransport):
         def __init__(self):
+            domains = getattr(settings, "agent_model_doh_domains", [])
+            self.automatic = (
+                getattr(settings, "agent_model_doh_scope", "domains" if domains else "auto")
+                == "auto"
+            )
             self.doh = (
                 DohResolver(settings.agent_model_doh_url)
                 if resolver is None
-                and origin.host.lower().rstrip(".")
-                in getattr(settings, "agent_model_doh_domains", [])
+                and getattr(settings, "agent_model_doh_url", None)
+                and (self.automatic or origin.host.lower().rstrip(".") in domains)
                 else None
             )
             self.inner = inner or httpx2.AsyncHTTPTransport(trust_env=False, retries=0)
+
+        async def resolve_addresses(self, host, port):
+            if resolver is not None:
+                return await resolver(host, port, type=socket.SOCK_STREAM)
+            if self.doh is not None and not self.automatic:
+                return await self.doh(host, port, type=socket.SOCK_STREAM)
+            name = host.lower().rstrip(".")
+            fallback = (
+                self.doh is not None
+                and "." in name
+                and not name.endswith((".local", ".localhost", ".lan", ".internal", ".home.arpa"))
+            )
+            try:
+                ipaddress.ip_address(name)
+            except ValueError:
+                pass
+            else:
+                fallback = False
+            try:
+                addresses = await asyncio.get_running_loop().getaddrinfo(
+                    host, port, type=socket.SOCK_STREAM
+                )
+            except OSError:
+                if fallback and self.doh is not None:
+                    return await self.doh(host, port, type=socket.SOCK_STREAM)
+                raise
+            ips = list(dict.fromkeys(item[4][0] for item in addresses))
+            # 正常解析与私有目标保留系统路径；不能借Fake-IP兜底隐藏混入的私有／元数据地址。
+            if (
+                self.doh is not None
+                and fallback
+                and (
+                    not ips
+                    or (
+                        any(benchmark_ip(ip) for ip in ips)
+                        and all(benchmark_ip(ip) or permitted_ip(ip) for ip in ips)
+                    )
+                )
+            ):
+                return await self.doh(host, port, type=socket.SOCK_STREAM)
+            return addresses
 
         async def handle_async_request(self, request):
             if (request.url.scheme, request.url.host, request.url.port) != (
@@ -92,11 +138,8 @@ def model_transport(settings, value, *, resolver=None, inner=None, max_response_
             ):
                 raise ModelEgressError()
             try:
-                resolve = resolver or self.doh or asyncio.get_running_loop().getaddrinfo
-                addresses = await resolve(
-                    origin.host,
-                    origin.port or (443 if origin.scheme == "https" else 80),
-                    type=socket.SOCK_STREAM,
+                addresses = await self.resolve_addresses(
+                    origin.host, origin.port or (443 if origin.scheme == "https" else 80)
                 )
             except OSError:
                 raise ModelEgressError("dns") from None

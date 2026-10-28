@@ -70,6 +70,7 @@ class Settings(BaseModel):
     agent_config_file: Path | None = None
     agent_secret_key_file: Path | None = None
     agent_model_url_policy: Literal["public", "allowlist"] = "public"
+    agent_model_doh_scope: Literal["auto", "domains"] = "auto"
     agent_model_doh_url: str | None = Field(default=None, max_length=2048)
     agent_model_doh_domains: list[str] = Field(default_factory=list, max_length=20)
     agent_model_urls: list[str] = Field(default_factory=list, max_length=20)
@@ -99,10 +100,25 @@ class Settings(BaseModel):
             return {**data, "agent_model_url_policy": "allowlist"}
         return data
 
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_model_dns(cls, data):
+        if (
+            isinstance(data, dict)
+            and data.get("agent_model_doh_domains")
+            and "agent_model_doh_scope" not in data
+        ):
+            return {**data, "agent_model_doh_scope": "domains"}
+        return data
+
     @model_validator(mode="after")
     def model_dns_scope(self):
-        if bool(self.agent_model_doh_url) != bool(self.agent_model_doh_domains):
-            raise ValueError("模型DoH须同时指定HTTPS解析器及精确域名清单")
+        if self.agent_model_doh_scope == "domains" and (
+            not self.agent_model_doh_url or not self.agent_model_doh_domains
+        ):
+            raise ValueError("限定域名模式须指定HTTPS解析器及域名清单")
+        if self.agent_model_doh_scope == "auto" and self.agent_model_doh_domains:
+            raise ValueError("自动模式无需域名清单，请移除清单或选择限定模式")
         if self.agent_model_doh_url:
             url = urlparse(self.agent_model_doh_url)
             if (

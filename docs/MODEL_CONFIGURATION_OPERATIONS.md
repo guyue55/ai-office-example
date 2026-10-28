@@ -110,19 +110,23 @@ Token参数不能替代HTTP内存限制。控制台托管模型的普通请求�
 
 隔离验收 `OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_backup_restore_postgres.py -q` 使用临时 PG18 的真实 custom-format dump/restore，在同一隔离集群新数据库恢复数据及 ACL。验证活动修订与最新未应用草稿分别保留；正确根密钥恢复可用，缺失／错误根密钥使助手降级，普通数据查询仍通过。该测试没有供应商调用，不替代异机身份库恢复、完整实例灾备、容量或目标环境演练。现有实例不因本轮测试而升级。
 
-## 模型专用可信DNS（2026-10-28修复）
+## 模型DNS自动兼容（2026-10-28更新）
 
-服务端托管模型可使用运维配置的DoH JSON解析器，不要求修改Clash或系统DNS。在实例`service/service.json`中同时指定：
+新增公网模型供应商无需维护域名清单。运维在实例`service/service.json`统一配置可信DoH JSON解析器即可：
 
 ```json
 {
   "agent_model_doh_url": "https://cloudflare-dns.com/dns-query",
-  "agent_model_doh_domains": ["model.example.com"]
+  "agent_model_doh_scope": "auto"
 }
 ```
 
-上例需合并到原配置，不覆盖其余字段；域名替换为获准模型的精确主机名，不含协议、路径或通配符。默认两字段为空、继续系统解析；只有清单中的模型目标使用该解析器。解析器须支持Cloudflare兼容的DoH JSON查询与Question／Answer格式；不将该JSON接口称作所有RFC8484服务都支持的格式。企业可选自建兼容解析器，不强制公共DNS。内网域名不默认查询公共服务。
+上例合并到原配置，不覆盖其他字段。业务人员继续只填协议、base URL、模型和密钥；默认public出口模式不限制供应商品牌或域名。可信解析器属于部署基础设施，可用企业自建的兼容服务，不强制Cloudflare；未配置时保持原系统DNS。
 
-A／AAAA异步并发查询；总解析超时5秒，原始和解压后各64KiB，每响应最多64记录，合并地址最多64。校验问题、状态、截断、别名链和地址族；所有候选地址仍通过原出口规则，连接固定IP并保留Host／SNI和证书验证。不重定向、不自动降级回不安全解析，不写死供应商IP。单传输生命周期内缓存最多64域名，TTL遵循记录并上限60秒，TTL=0不缓存；结束时关闭HTTP客户端，取消会传播到并发DNS查询。
+自动模式先使用系统DNS：正常公网结果直接使用；遇到Fake-IP或公网域名解析失败时使用可信解析器。系统DNS返回私有、链路本地、元数据或混合不安全地址时不以兜底掩盖结果，仍按原出口授权判断。字面IP、单标签名及`.local`／`.localhost`／`.lan`／`.internal`／`.home.arpa`不触发公共DoH兜底；已授权且正常解析为私网IP的内部模型保留系统路径。不能仅凭域名推断所有企业私有名称，配置解析器时应遵守企业DNS政策。
 
-此配置只影响托管模型传输，不改数据库、身份、普通HTTP客户端、员工独立Agent或宿主代理。`dns_fake_ip`提示代理映射地址；`dns_address`提示受限解析结果；原`dns`表示查询失败。修复后历史测试记录仍保留旧失败，不自动重试付费调用；需用户手动重新测试。
+只有主动要求限定范围的部署才使用`agent_model_doh_scope: "domains"`与`agent_model_doh_domains`精确清单；旧版非空清单未写scope时保持限定语义，不静默扩大查询范围。当前实例已明确选择auto并移除原单域名清单。
+
+解析器须支持Cloudflare兼容的DoH JSON查询与Question／Answer格式，不声称所有RFC8484接口都支持JSON。A／AAAA异步并发，总解析超时5秒，原始和解压后各64KiB，每响应最多64记录，合并地址最多64。所有候选地址仍校验，连接固定IP、保留Host／SNI和TLS验证；不重定向、不在可信解析失败后放行Fake-IP。缓存最多64域名，TTL按记录并上限60秒，TTL=0不缓存；结束关闭客户端，取消传播至并发查询。
+
+只影响托管模型传输，不接管身份、数据库、其他客户端、员工独立Agent或宿主代理。历史测试失败保留，不自动重试付费调用。`dns_fake_ip`表示基准测试映射地址，`dns_address`表示受限地址，`dns`表示解析失败。
