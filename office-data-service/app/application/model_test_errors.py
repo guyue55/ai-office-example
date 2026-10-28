@@ -2,9 +2,13 @@
 
 import ssl
 
-from app.infrastructure.model_egress import ModelEgressError
+from app.infrastructure.model_errors import ModelEgressError
 
 MESSAGES = {
+    "response_limit": (
+        "模型响应超过传输预算",
+        "请核对模型网关及响应格式；不要直接扩大业务输出预算。",
+    ),
     "authentication": ("模型认证失败", "核对密钥是否有效以及鉴权方式。"),
     "permission": ("供应商拒绝此调用", "核对模型访问权限及供应商账号状态。"),
     "endpoint_or_model": ("地址或模型不匹配", "核对base URL、协议及准确模型标识。"),

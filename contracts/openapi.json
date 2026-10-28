@@ -17863,7 +17863,8 @@
               "connect",
               "timeout",
               "policy",
-              "invalid_response"
+              "invalid_response",
+              "response_limit"
             ],
             "title": "Category"
           },

@@ -89,3 +89,16 @@ HTTP演示页面仍提示明文传输；真实企业密钥应经HTTPS配置，�
 `ok`为基础合成调用通过；失败类别固定为authentication、permission、endpoint_or_model、rate_limit、provider、dns、tls、connect、timeout、policy、invalid_response。页面用中文说明并给下一步建议，技术类别便于排障；不返回密钥、供应商响应正文或原异常字符串。测试元数据保存在model_connection_test，响应只提供最近一次；修订不同即过期。历史清理策略及完整测试历史列表不在本轮范围。
 
 实现与本轮分层验收见[连接流程计划](plans/2026-10-28-model-connection-flow.md)。当前运行实例没有自动升级；升级须先备份并迁移至0015。
+
+
+## 响应预算与测试异常恢复（2026-10-28加固）
+
+Token参数不能替代HTTP内存限制。控制台托管模型的普通请求默认原始响应、解压后响应分别不超过4MiB，可在实例service/service.json设置`agent_model_response_wire_bytes`、`agent_model_response_decoded_bytes`，各允许65536至16777216字节。合成连接探针固定进一步收紧至各64KiB，不随一般预算提高；这些是传输预算，和业务`limits.output_bytes`各自独立。员工独立Agent／外部文件模式不因本轮自动改变。
+
+读取在SDK解析之前逐块计数，成功与错误体一致；Content-Length只能提前拒绝，不能绕过实际累计。支持identity、gzip和标准zlib deflate并做有界解压，损坏、截断、拼接压缩流及其他压缩方式明确拒绝。请求只声明接受gzip／deflate。超限返回测试分类`response_limit`，响应关闭且不自动重试；不保留供应商原始正文。
+
+测试从开始记录提交到结果落库都纳入收尾：已获得结果时优先保存完成事实，结果未知时标interrupted。独立收尾任务最多5秒（不超过operation_timeout），请求取消／重复取消不直接取消该任务；收尾未结束会拒绝新的连接测试，避免重复计费。进程正常关闭会等待已登记收尾。
+
+收尾仍可能因数据库不可用而失败，此时记录安全日志并返回回执未保存；不能把它解释为未发生调用。无需重启，后续配置查询／操作会恢复无实际运行任务的started为interrupted；每次最多100条，锁定记录跳过并在后续访问再核对，真实活跃测试和收尾任务不会被误恢复。恢复不调用模型、不声称恢复了已丢失结果。数据库尚不可用时无法保证立即落盘；进程强制终止后的恢复也只修正状态，不重发请求。此机制仍仅支持既定的单执行进程。
+
+加固方案、失败证据和验证边界见[专项计划](plans/2026-10-28-model-response-lifecycle-hardening.md)。数据库结构保持0015，本轮无需新迁移；此前未升级实例仍须先完成原0015迁移。

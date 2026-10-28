@@ -6,14 +6,7 @@ import socket
 from urllib.parse import urlsplit
 
 from app.common.errors import require
-
-
-class ModelEgressError(Exception):
-    """固定错误分类，不携带目标、解析结果或凭证。"""
-
-    def __init__(self, category="policy"):
-        self.category = category
-        super().__init__(category)
+from app.infrastructure.model_errors import ModelEgressError
 
 
 def permitted_ip(value, *, internal=False):
@@ -52,7 +45,7 @@ def check_endpoint(settings, value):
         )
 
 
-def model_transport(settings, value, *, resolver=None, inner=None):
+def model_transport(settings, value, *, resolver=None, inner=None, max_response_bytes=None):
     """可选依赖延迟加载；每个模型上下文独享连接池和原始TLS身份。"""
     import httpx2
 
@@ -94,6 +87,7 @@ def model_transport(settings, value, *, resolver=None, inner=None):
             chosen = next((ip for ip in ips if ":" not in ip), ips[0])
             headers = request.headers.copy()
             headers["host"] = origin.netloc.decode("ascii")
+            headers["accept-encoding"] = "gzip, deflate"
             pinned = httpx2.Request(
                 request.method,
                 request.url.copy_with(host=chosen),
@@ -105,7 +99,19 @@ def model_transport(settings, value, *, resolver=None, inner=None):
             if 300 <= response.status_code < 400:
                 await response.aclose()
                 raise ModelEgressError()
-            return response
+            from app.infrastructure.model_response import bounded_response
+
+            return bounded_response(
+                response,
+                wire_limit=min(
+                    getattr(settings, "agent_model_response_wire_bytes", 4194304),
+                    max_response_bytes or 16777216,
+                ),
+                decoded_limit=min(
+                    getattr(settings, "agent_model_response_decoded_bytes", 4194304),
+                    max_response_bytes or 16777216,
+                ),
+            )
 
         async def aclose(self):
             await self.inner.aclose()

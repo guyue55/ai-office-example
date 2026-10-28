@@ -71,6 +71,8 @@ class Settings(BaseModel):
     agent_secret_key_file: Path | None = None
     agent_model_url_policy: Literal["public", "allowlist"] = "public"
     agent_model_urls: list[str] = Field(default_factory=list, max_length=20)
+    agent_model_response_wire_bytes: int = Field(default=4194304, ge=65536, le=16777216)
+    agent_model_response_decoded_bytes: int = Field(default=4194304, ge=65536, le=16777216)
     agent_max_running: int = Field(default=8, ge=1, le=64)
     agent_max_per_user: int = Field(default=2, ge=1, le=8)
     client_id: str = PRODUCT["client_id"]

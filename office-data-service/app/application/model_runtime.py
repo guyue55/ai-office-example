@@ -43,7 +43,13 @@ async def prepare_runtime(application, revision, *, model_context=None, syntheti
                 model_secrets.decrypt, settings.agent_secret_key_file, ciphertext
             )
             async with import_module("office_agent.providers").configured_model(
-                bound_config, key=key, transport=model_transport(settings, bound_config.model_url)
+                bound_config,
+                key=key,
+                transport=model_transport(
+                    settings,
+                    bound_config.model_url,
+                    max_response_bytes=65536 if synthetic else None,
+                ),
             ) as model:
                 yield model
 

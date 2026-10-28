@@ -5,14 +5,16 @@ import hashlib
 import json
 from importlib import import_module
 from importlib.util import find_spec
+from uuid import uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from app.application.agent_runner import AgentRunner, recover_runs
 from app.application.contracts import validate_output
 from app.application.model_runtime import prepare_runtime, test_runtime
+from app.application.model_test_lifecycle import ModelTestLifecycle
 from app.common.errors import DomainError, require
-from app.infrastructure.models import AgentRun, Audit, ModelConfiguration, ModelConnectionTest
+from app.infrastructure.models import AgentRun, ModelConfiguration, ModelConnectionTest
 from app.modules.access.service import Access
 from app.modules.agent.conversations import Conversations
 from app.modules.agent.model_store import ModelStore
@@ -29,6 +31,7 @@ class AgentCoordinator:
         self.config = None
         self.lock = asyncio.Lock()
         self.test_lock = asyncio.Lock()
+        self.tests = ModelTestLifecycle(self.sessions, self.settings.operation_timeout)
         self.started = False
         self.closed = False
         self.error = ""
@@ -41,12 +44,7 @@ class AgentCoordinator:
                 return
             try:
                 await recover_runs(self.sessions)
-                async with self.sessions.begin() as db:
-                    await db.execute(
-                        update(ModelConnectionTest)
-                        .where(ModelConnectionTest.state == "started")
-                        .values(state="interrupted")
-                    )
+                await self.tests.recover()
                 async with self.sessions() as db:
                     state = await db.get(ModelConfiguration, 1)
                     if state is not None:
@@ -87,7 +85,13 @@ class AgentCoordinator:
         self, principal, operation, payload, trace_id, *, presenter=None, authenticate=None
     ):
         await self.start()
+        if operation.startswith("agent.config."):
+            await self.tests.recover()
         if operation == "agent.config.test":
+            require(not self.closed, 503, "execution_unavailable", "服务正在停止，不能发起模型测试")
+            require(
+                not self.tests.active, 409, "version_conflict", "上次连接测试仍在收尾，请等待回执"
+            )
             require(
                 not self.test_lock.locked(),
                 409,
@@ -305,75 +309,60 @@ class AgentCoordinator:
         return result, update
 
     async def _test_configuration(self, principal, payload, trace_id, presenter):
-        async with self.sessions.begin() as db:
-            access = await Access.create(db, principal, trace_id)
-            access.need("agent.config.read")
-            access.need("agent.config.test")
-            store = ModelStore(access, self.settings)
-            state = await store.state()
-            store.expect(state, payload["version"])
-            require(
-                payload["revision"] == state.draft_revision,
-                409,
-                "version_conflict",
-                "请先核对最新草稿",
-            )
-            row = await store.revision(payload["revision"])
-            config, runner = await prepare_runtime(
-                self.application, row, model_context=self.model_context, synthetic=True
-            )
-            attempt = ModelConnectionTest(
-                revision=row.revision,
-                actor_id=access.actor.id,
-                api=row.config["api"],
-                model=row.config["model"],
-                state="started",
-            )
-            db.add(attempt)
-            await db.flush()
-            attempt_id, actor_id = attempt.id, access.actor.id
-            access.audit(
-                "agent.config.tested",
-                str(row.revision),
-                {"phase": "started", "revision": row.revision},
-            )
-        # 供应商网络等待不占用数据库连接或事务。没有自动重试。
+        attempt_id = actor_id = None
+        result = None
+        persisted = False
         try:
+            async with self.tests.guard, self.sessions.begin() as db:
+                access = await Access.create(db, principal, trace_id)
+                access.need("agent.config.read")
+                access.need("agent.config.test")
+                store = ModelStore(access, self.settings)
+                state = await store.state()
+                store.expect(state, payload["version"])
+                require(
+                    payload["revision"] == state.draft_revision,
+                    409,
+                    "version_conflict",
+                    "请先核对最新草稿",
+                )
+                row = await store.revision(payload["revision"])
+                config, runner = await prepare_runtime(
+                    self.application, row, model_context=self.model_context, synthetic=True
+                )
+                attempt = ModelConnectionTest(
+                    revision=row.revision,
+                    actor_id=access.actor.id,
+                    api=row.config["api"],
+                    model=row.config["model"],
+                    state="started",
+                )
+                attempt.id = str(uuid4())
+                self.tests.active.add(attempt.id)
+                attempt_id, actor_id = attempt.id, access.actor.id
+                db.add(attempt)
+                await db.flush()
+                access.audit(
+                    "agent.config.tested",
+                    str(row.revision),
+                    {"phase": "started", "revision": row.revision},
+                )
+            # 供应商网络等待不占用数据库连接或事务；收尾覆盖提交、网络和结果验证。
             outcome = await test_runtime(config, runner)
-        except asyncio.CancelledError:
-            async with self.sessions.begin() as db:
-                attempt = await db.get(ModelConnectionTest, attempt_id, with_for_update=True)
-                attempt.state = "interrupted"
-                db.add(
-                    Audit(
-                        actor_id=actor_id,
-                        action="agent.config.tested",
-                        resource_id=str(payload["revision"]),
-                        detail={"phase": "interrupted"},
-                        trace_id=trace_id,
-                    )
-                )
-            raise
-        result = validate_output(
-            "agent.config.test", payload, {"revision": payload["revision"], **outcome}
-        )
-        # 完成留痕不依赖发起者仍有权限；读取响应另行核验，不能撤权后丢失测试事实。
-        async with self.sessions.begin() as db:
-            attempt = await db.get(ModelConnectionTest, attempt_id, with_for_update=True)
-            attempt.state, attempt.result = "completed", result
-            db.add(
-                Audit(
-                    actor_id=actor_id,
-                    action="agent.config.tested",
-                    resource_id=str(payload["revision"]),
-                    detail={
-                        "phase": "completed",
-                        "passed": outcome["passed"],
-                        "category": outcome["category"],
-                    },
-                    trace_id=trace_id,
-                )
+            result = validate_output(
+                "agent.config.test", payload, {"revision": payload["revision"], **outcome}
             )
+        finally:
+            if attempt_id is not None:
+                persisted = await self.tests.finish(
+                    attempt_id, actor_id, payload["revision"], trace_id, result
+                )
+        require(
+            persisted,
+            503,
+            "execution_unavailable",
+            "测试回执暂未保存，请查询状态核对；不要直接重复测试",
+        )
         async with self.sessions.begin() as db:
             access = await Access.create(db, principal, trace_id)
             access.need("agent.config.read")
@@ -382,5 +371,6 @@ class AgentCoordinator:
 
     async def close(self):
         self.closed = True
+        await self.tests.close()
         if self.runner is not None:
             await self.runner.close()

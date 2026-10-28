@@ -33,7 +33,7 @@ jobs:
       - run: uv run --project clients/agent --frozen pytest clients/agent/tests -q
       - name: 内部异步工具适配与托管模型出口
         if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
-        run: uv run --extra agent --locked pytest tests/test_agent_application_bridge.py tests/test_model_egress.py -q
+        run: uv run --extra agent --locked pytest tests/test_agent_application_bridge.py tests/test_model_egress.py tests/test_model_response.py -q
       - name: 隔离助手浏览器交互
         if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
         shell: bash
@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           docker pull pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
-          OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --locked pytest tests/test_agent_postgres.py tests/test_agent_records_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_model_configuration_postgres.py tests/test_model_configuration_upgrade.py -q
+          OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --locked pytest tests/test_agent_postgres.py tests/test_agent_records_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_model_configuration_postgres.py tests/test_model_configuration_upgrade.py tests/test_model_test_lifecycle_postgres.py -q
           OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_settings_browser.py -q
       - name: 构建独立包与普通客户端依赖
         run: |

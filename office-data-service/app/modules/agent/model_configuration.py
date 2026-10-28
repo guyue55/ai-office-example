@@ -102,6 +102,7 @@ class ModelTestResult(Output):
         "timeout",
         "policy",
         "invalid_response",
+        "response_limit",
     ]
     suggestion: str
     elapsed_ms: int = Field(ge=0)
