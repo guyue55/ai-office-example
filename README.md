@@ -57,3 +57,5 @@ Agent前端下一阶段研究见[前端路线、产品范围与验证计划](doc
 服务器安装可在 `deploy/.env` 选择 `OFFICE_AGENT=0/1` 与可选 `OFFICE_IMAGE`；两变体共用安装链路，建库前验证能力。Agent 依赖安装后还需管理员配置模型。双变体构建、恢复及未验收边界见[交付计划](docs/plans/2026-10-28-agent-delivery-implementation.md)，安装步骤见[INSTALL.md](INSTALL.md)。
 
 登录与模型接入的通用性整改见[方案与验收](docs/plans/2026-10-28-usability-boundaries.md)：实例Cookie隔离、失效登录恢复、内网模型和三协议网关适配。新代码不会自动更新已运行实例。
+
+模型配置下一轮体验调整见[交互调研与推荐方案](docs/MODEL_SETTINGS_UX_RESEARCH.md)：当前输入直接获取模型、手动ID与就近测试；该文为待实施设计，不代表现有页面已具备。
