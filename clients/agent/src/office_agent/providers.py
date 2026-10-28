@@ -52,7 +52,10 @@ async def configured_model(
     transport: httpx2.AsyncBaseTransport | None = None,
 ):
     # 托管服务显式注入解密后的本修订密钥；独立员工仍只读原秘密引用。
-    if key is None:
+    if config.auth_mode == "none":
+        # SDK构造器需要非空占位值；请求钩子会删除它，绝不读取宿主密钥。
+        key = "unused-no-auth"
+    elif key is None:
         key = await asyncio.to_thread(model_key, config)
     timeout = min(config.request_timeout, config.limits.seconds)
 
@@ -75,7 +78,12 @@ async def configured_model(
         for name in list(request.headers):
             if name.lower() not in allowed:
                 del request.headers[name]
-        if config.api == "anthropic-messages" and config.anthropic_auth == "x-api-key":
+        request.headers.update(config.extra_headers)
+        if config.auth_mode == "none":
+            return
+        if config.auth_mode == "custom-header":
+            request.headers[config.auth_header] = key
+        elif config.api == "anthropic-messages" and config.anthropic_auth == "x-api-key":
             request.headers["x-api-key"] = key
         else:
             request.headers["Authorization"] = "Bearer " + key
@@ -96,6 +104,7 @@ async def configured_model(
             async with AsyncAnthropic(
                 base_url=config.model_url,
                 api_key=key,
+                default_query=config.extra_query,
                 max_retries=0,
                 timeout=timeout,
                 http_client=http,
@@ -110,6 +119,7 @@ async def configured_model(
                 api_key=key,
                 organization="",
                 project="",
+                default_query=config.extra_query,
                 max_retries=0,
                 timeout=timeout,
                 http_client=http,

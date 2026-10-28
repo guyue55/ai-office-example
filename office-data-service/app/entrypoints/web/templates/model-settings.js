@@ -32,8 +32,11 @@
     const keyField = editor.querySelector('#model-secret-field');
     const protocol = editor.querySelector('#model-api');
     const auth = editor.querySelector('#model-auth');
+    const mode = editor.querySelector('#model-auth-mode');
     function secretState() {
-      const replacing = action.value === 'replace';
+      const anonymous = mode.value === 'none';
+      action.disabled = anonymous;
+      const replacing = !anonymous && action.value === 'replace';
       keyField.dataset.modelSecret = action.value;
       key.disabled = !replacing; key.required = replacing; keyField.hidden = !replacing;
       if (!replacing) key.value = '';
@@ -48,6 +51,7 @@
       auth.querySelector('[value="x-api-key"]').disabled = !anthropic;
       if (!anthropic) auth.value = 'bearer';
     }
+    mode.addEventListener('change', secretState);
     action.addEventListener('change', secretState);
     protocol.addEventListener('change', protocolState);
     secretState(); protocolState();

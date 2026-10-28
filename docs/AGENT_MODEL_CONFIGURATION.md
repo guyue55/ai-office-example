@@ -20,7 +20,7 @@ Pydantic AI提供[OpenAI Chat／Responses模型](https://pydantic.dev/docs/ai/mo
 | openai-responses | OpenAIResponsesModel | Responses兼容base URL，通常含/v1 | base URL下的/responses |
 | anthropic-messages | AnthropicModel | Anthropic兼容base URL，官方为根地址 | base URL下的/v1/messages |
 
-`model_url`不是完整接口URL；不要填到`/chat/completions`、`/responses`或`/v1/messages`。自定义反向代理有路径前缀时按其文档填写，不自动删路径或探测其他主机。模型URL支持HTTPS和本机loopback HTTP；企业服务的局域网HTTP演示开关不能扩大模型出口。loopback指实际执行Agent的环境：员工电脑上是该电脑，服务器容器中是该容器，不是另一台员工电脑或宿主机地址。
+`model_url`不是完整接口URL；不要填到`/chat/completions`、`/responses`或`/v1/messages`。自定义反向代理有路径前缀时按其文档填写，不自动删路径或探测其他主机。模型URL默认支持HTTPS和本机loopback HTTP；显式设置 `allow_model_http=true` 可接入RFC1918 IPv4内网HTTP模型，与企业服务HTTP演示开关独立。鉴权模式、网关参数及托管端授权见 [模型运维说明](MODEL_CONFIGURATION_OPERATIONS.md#登录隔离与通用模型接入2026-10-28)。loopback指实际执行Agent的环境：员工电脑上是该电脑，服务器容器中是该容器，不是另一台员工电脑或宿主机地址。
 
 ## 最小配置
 
@@ -81,3 +81,25 @@ SDK可能读取宿主环境的自定义头与组织信息。独立HTTP客户端�
 三种协议及Anthropic两种鉴权头通过独立loopback HTTP实测：模型工具请求→真实OfficeClient→统一契约→模型续答，保留分页覆盖并核对Token累计。另测试重定向不跟随、错误不重试、不换协议、不回显秘密，以及宿主鉴权／组织信息隔离、客户端关闭和遥测禁用。
 
 这些响应是明确的协议夹具，不是实际供应商推理。获准模型的真实效果、费用、限额、企业证书／网关兼容仍需按具体部署验收；不会把更换base URL等同于所有兼容服务可用。
+
+### 无密钥内网模型示例
+
+仅用于已确认无需鉴权、且获准处理任务数据的内网模型。无需编造密钥：
+
+```toml
+service_url = "https://office.example"
+model_url = "http://192.168.1.20:11434/v1"
+model = "configured-model"
+api = "openai-completions"
+auth_mode = "none"
+allow_model_http = true
+approved_model_data = true
+
+[extra_headers]
+x-route = "blue"
+
+[extra_query]
+api-version = "2026-01-01"
+```
+
+上面的header/query仅演示格式，供应商不要求时删除。密钥网关改用 `auth_mode="custom-header"`、`auth_header="x-gateway-key"` 并配置原有 `api_key_file`／`api_key_env`；不要将密钥放进 extra_headers 或 extra_query。托管服务通过控制台配置相同字段，内网出口由运维精确允许。

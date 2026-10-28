@@ -3,7 +3,7 @@
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 
-from app.entrypoints.web.responses import COOKIE, TEMPLATES
+from app.entrypoints.web.responses import TEMPLATES, session_cookie
 from app.entrypoints.web.tables import table_query
 from app.modules.access.session_schemas import SessionList
 
@@ -31,7 +31,7 @@ def register_client_sessions(router, operate, render, csrf, version, notify, sto
         )
         if result["current"]:
             # 不再用刚撤销的身份渲染me或自动SSO重登，清理失败也不会循环回跳。
-            store.destroy(request.cookies.get(COOKIE))
+            store.destroy(request.cookies.get(session_cookie(request)))
             response = TEMPLATES.TemplateResponse(
                 request,
                 "signed_out.html",
@@ -41,7 +41,7 @@ def register_client_sessions(router, operate, render, csrf, version, notify, sto
                     "cleanup": result["cleanup"],
                 },
             )
-            response.delete_cookie(COOKIE, path="/")
+            response.delete_cookie(session_cookie(request), path="/")
             return response
         notify(
             request,

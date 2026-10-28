@@ -12,7 +12,7 @@
 .settings-field {display:grid;align-content:start;gap:8px;min-width:0;}
 .settings-field[hidden] {display:none;}
 .settings-field label {margin:0;line-height:1.5;font-size:14px;}
-.settings-field input,.settings-field select {width:100%;box-sizing:border-box;min-height:40px;}
+.settings-field input,.settings-field select,.settings-field textarea {width:100%;box-sizing:border-box;min-height:40px;}
 .settings-field small,.settings-help {font-size:12px;color:var(--muted);line-height:1.7;}
 .settings-field small {display:block;}
 .settings-help {margin:12px 0 0;overflow-wrap:anywhere;}

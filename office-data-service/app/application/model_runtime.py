@@ -20,7 +20,13 @@ async def prepare_runtime(application, revision, *, model_context=None, syntheti
         "启用前需确认模型数据使用许可",
     )
     check_endpoint(settings, revision.config["model_url"])
-    require(revision.secret_ciphertext is not None, 422, "invalid_input", "请先设置模型密钥")
+    needs_key = revision.config.get("auth_mode", "api-key") != "none"
+    require(
+        not needs_key or revision.secret_ciphertext is not None,
+        422,
+        "invalid_input",
+        "请先设置模型密钥",
+    )
     try:
         config = import_module("office_agent.config").AgentConfig.model_validate(
             {
@@ -31,16 +37,26 @@ async def prepare_runtime(application, revision, *, model_context=None, syntheti
                 else revision.config["approved_model_data"],
                 "service_url": settings.public_url,
                 "allow_lan_http_demo": settings.allow_lan_http_demo,
+                "allow_model_http": revision.config["model_url"] in settings.agent_model_urls,
             }
         )
         ciphertext = revision.secret_ciphertext
         # 应用前验证秘密可解密；不向环境变量写入，不创建明文临时文件。
-        await asyncio.to_thread(model_secrets.decrypt, settings.agent_secret_key_file, ciphertext)
+        if needs_key:
+            await asyncio.to_thread(
+                model_secrets.decrypt, settings.agent_secret_key_file, ciphertext
+            )
 
         @asynccontextmanager
         async def managed_model(bound_config):
-            key = await asyncio.to_thread(
-                model_secrets.decrypt, settings.agent_secret_key_file, ciphertext
+            key = (
+                (
+                    await asyncio.to_thread(
+                        model_secrets.decrypt, settings.agent_secret_key_file, ciphertext
+                    )
+                )
+                if needs_key
+                else None
             )
             async with import_module("office_agent.providers").configured_model(
                 bound_config,
@@ -73,7 +89,7 @@ async def test_runtime(config, runner):
         async with asyncio.timeout(
             min(
                 config.request_timeout,
-                max(1, runner.application.settings.operation_timeout - 3),
+                config.limits.seconds,
                 30,
             )
         ):

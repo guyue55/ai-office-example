@@ -31,7 +31,7 @@
 }
 ```
 
-默认 `public` 模式，管理员直接填写公网HTTPS base URL，不必先让运维逐个加地址。`agent_model_urls` 在此模式可明确授权特定内网HTTPS或隔离loopback端点；元数据／链路本地、多播、未指定及保留地址仍拒绝。企业需要固定供应商时，设置 `agent_model_url_policy: "allowlist"`，列表必须精确匹配。旧配置已有非空列表但未写策略时自动保持allowlist，不静默扩大权限；空列表旧配置按public默认行为。
+默认 `public` 模式，管理员直接填写公网HTTPS base URL，不必先让运维逐个加地址。`agent_model_urls` 在此模式可明确授权特定内网HTTPS／HTTP或隔离loopback端点；元数据／链路本地、多播、未指定及保留地址仍拒绝。企业需要固定供应商时，设置 `agent_model_url_policy: "allowlist"`，列表必须精确匹配。旧配置已有非空列表但未写策略时自动保持allowlist，不静默扩大权限；空列表旧配置按public默认行为。
 
 保存只做本地格式与策略校验，不解析域名、不发模型请求。托管模型每次实际请求在有界异步调用内解析DNS，验证全部候选IP，将连接固定至通过检查的IP，保留原域名Host、TLS SNI与证书验证，拒绝跨源／base路径外请求及重定向，不使用宿主代理环境。只有运维明确列出的loopback HTTP用于隔离模型测试，企业HTTP演示开关不会放开任意内网HTTP模型。此措施不代替网络出口防火墙；企业强制代理需要另行适配与验收。只影响控制台托管模型，员工独立Agent与外部文件模式保持原行为。
 
@@ -130,3 +130,24 @@ Token参数不能替代HTTP内存限制。控制台托管模型的普通请求�
 解析器须支持Cloudflare兼容的DoH JSON查询与Question／Answer格式，不声称所有RFC8484接口都支持JSON。A／AAAA异步并发，总解析超时5秒，原始和解压后各64KiB，每响应最多64记录，合并地址最多64。所有候选地址仍校验，连接固定IP、保留Host／SNI和TLS验证；不重定向、不在可信解析失败后放行Fake-IP。缓存最多64域名，TTL按记录并上限60秒，TTL=0不缓存；结束关闭客户端，取消传播至并发查询。
 
 只影响托管模型传输，不接管身份、数据库、其他客户端、员工独立Agent或宿主代理。历史测试失败保留，不自动重试付费调用。`dns_fake_ip`表示基准测试映射地址，`dns_address`表示受限地址，`dns`表示解析失败。
+
+## 登录隔离与通用模型接入（2026-10-28）
+
+控制台 Cookie 按配置 public_url 的规范地址派生实例命名空间，包含端口；不依赖浏览器传来的 Host。同一主机不同实例不会清理彼此的登录事务。旧共享 Cookie 不继续用于认证，升级后需重新登录。服务内存会话仍在重启时结束；失效、超时、绑定不符和令牌交换失败提供统一本站恢复入口，不重放旧回调。命名空间防止意外覆盖，不把同一主机端口视为对抗恶意服务的浏览器安全隔离；不可信服务应使用不同主机名。
+
+连接测试不借用 operation_timeout。模型探针最多30秒，取草稿 request_timeout、limits.seconds 与30秒最小值；页面显示已保存草稿预算。状态落库仍有独立有界收尾，不将“模型等待结束”误认为整个HTTP响应必须同刻结束。普通任务仍受自己的请求与总时限约束。
+
+### 显式内网模型
+
+公网默认 HTTPS，无需逐供应商登记。受信内网模型可由运维在 agent_model_urls 精确配置 HTTP base URL，例如 `http://192.168.1.20:11434/v1`，模型页即可保存；不要用公网 HTTP。地址解析仍逐请求校验、固定连接，HTTP 不接受公网解析结果，链路本地／元数据、假IP、多播等仍拒绝。当前员工端的内网 HTTP 使用 RFC1918 IPv4，需单独设置 `allow_model_http=true`；企业服务的 allow_lan_http_demo 不替代该授权。托管配置由服务器根据显式允许地址注入此许可。内网域名 HTTP 及IPv6 HTTP尚不作为员工端通用承诺，可使用内网IPv4或HTTPS。
+
+### 网关高级参数
+
+- `auth_mode="api-key"` 保持原默认；OpenAI 用 Bearer，Anthropic 可选择 Bearer／x-api-key。
+- `auth_mode="none"` 明确不鉴权，不读取宿主密钥、不发送 SDK 内部占位值。已有密文可保留但不会使用。无JS表单选择无密钥时，密钥操作选“保留”或“清除”，不要选择“替换”却留空。
+- `auth_mode="custom-header"` 加 `auth_header="x-gateway-key"` 将独立加密密钥放入指定头，替代默认鉴权；不与 Bearer 同发。
+- `extra_headers`／`extra_query` 各为最多16项字符串映射，只放路由、版本等非秘密参数；每项值最多256个可打印ASCII字符。例如查询参数 `{"api-version":"2026-01-01"}`。不在 base URL 拼查询字符串，不放密钥。禁止凭证名称、重复大小写名称、传输层保留头，且不允许覆盖凭证头。
+
+员工端 TOML 使用同名字段，秘密仍通过 api_key_file 或 api_key_env。服务端通过人工 Web／HTTP 配置，不开放给助手或MCP改密钥。三种标准协议继续共用一套SDK模型适配；专用供应商API、Azure身份协议或任意网关语义并不因能传参数就自动兼容。
+
+依据：[RFC6265 §8.5](https://www.rfc-editor.org/rfc/rfc6265#section-8.5) 明确Cookie不按端口隔离；[OpenAI客户端源码](https://github.com/openai/openai-python/blob/main/src/openai/_client.py) 与 [Anthropic客户端源码](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/_client.py) 支持 default_query／default_headers。实现使用现有异步客户端、结构化查询参数和受控请求钩子，未引入新的网关框架。

@@ -17,7 +17,6 @@ from test_web_console import web  # noqa: F401
         "https://x.invalid/v1/chat/completions",
         "https://x.invalid/responses",
         "https://x.invalid/v1/messages",
-        "http://192.168.1.2/v1",
         "https://secret@x.invalid/v1",
         "https://x.invalid/v1?key=secret",
         "file:///tmp/x",

@@ -162,12 +162,11 @@ class Settings(BaseModel):
                 or url.password
                 or url.query
                 or url.fragment
-                or (
-                    url.scheme != "https"
-                    and not (url.scheme == "http" and url.hostname in {"127.0.0.1", "localhost"})
-                )
+                or url.scheme not in {"https", "http"}
+                or url.port == 0
+                or any(c.isspace() or ord(c) < 32 for c in value)
             ):
-                raise ValueError("模型出口须为无凭证的HTTPS base URL，本机隔离验收可用HTTP")
+                raise ValueError("模型出口须为无凭证的HTTPS或显式授权的内网HTTP base URL")
         return list(dict.fromkeys(value.rstrip("/") for value in values))
 
     @model_validator(mode="after")

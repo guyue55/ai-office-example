@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 import uvicorn
+from app.entrypoints.web.responses import instance_cookie
 from playwright.sync_api import expect, sync_playwright
 from test_web_console import web  # noqa: F401 -- 复用显式隔离身份与Web应用。
 
@@ -82,7 +83,15 @@ def test_assistant_real_browser_confirmation_layout_and_escape(web):  # noqa: F8
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 base = f"http://127.0.0.1:{port}"
                 page.context.add_cookies(
-                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", web.application.settings.public_url
+                            ),
+                            "value": web.cookie,
+                            "url": base,
+                        }
+                    ]
                 )
                 page.goto(base + "/console/assistant")
                 expect(page.get_by_role("heading", name="智能助手", exact=True)).to_be_visible()

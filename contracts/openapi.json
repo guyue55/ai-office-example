@@ -17547,6 +17547,39 @@
             "title": "Anthropic Auth",
             "default": "bearer"
           },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "api-key",
+              "none",
+              "custom-header"
+            ],
+            "title": "Auth Mode",
+            "default": "api-key"
+          },
+          "auth_header": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Auth Header",
+            "default": "x-api-key"
+          },
+          "extra_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 16,
+            "title": "Extra Headers"
+          },
+          "extra_query": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 16,
+            "title": "Extra Query"
+          },
           "request_timeout": {
             "type": "number",
             "maximum": 300.0,
@@ -17784,6 +17817,13 @@
             },
             "type": "array",
             "title": "Allowed Urls"
+          },
+          "test_timeout_seconds": {
+            "type": "number",
+            "maximum": 30.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Test Timeout Seconds",
+            "default": 30
           },
           "message": {
             "type": "string",

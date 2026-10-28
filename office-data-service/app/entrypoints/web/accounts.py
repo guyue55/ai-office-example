@@ -12,7 +12,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
 from app.common.errors import DomainError, log_rejection, require, validation_error
-from app.entrypoints.web.responses import COOKIE, LOGIN_COOKIE
+from app.entrypoints.web.responses import instance_cookie
 from app.entrypoints.web.session import new_csrf
 from app.entrypoints.web.tables import table_query
 from app.modules.access.account_schemas import AccountHistory
@@ -22,6 +22,8 @@ def register_accounts(
     router, application, store, operate, render, csrf, version, notify, principal_of, login_gate
 ):
     settings = application.settings
+    COOKIE = instance_cookie("office_web_session", settings.public_url)
+    LOGIN_COOKIE = instance_cookie("office_web_login", settings.public_url)
 
     async def permission(request, *codes):
         me = await operate(request, "me")

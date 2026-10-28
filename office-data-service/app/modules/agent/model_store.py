@@ -111,6 +111,13 @@ class ModelStore:
             "secret_set": bool(row and row.secret_ciphertext),
             "draft": row.config if row else None,
             "active": active.config if active else None,
+            "test_timeout_seconds": min(
+                30,
+                row.config.get("request_timeout", 30),
+                row.config.get("limits", {}).get("seconds", 120),
+            )
+            if row
+            else 30,
             "allowed_urls": list(self.settings.agent_model_urls),
             "url_policy": self.settings.agent_model_url_policy,
             "message": message,

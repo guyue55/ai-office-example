@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import uvicorn
+from app.entrypoints.web.responses import instance_cookie
 from playwright.sync_api import expect, sync_playwright
 from sqlalchemy import select
 from test_query_postgres import dataset, isolated_query_db  # noqa: F401
@@ -143,7 +144,15 @@ def test_browser_approval_commits_one_candidate_with_agent_audit(request, tmp_pa
             )
             try:
                 context = browser.new_context(viewport={"width": 1440, "height": 900})
-                context.add_cookies([{"name": "office_web_session", "value": cookie, "url": base}])
+                context.add_cookies(
+                    [
+                        {
+                            "name": instance_cookie("office_web_session", enabled.public_url),
+                            "value": cookie,
+                            "url": base,
+                        }
+                    ]
+                )
                 page = context.new_page()
                 browser_errors = []
                 page.on("pageerror", lambda error: browser_errors.append(str(error)))

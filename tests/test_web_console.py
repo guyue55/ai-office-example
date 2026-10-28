@@ -11,6 +11,7 @@ import httpx
 import pytest
 from app.application.commands import validate_command
 from app.common.errors import DomainError
+from app.entrypoints.web.responses import instance_cookie
 from app.entrypoints.web.session import SessionStore
 from app.infrastructure.config import Settings
 from app.main import create_app
@@ -101,7 +102,7 @@ def web(tmp_path, monkeypatch, request):
     application.call = AsyncMock(side_effect=operation)
     cookie = store.create({"access_token": "isolated", "csrf": "form-csrf"})
     client = TestClient(app, base_url="https://testserver", follow_redirects=False)
-    client.cookies.set("office_web_session", cookie)
+    client.cookies.set(instance_cookie("office_web_session", settings.public_url), cookie)
     yield SimpleNamespace(
         app=app, application=application, store=store, client=client, cookie=cookie
     )
@@ -481,7 +482,6 @@ def test_parallel_login_tabs_do_not_overwrite_each_other(web, identity_exchange,
 def test_pending_login_cookies_are_bounded_and_expired_ones_are_cleaned(web):
     from app.entrypoints.web.console import (
         LOGIN_COOKIE_LIMIT,
-        LOGIN_COOKIE_PREFIX,
         login_cookie_name,
     )
 
@@ -497,9 +497,16 @@ def test_pending_login_cookies_are_bounded_and_expired_ones_are_cleaned(web):
     value, _ = web.store.pending[states[0]]
     web.store.pending[states[0]] = value, 0
     assert web.client.get("/console").status_code == 303
-    assert login_cookie_name(states[0]) not in web.client.cookies
     assert (
-        sum(name.startswith(LOGIN_COOKIE_PREFIX) for name in web.client.cookies)
+        login_cookie_name(states[0], web.application.settings.public_url) not in web.client.cookies
+    )
+    assert (
+        sum(
+            name.startswith(
+                instance_cookie("office_web_login", web.application.settings.public_url) + "_"
+            )
+            for name in web.client.cookies
+        )
         == LOGIN_COOKIE_LIMIT
     )
 
@@ -510,9 +517,11 @@ def test_swapped_login_cookie_is_rejected_without_consuming_state(web, identity_
     web.client.cookies.clear()
     starts = [web.client.get("/console"), web.client.get("/console")]
     states = [parse_qs(urlparse(r.headers["location"]).query)["state"][0] for r in starts]
-    target = login_cookie_name(states[0])
+    target = login_cookie_name(states[0], web.application.settings.public_url)
     original = web.client.cookies.get(target)
-    other = web.client.cookies.get(login_cookie_name(states[1]))
+    other = web.client.cookies.get(
+        login_cookie_name(states[1], web.application.settings.public_url)
+    )
     domain = next(cookie.domain for cookie in web.client.cookies.jar if cookie.name == target)
     web.client.cookies.set(target, other, domain=domain, path="/")
     callback = "/auth/callback?code=isolated&state=" + states[0]

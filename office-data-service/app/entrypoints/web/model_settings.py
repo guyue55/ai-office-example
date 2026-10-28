@@ -1,5 +1,7 @@
 """人工模型设置入口；CSRF与应用权限共同约束，不向助手工具提供密钥。"""
 
+import json
+
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 
@@ -35,6 +37,10 @@ def register_model_settings(router, operate, render, csrf, notify):
                         "model": form.get("model"),
                         "model_url": form.get("model_url"),
                         "anthropic_auth": form.get("anthropic_auth", "bearer"),
+                        "auth_mode": form.get("auth_mode", "api-key"),
+                        "auth_header": form.get("auth_header", "x-api-key"),
+                        "extra_headers": json.loads(str(form.get("extra_headers", "{}")) or "{}"),
+                        "extra_query": json.loads(str(form.get("extra_query", "{}")) or "{}"),
                         "request_timeout": float(str(form.get("request_timeout", "30"))),
                         "approved_model_data": form.get("approved_model_data") == "on",
                         "limits": {
@@ -52,7 +58,7 @@ def register_model_settings(router, operate, render, csrf, notify):
                     payload["acknowledge_cost"] = form.get("acknowledge_cost") == "on"
         except (TypeError, ValueError):
             raise DomainError(
-                422, "invalid_input", "配置格式无效，请核对版本、超时与预算"
+                422, "invalid_input", "配置格式无效，请核对版本、超时、预算及网关参数JSON"
             ) from None
         if action == "save-test":
             # 先检查测试权限再保存，避免无权测试时意外保存；每阶段仍由应用重新授权。

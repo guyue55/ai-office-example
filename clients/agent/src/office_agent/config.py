@@ -4,6 +4,7 @@ import re
 import tomllib
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from office_client.auth import ClientError, trusted_url
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -33,6 +34,11 @@ class AgentConfig(BaseModel):
         "openai-completions"
     )
     anthropic_auth: Literal["bearer", "x-api-key"] = "bearer"
+    auth_mode: Literal["api-key", "none", "custom-header"] = "api-key"
+    auth_header: str = Field(default="x-api-key", min_length=1, max_length=100)
+    extra_headers: dict[str, str] = Field(default_factory=dict, max_length=16)
+    extra_query: dict[str, str] = Field(default_factory=dict, max_length=16)
+    allow_model_http: bool = False
     request_timeout: float = Field(default=30, gt=0, le=300)
     api_key_env: str = "OFFICE_MODEL_API_KEY"
     api_key_file: str | None = Field(default=None, min_length=1, max_length=4096)
@@ -49,6 +55,57 @@ class AgentConfig(BaseModel):
         return value
 
     @model_validator(mode="after")
+    def gateway_options(self):
+        # 普通配置仅放路由／版本等非秘密参数；秘密继续使用独立凭证通道。
+        reserved = {
+            "host",
+            "connection",
+            "content-length",
+            "content-type",
+            "transfer-encoding",
+            "accept-encoding",
+            "cookie",
+            "set-cookie",
+            "proxy-authorization",
+            "authorization",
+        }
+
+        def valid_name(name):
+            return bool(re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,99}", name))
+
+        def sensitive(name):
+            return any(
+                word in name.lower()
+                for word in (
+                    "key",
+                    "token",
+                    "secret",
+                    "password",
+                    "credential",
+                    "authorization",
+                    "cookie",
+                )
+            )
+
+        if not valid_name(self.auth_header) or self.auth_header.lower() in reserved:
+            raise ValueError("自定义凭证头名称无效或属于传输层保留头")
+        for values in (self.extra_headers, self.extra_query):
+            lowered = [name.lower() for name in values]
+            if len(set(lowered)) != len(lowered):
+                raise ValueError("网关参数不能大小写重复")
+            for name, value in values.items():
+                if (
+                    not valid_name(name)
+                    or sensitive(name)
+                    or name.lower() in reserved
+                    or name.lower() == self.auth_header.lower()
+                ):
+                    raise ValueError("网关参数不能包含凭证或覆盖保留头")
+                if len(value) > 256 or any(ord(c) < 32 or ord(c) > 126 for c in value):
+                    raise ValueError("网关参数只接受有界可打印ASCII值")
+        return self
+
+    @model_validator(mode="after")
     def addresses(self):
         if self.api != "anthropic-messages" and self.anthropic_auth != "bearer":
             raise ValueError("旧Anthropic鉴权头仅适用于Messages协议")
@@ -57,9 +114,15 @@ class AgentConfig(BaseModel):
                 self.service_url, allow_lan_http_demo=self.allow_lan_http_demo
             )
             # 模型端点独立核验，企业HTTP演示开关不能扩大模型出口。
-            self.model_url = trusted_url(self.model_url)
+            self.model_url = trusted_url(self.model_url, allow_lan_http_demo=self.allow_model_http)
         except ClientError:
             raise ValueError("服务或模型端点不可信") from None
+        if (
+            urlsplit(self.model_url)
+            .path.rstrip("/")
+            .endswith(("/chat/completions", "/responses", "/messages"))
+        ):
+            raise ValueError("请填写模型base URL，不填完整请求路径")
         if not self.approved_model_data:
             raise ValueError("请先确认该模型端点获准处理本任务数据")
         return self

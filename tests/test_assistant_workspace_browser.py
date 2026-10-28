@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import uvicorn
+from app.entrypoints.web.responses import instance_cookie
 from playwright.sync_api import expect, sync_playwright
 from test_assistant_workspace_web import install_workspace
 from test_web_console import web  # noqa: F401
@@ -63,7 +64,15 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
             try:
                 context = browser.new_context(viewport={"width": 1440, "height": 1000})
                 context.add_cookies(
-                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", web.application.settings.public_url
+                            ),
+                            "value": web.cookie,
+                            "url": base,
+                        }
+                    ]
                 )
                 page = context.new_page()
                 errors = []
@@ -268,7 +277,15 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
             try:
                 context = browser.new_context(viewport={"width": 1600, "height": 1000})
                 context.add_cookies(
-                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", web.application.settings.public_url
+                            ),
+                            "value": web.cookie,
+                            "url": base,
+                        }
+                    ]
                 )
                 # localhost可能有Clipboard API；明确模拟真实LAN HTTP的不支持情形。
                 context.add_init_script(
@@ -528,7 +545,15 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                     viewport={"width": 390, "height": 700}, has_touch=True, is_mobile=True
                 )
                 touch.add_cookies(
-                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", web.application.settings.public_url
+                            ),
+                            "value": web.cookie,
+                            "url": base,
+                        }
+                    ]
                 )
                 touch_page = touch.new_page()
                 touch_page.goto(base + "/console/assistant/workspace")

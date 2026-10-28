@@ -51,7 +51,8 @@ def check_endpoint(settings, value):
         address = None
     if address is not None:
         require(
-            permitted_ip(str(address), internal=explicit),
+            permitted_ip(str(address), internal=explicit)
+            and (url.scheme != "http" or not address.is_global),
             422,
             "invalid_input",
             "模型目标地址不符合出口策略",
@@ -144,7 +145,11 @@ def model_transport(settings, value, *, resolver=None, inner=None, max_response_
             except OSError:
                 raise ModelEgressError("dns") from None
             ips = list(dict.fromkeys(item[4][0] for item in addresses))
-            if not ips or not all(permitted_ip(ip, internal=internal) for ip in ips):
+            if not ips or not all(
+                permitted_ip(ip, internal=internal)
+                and (origin.scheme != "http" or not ipaddress.ip_address(ip).is_global)
+                for ip in ips
+            ):
                 fake = any(benchmark_ip(ip) for ip in ips)
                 raise ModelEgressError("dns_fake_ip" if fake else "dns_address")
             # URL使用已验证IP，Host与SNI保持供应商域名；底层不能再次解析域名。

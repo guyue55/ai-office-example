@@ -381,3 +381,95 @@ def test_managed_model_full_lifecycle(request, tmp_path):
             await factory.kw["bind"].dispose()
 
     asyncio.run(scenario())
+
+
+def test_no_key_gateway_saved_tested_applied_and_reloaded(request, tmp_path, monkeypatch):
+    """真实隔离PG＋HTTP应用＋SDK协议；模型线缆为显式合成替身。"""
+    import httpx2
+
+    settings = request.getfixturevalue("isolated_query_db")
+    key = tmp_path / "model-root"
+    key.write_bytes(Fernet.generate_key())
+    key.chmod(0o600)
+    enabled = settings.model_copy(update={"agent_secret_key_file": key})
+    seen = []
+
+    async def serve(request):
+        seen.append(request)
+        assert "authorization" not in request.headers
+        assert request.headers["x-route"] == "blue"
+        assert request.url.params["api-version"] == "2026-01-01"
+        return httpx2.Response(
+            200,
+            json={
+                "id": "synthetic",
+                "object": "chat.completion",
+                "created": 1,
+                "model": "fixture",
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": "OK"},
+                    }
+                ],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+            },
+        )
+
+    monkeypatch.setattr(
+        "app.application.model_runtime.model_transport",
+        lambda *args, **kwargs: httpx2.MockTransport(serve),
+    )
+
+    async def scenario():
+        factory, _, _, admin, *_ = await dataset(settings)
+        web = create_app(enabled)
+        app = web.state.application
+        app.verifier.verify_async = AsyncMock(return_value=admin)
+        coordinator = AgentCoordinator(app)
+        app._agent = coordinator
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=web),
+                base_url="https://fixture.invalid",
+                headers={"Authorization": "Bearer synthetic"},
+            ) as client:
+                path = "/api/v2/agent/configuration"
+                current = (await client.get(path)).json()["data"]
+                saved = await client.post(
+                    path + "/draft",
+                    json={
+                        "version": current["version"],
+                        "secret_action": "clear",
+                        "draft": {
+                            "model_url": "https://model.invalid/v1",
+                            "model": "fixture",
+                            "auth_mode": "none",
+                            "extra_headers": {"x-route": "blue"},
+                            "extra_query": {"api-version": "2026-01-01"},
+                            "approved_model_data": True,
+                        },
+                    },
+                )
+                assert saved.status_code == 200, saved.text
+                state = saved.json()["data"]
+                assert not state["secret_set"]
+                command = {"version": state["version"], "revision": state["draft_revision"]}
+                tested = await client.post(
+                    path + "/test", json={**command, "acknowledge_cost": True}
+                )
+                assert tested.status_code == 200 and tested.json()["data"]["passed"], tested.text
+                applied = await client.post(path + "/apply", json=command)
+                assert applied.status_code == 200 and applied.json()["data"]["ready"], applied.text
+                reloaded = (await client.get(path)).json()["data"]
+                assert reloaded["active"]["auth_mode"] == "none"
+                assert reloaded["active"]["extra_query"] == {"api-version": "2026-01-01"}
+                assert len(seen) == 1
+        finally:
+            await coordinator.close()
+            await app.sessions.kw["bind"].dispose()
+            await app.verifier.aclose()
+            await factory.kw["bind"].dispose()
+
+    asyncio.run(scenario())

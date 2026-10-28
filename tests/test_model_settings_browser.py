@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import uvicorn
+from app.entrypoints.web.responses import instance_cookie
 from cryptography.fernet import Fernet
 from playwright.sync_api import expect, sync_playwright
 from test_query_postgres import dataset, isolated_query_db  # noqa: F401
@@ -107,7 +108,17 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
             )
             try:
                 context = browser.new_context(viewport={"width": 1440, "height": 1000})
-                context.add_cookies([{"name": "office_web_session", "value": cookie, "url": base}])
+                context.add_cookies(
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", shared["app"].settings.public_url
+                            ),
+                            "value": cookie,
+                            "url": base,
+                        }
+                    ]
+                )
                 page = context.new_page()
                 errors = []
                 page.on("pageerror", lambda e: errors.append(str(e)))
@@ -123,6 +134,12 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
                 page.locator("#model-api").select_option("openai-completions")
                 expect(page.locator("#model-auth-field")).to_be_hidden()
                 expect(page.locator("#model-auth")).to_have_value("bearer")
+                page.locator("#model-auth-mode").select_option("none")
+                expect(page.locator("#model-secret-action")).to_be_disabled()
+                expect(page.locator("#model-secret")).to_be_disabled()
+                assert not page.locator("#model-secret").evaluate("el => el.required")
+                page.locator("#model-auth-mode").select_option("api-key")
+                expect(page.locator("#model-secret-action")).to_be_enabled()
                 page.locator("#model-secret").fill("synthetic-key-to-clear")
                 page.locator("#model-secret-action").select_option("clear")
                 expect(page.locator("#model-secret")).to_have_value("")
@@ -252,7 +269,17 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
                     path="runtime/agent-research/browser/model-settings-result.png", full_page=True
                 )
                 plain = browser.new_context(java_script_enabled=False)
-                plain.add_cookies([{"name": "office_web_session", "value": cookie, "url": base}])
+                plain.add_cookies(
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", shared["app"].settings.public_url
+                            ),
+                            "value": cookie,
+                            "url": base,
+                        }
+                    ]
+                )
                 plain_page = plain.new_page()
                 response = plain_page.goto(base + "/console/model-settings")
                 assert response.status == 200

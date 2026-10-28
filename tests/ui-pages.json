@@ -193,6 +193,13 @@
         "test_model_configuration.py",
         "test_model_settings_browser.py"
       ]
+    },
+    {
+      "template": "login_recovery.html",
+      "coverage": "失效登录恢复与跨实例隔离",
+      "tests": [
+        "test_web_instance_isolation.py"
+      ]
     }
   ],
   "components": [

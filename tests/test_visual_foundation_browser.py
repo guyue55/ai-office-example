@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import uvicorn
+from app.entrypoints.web.responses import instance_cookie
 from playwright.sync_api import expect, sync_playwright
 from test_web_console import web  # noqa: F401
 
@@ -78,7 +79,15 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
             try:
                 context = browser.new_context(viewport={"width": 1440, "height": 1000})
                 context.add_cookies(
-                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", web.application.settings.public_url
+                            ),
+                            "value": web.cookie,
+                            "url": base,
+                        }
+                    ]
                 )
                 page = context.new_page()
                 errors = []
@@ -167,7 +176,15 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                     java_script_enabled=False, viewport={"width": 390, "height": 800}
                 )
                 plain_context.add_cookies(
-                    [{"name": "office_web_session", "value": web.cookie, "url": base}]
+                    [
+                        {
+                            "name": instance_cookie(
+                                "office_web_session", web.application.settings.public_url
+                            ),
+                            "value": web.cookie,
+                            "url": base,
+                        }
+                    ]
                 )
                 plain = plain_context.new_page()
                 plain.goto(base + "/console/employees")
