@@ -70,6 +70,8 @@ class Settings(BaseModel):
     agent_config_file: Path | None = None
     agent_secret_key_file: Path | None = None
     agent_model_url_policy: Literal["public", "allowlist"] = "public"
+    agent_model_doh_url: str | None = Field(default=None, max_length=2048)
+    agent_model_doh_domains: list[str] = Field(default_factory=list, max_length=20)
     agent_model_urls: list[str] = Field(default_factory=list, max_length=20)
     agent_model_response_wire_bytes: int = Field(default=4194304, ge=65536, le=16777216)
     agent_model_response_decoded_bytes: int = Field(default=4194304, ge=65536, le=16777216)
@@ -96,6 +98,42 @@ class Settings(BaseModel):
         ):
             return {**data, "agent_model_url_policy": "allowlist"}
         return data
+
+    @model_validator(mode="after")
+    def model_dns_scope(self):
+        if bool(self.agent_model_doh_url) != bool(self.agent_model_doh_domains):
+            raise ValueError("模型DoH须同时指定HTTPS解析器及精确域名清单")
+        if self.agent_model_doh_url:
+            url = urlparse(self.agent_model_doh_url)
+            if (
+                url.scheme != "https"
+                or not url.hostname
+                or url.username
+                or url.password
+                or url.query
+                or url.fragment
+                or not url.path
+                or url.port == 0
+                or any(c.isspace() or ord(c) < 32 for c in self.agent_model_doh_url)
+            ):
+                raise ValueError("模型DoH须为无凭证、无查询参数的HTTPS接口")
+        return self
+
+    @field_validator("agent_model_doh_domains")
+    @classmethod
+    def model_dns_domains(cls, values):
+        from app.infrastructure.model_dns import dns_name
+
+        domains = []
+        for value in values:
+            value = dns_name(value)
+            try:
+                ipaddress.ip_address(value)
+            except ValueError:
+                domains.append(value)
+            else:
+                raise ValueError("模型DoH清单只接受精确域名")
+        return list(dict.fromkeys(domains))
 
     @field_validator("agent_model_urls")
     @classmethod

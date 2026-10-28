@@ -58,3 +58,7 @@ HTTPX2支持HTTP代理，HTTPS目标经CONNECT隧道完成TLS。显式proxy可�
 - Mihomo Fake-IP过滤：https://wiki.metacubex.one/config/dns/#fake-ip-filter
 
 官方资料支撑机制；优先顺序和项目模块边界是结合当前源码与本机实测作出的工程判断，不是上游替本项目完成的安全认证。
+
+## 后续实施
+
+服务端精确域名DoH适配已按[修复计划](plans/2026-10-28-model-dns-fix.md)实施；配置、限制与运行边界见[操作说明](MODEL_CONFIGURATION_OPERATIONS.md#模型专用可信dns2026-10-28修复)。上文“尚未实现”描述研究基线，当前代码以实施计划为准；显式代理仍未加入。

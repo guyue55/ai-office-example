@@ -33,7 +33,7 @@ jobs:
       - run: uv run --project clients/agent --frozen pytest clients/agent/tests -q
       - name: 内部异步工具适配与托管模型出口
         if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
-        run: uv run --extra agent --locked pytest tests/test_agent_application_bridge.py tests/test_model_egress.py tests/test_model_response.py -q
+        run: uv run --extra agent --locked pytest tests/test_agent_application_bridge.py tests/test_model_dns.py tests/test_model_egress.py tests/test_model_response.py -q
       - name: 隔离助手浏览器交互
         if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
         shell: bash

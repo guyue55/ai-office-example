@@ -97,6 +97,8 @@ class ModelTestResult(Output):
         "rate_limit",
         "provider",
         "dns",
+        "dns_fake_ip",
+        "dns_address",
         "tls",
         "connect",
         "timeout",

@@ -109,3 +109,20 @@ Token参数不能替代HTTP内存限制。控制台托管模型的普通请求�
 普通镜像不含 `office_agent`；Agent 镜像以同一 Dockerfile 的 `OFFICE_AGENT=1` 构建。安装器在建库前导入预检，配置入口可见不代表可运行模型。发布矩阵按普通／Agent 分开标签、摘要和证明，本地构建不代表 GHCR 已交付。
 
 隔离验收 `OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_backup_restore_postgres.py -q` 使用临时 PG18 的真实 custom-format dump/restore，在同一隔离集群新数据库恢复数据及 ACL。验证活动修订与最新未应用草稿分别保留；正确根密钥恢复可用，缺失／错误根密钥使助手降级，普通数据查询仍通过。该测试没有供应商调用，不替代异机身份库恢复、完整实例灾备、容量或目标环境演练。现有实例不因本轮测试而升级。
+
+## 模型专用可信DNS（2026-10-28修复）
+
+服务端托管模型可使用运维配置的DoH JSON解析器，不要求修改Clash或系统DNS。在实例`service/service.json`中同时指定：
+
+```json
+{
+  "agent_model_doh_url": "https://cloudflare-dns.com/dns-query",
+  "agent_model_doh_domains": ["model.example.com"]
+}
+```
+
+上例需合并到原配置，不覆盖其余字段；域名替换为获准模型的精确主机名，不含协议、路径或通配符。默认两字段为空、继续系统解析；只有清单中的模型目标使用该解析器。解析器须支持Cloudflare兼容的DoH JSON查询与Question／Answer格式；不将该JSON接口称作所有RFC8484服务都支持的格式。企业可选自建兼容解析器，不强制公共DNS。内网域名不默认查询公共服务。
+
+A／AAAA异步并发查询；总解析超时5秒，原始和解压后各64KiB，每响应最多64记录，合并地址最多64。校验问题、状态、截断、别名链和地址族；所有候选地址仍通过原出口规则，连接固定IP并保留Host／SNI和证书验证。不重定向、不自动降级回不安全解析，不写死供应商IP。单传输生命周期内缓存最多64域名，TTL遵循记录并上限60秒，TTL=0不缓存；结束时关闭HTTP客户端，取消会传播到并发DNS查询。
+
+此配置只影响托管模型传输，不改数据库、身份、普通HTTP客户端、员工独立Agent或宿主代理。`dns_fake_ip`提示代理映射地址；`dns_address`提示受限解析结果；原`dns`表示查询失败。修复后历史测试记录仍保留旧失败，不自动重试付费调用；需用户手动重新测试。

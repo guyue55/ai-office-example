@@ -6,13 +6,26 @@ import socket
 from urllib.parse import urlsplit
 
 from app.common.errors import require
+from app.infrastructure.model_dns import DohResolver
 from app.infrastructure.model_errors import ModelEgressError
+
+BENCHMARK_V4 = ipaddress.ip_network("198.18.0.0/15")
+BENCHMARK_V6 = ipaddress.ip_network("2001:2::/48")
+
+
+def benchmark_ip(value):
+    address = ipaddress.ip_address(value)
+    if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+        address = address.ipv4_mapped
+    return address in (BENCHMARK_V4 if address.version == 4 else BENCHMARK_V6)
 
 
 def permitted_ip(value, *, internal=False):
     address = ipaddress.ip_address(value)
     if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
         address = address.ipv4_mapped
+    if benchmark_ip(str(address)):
+        return False
     if address.is_link_local or address.is_multicast or address.is_unspecified:
         return False
     if address.is_reserved and not address.is_loopback:
@@ -55,6 +68,13 @@ def model_transport(settings, value, *, resolver=None, inner=None, max_response_
 
     class Transport(httpx2.AsyncBaseTransport):
         def __init__(self):
+            self.doh = (
+                DohResolver(settings.agent_model_doh_url)
+                if resolver is None
+                and origin.host.lower().rstrip(".")
+                in getattr(settings, "agent_model_doh_domains", [])
+                else None
+            )
             self.inner = inner or httpx2.AsyncHTTPTransport(trust_env=False, retries=0)
 
         async def handle_async_request(self, request):
@@ -72,7 +92,7 @@ def model_transport(settings, value, *, resolver=None, inner=None, max_response_
             ):
                 raise ModelEgressError()
             try:
-                resolve = resolver or asyncio.get_running_loop().getaddrinfo
+                resolve = resolver or self.doh or asyncio.get_running_loop().getaddrinfo
                 addresses = await resolve(
                     origin.host,
                     origin.port or (443 if origin.scheme == "https" else 80),
@@ -82,7 +102,8 @@ def model_transport(settings, value, *, resolver=None, inner=None, max_response_
                 raise ModelEgressError("dns") from None
             ips = list(dict.fromkeys(item[4][0] for item in addresses))
             if not ips or not all(permitted_ip(ip, internal=internal) for ip in ips):
-                raise ModelEgressError()
+                fake = any(benchmark_ip(ip) for ip in ips)
+                raise ModelEgressError("dns_fake_ip" if fake else "dns_address")
             # URL使用已验证IP，Host与SNI保持供应商域名；底层不能再次解析域名。
             chosen = next((ip for ip in ips if ":" not in ip), ips[0])
             headers = request.headers.copy()
@@ -114,6 +135,10 @@ def model_transport(settings, value, *, resolver=None, inner=None, max_response_
             )
 
         async def aclose(self):
-            await self.inner.aclose()
+            try:
+                await self.inner.aclose()
+            finally:
+                if self.doh is not None:
+                    await self.doh.aclose()
 
     return Transport()
