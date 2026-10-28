@@ -1,33 +1,34 @@
 """托管配置到既有异步模型运行时的桥；普通服务不静态依赖Agent SDK。"""
 
 import asyncio
+import time
 from contextlib import asynccontextmanager
 from importlib import import_module
 
 from app.application.agent_runner import AgentRunner
 from app.common.errors import DomainError, require
 from app.infrastructure import model_secrets
+from app.infrastructure.model_egress import check_endpoint, model_transport
 
 
-async def prepare_runtime(application, revision, *, model_context=None):
+async def prepare_runtime(application, revision, *, model_context=None, synthetic=False):
     settings = application.settings
     require(
-        revision.config.get("approved_model_data") is True,
+        synthetic or revision.config.get("approved_model_data") is True,
         422,
         "invalid_input",
-        "启用或测试前需确认模型数据使用许可",
+        "启用前需确认模型数据使用许可",
     )
-    require(
-        revision.config["model_url"] in settings.agent_model_urls,
-        422,
-        "invalid_input",
-        "该模型地址已不在允许出口中",
-    )
+    check_endpoint(settings, revision.config["model_url"])
     require(revision.secret_ciphertext is not None, 422, "invalid_input", "请先设置模型密钥")
     try:
         config = import_module("office_agent.config").AgentConfig.model_validate(
             {
                 **revision.config,
+                # 只为无工具合成探针构建临时配置，不持久化或改变启用许可。
+                "approved_model_data": True
+                if synthetic
+                else revision.config["approved_model_data"],
                 "service_url": settings.public_url,
                 "allow_lan_http_demo": settings.allow_lan_http_demo,
             }
@@ -42,7 +43,7 @@ async def prepare_runtime(application, revision, *, model_context=None):
                 model_secrets.decrypt, settings.agent_secret_key_file, ciphertext
             )
             async with import_module("office_agent.providers").configured_model(
-                bound_config, key=key
+                bound_config, key=key, transport=model_transport(settings, bound_config.model_url)
             ) as model:
                 yield model
 
@@ -59,6 +60,7 @@ async def prepare_runtime(application, revision, *, model_context=None):
 
 async def test_runtime(config, runner):
     """只有固定合成输入，不挂企业工具；不返回供应商文本或错误原文。"""
+    started = time.monotonic()
     try:
         Agent = import_module("pydantic_ai").Agent
         UsageLimits = import_module("pydantic_ai.usage").UsageLimits
@@ -75,6 +77,14 @@ async def test_runtime(config, runner):
                     model_settings={"max_tokens": 32},
                     usage_limits=UsageLimits(request_limit=1, total_tokens_limit=512),
                 )
-        return True
-    except Exception:  # noqa: BLE001 -- 超时／第三方正文不得进入业务响应及日志。
-        return False
+        return {
+            "passed": True,
+            "category": "ok",
+            "message": "基础合成调用通过；不代表业务工具、余额或全部模型能力可用",
+            "suggestion": "核对数据使用许可后，可显式启用此修订。",
+            "elapsed_ms": round((time.monotonic() - started) * 1000),
+        }
+    except Exception as exc:  # noqa: BLE001 -- 超时／第三方正文不得进入业务响应及日志。
+        from app.application.model_test_errors import failure
+
+        return {**failure(exc), "elapsed_ms": round((time.monotonic() - started) * 1000)}

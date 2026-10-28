@@ -45,7 +45,12 @@ def model_key(config: AgentConfig) -> str:
 
 
 @asynccontextmanager
-async def configured_model(config: AgentConfig, *, key: str | None = None):
+async def configured_model(
+    config: AgentConfig,
+    *,
+    key: str | None = None,
+    transport: httpx2.AsyncBaseTransport | None = None,
+):
     # 托管服务显式注入解密后的本修订密钥；独立员工仍只读原秘密引用。
     if key is None:
         key = await asyncio.to_thread(model_key, config)
@@ -76,6 +81,7 @@ async def configured_model(config: AgentConfig, *, key: str | None = None):
             request.headers["Authorization"] = "Bearer " + key
 
     async with httpx2.AsyncClient(
+        transport=transport,
         trust_env=False,
         follow_redirects=False,
         timeout=timeout,

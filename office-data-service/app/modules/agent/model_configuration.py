@@ -1,5 +1,6 @@
 """模型管理契约；秘密只允许写入，输出模型不包含秘密值或秘密引用。"""
 
+from datetime import datetime
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -36,7 +37,9 @@ class ModelDraft(Input):
     def endpoint(self):
         url = urlsplit(self.model_url)
         if (
-            not url.hostname
+            any(c.isspace() or ord(c) < 32 for c in self.model_url)
+            or url.port == 0
+            or not url.hostname
             or url.username
             or url.password
             or url.query
@@ -82,6 +85,38 @@ class ModelTest(ModelApply):
     acknowledge_cost: Literal[True]
 
 
+class ModelTestResult(Output):
+    revision: int
+    passed: bool
+    message: str
+    category: Literal[
+        "ok",
+        "authentication",
+        "permission",
+        "endpoint_or_model",
+        "rate_limit",
+        "provider",
+        "dns",
+        "tls",
+        "connect",
+        "timeout",
+        "policy",
+        "invalid_response",
+    ]
+    suggestion: str
+    elapsed_ms: int = Field(ge=0)
+
+
+class ModelTestView(Output):
+    id: str
+    revision: int
+    api: str
+    model: str
+    state: Literal["started", "completed", "interrupted"]
+    created_at: datetime
+    result: ModelTestResult | None
+
+
 class ModelStatus(Output):
     version: int
     draft_revision: int | None
@@ -93,11 +128,7 @@ class ModelStatus(Output):
     secret_set: bool
     draft: ModelDraft | None
     active: ModelDraft | None = None
+    url_policy: Literal["public", "allowlist"] = "public"
+    last_test: ModelTestView | None = None
     allowed_urls: list[str]
-    message: str
-
-
-class ModelTestResult(Output):
-    revision: int
-    passed: bool
     message: str

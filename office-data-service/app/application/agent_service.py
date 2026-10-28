@@ -6,13 +6,13 @@ import json
 from importlib import import_module
 from importlib.util import find_spec
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.application.agent_runner import AgentRunner, recover_runs
 from app.application.contracts import validate_output
 from app.application.model_runtime import prepare_runtime, test_runtime
 from app.common.errors import DomainError, require
-from app.infrastructure.models import AgentRun, ModelConfiguration
+from app.infrastructure.models import AgentRun, Audit, ModelConfiguration, ModelConnectionTest
 from app.modules.access.service import Access
 from app.modules.agent.conversations import Conversations
 from app.modules.agent.model_store import ModelStore
@@ -41,6 +41,12 @@ class AgentCoordinator:
                 return
             try:
                 await recover_runs(self.sessions)
+                async with self.sessions.begin() as db:
+                    await db.execute(
+                        update(ModelConnectionTest)
+                        .where(ModelConnectionTest.state == "started")
+                        .values(state="interrupted")
+                    )
                 async with self.sessions() as db:
                     state = await db.get(ModelConfiguration, 1)
                     if state is not None:
@@ -314,35 +320,64 @@ class AgentCoordinator:
             )
             row = await store.revision(payload["revision"])
             config, runner = await prepare_runtime(
-                self.application, row, model_context=self.model_context
+                self.application, row, model_context=self.model_context, synthetic=True
             )
+            attempt = ModelConnectionTest(
+                revision=row.revision,
+                actor_id=access.actor.id,
+                api=row.config["api"],
+                model=row.config["model"],
+                state="started",
+            )
+            db.add(attempt)
+            await db.flush()
+            attempt_id, actor_id = attempt.id, access.actor.id
             access.audit(
                 "agent.config.tested",
                 str(row.revision),
                 {"phase": "started", "revision": row.revision},
             )
         # 供应商网络等待不占用数据库连接或事务。没有自动重试。
-        passed = await test_runtime(config, runner)
+        try:
+            outcome = await test_runtime(config, runner)
+        except asyncio.CancelledError:
+            async with self.sessions.begin() as db:
+                attempt = await db.get(ModelConnectionTest, attempt_id, with_for_update=True)
+                attempt.state = "interrupted"
+                db.add(
+                    Audit(
+                        actor_id=actor_id,
+                        action="agent.config.tested",
+                        resource_id=str(payload["revision"]),
+                        detail={"phase": "interrupted"},
+                        trace_id=trace_id,
+                    )
+                )
+            raise
+        result = validate_output(
+            "agent.config.test", payload, {"revision": payload["revision"], **outcome}
+        )
+        # 完成留痕不依赖发起者仍有权限；读取响应另行核验，不能撤权后丢失测试事实。
+        async with self.sessions.begin() as db:
+            attempt = await db.get(ModelConnectionTest, attempt_id, with_for_update=True)
+            attempt.state, attempt.result = "completed", result
+            db.add(
+                Audit(
+                    actor_id=actor_id,
+                    action="agent.config.tested",
+                    resource_id=str(payload["revision"]),
+                    detail={
+                        "phase": "completed",
+                        "passed": outcome["passed"],
+                        "category": outcome["category"],
+                    },
+                    trace_id=trace_id,
+                )
+            )
         async with self.sessions.begin() as db:
             access = await Access.create(db, principal, trace_id)
-            access.audit(
-                "agent.config.tested",
-                str(payload["revision"]),
-                {"phase": "completed", "passed": passed},
-            )
             access.need("agent.config.read")
             access.need("agent.config.test")
-        result = validate_output(
-            "agent.config.test",
-            payload,
-            {
-                "revision": payload["revision"],
-                "passed": passed,
-                "message": "合成连接测试通过；不代表业务工具、余额和所有模型能力均可用"
-                if passed
-                else "连接测试未通过，请核对地址、协议、密钥、模型和网络；未自动重试",
-            },
-        )
         return presenter(result, replayed=False) if presenter else result
 
     async def close(self):

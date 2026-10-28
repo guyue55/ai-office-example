@@ -2,9 +2,16 @@
 
 import asyncio
 
+from sqlalchemy import select
+
 from app.common.errors import require
 from app.infrastructure import model_secrets
-from app.infrastructure.models import ModelConfiguration, ModelConfigurationRevision
+from app.infrastructure.model_egress import check_endpoint
+from app.infrastructure.models import (
+    ModelConfiguration,
+    ModelConfigurationRevision,
+    ModelConnectionTest,
+)
 from app.modules.agent.model_configuration import ModelSave
 
 
@@ -31,12 +38,7 @@ class ModelStore:
         self.access.need("agent.config.read")
         command = ModelSave.model_validate(payload)
         self.expect(state, command.version)
-        require(
-            command.draft.model_url in self.settings.agent_model_urls,
-            422,
-            "invalid_input",
-            "模型地址不在运维允许列表中，请先联系运维配置出口",
-        )
+        check_endpoint(self.settings, command.draft.model_url)
         # 即使保留／清除，也验证根密钥，避免产生无法继续管理的托管配置。
         await asyncio.to_thread(model_secrets.cipher, self.settings.agent_secret_key_file)
         previous = await self.revision(state.draft_revision) if state.draft_revision else None
@@ -82,7 +84,23 @@ class ModelStore:
             secret_store_ready = True
         except Exception:  # noqa: BLE001 -- 只返回状态，不暴露路径或底层异常。
             secret_store_ready = False
+        last_test = await self.db.scalar(
+            select(ModelConnectionTest)
+            .order_by(ModelConnectionTest.created_at.desc(), ModelConnectionTest.id.desc())
+            .limit(1)
+        )
         return {
+            "last_test": {
+                "id": last_test.id,
+                "revision": last_test.revision,
+                "api": last_test.api,
+                "model": last_test.model,
+                "state": last_test.state,
+                "created_at": last_test.created_at,
+                "result": last_test.result,
+            }
+            if last_test
+            else None,
             "version": state.version,
             "draft_revision": state.draft_revision,
             "active_revision": state.active_revision,
@@ -94,5 +112,6 @@ class ModelStore:
             "draft": row.config if row else None,
             "active": active.config if active else None,
             "allowed_urls": list(self.settings.agent_model_urls),
+            "url_policy": self.settings.agent_model_url_policy,
             "message": message,
         }

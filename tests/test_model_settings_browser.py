@@ -41,7 +41,7 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
             "public_url": base,
             "web_session_secret_file": web_key,
             "agent_secret_key_file": key,
-            "agent_model_urls": ["https://model.invalid/v1"],
+            "agent_model_urls": [],
         }
     )
     store = SessionStore(enabled.web_session_secret, enabled.web_session_ttl)
@@ -74,6 +74,8 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
 
         @asynccontextmanager
         async def model(config):
+            if config.model == "failed-model":
+                raise ValueError("provider-secret-do-not-expose")
             yield FunctionModel(lambda messages, info: ModelResponse(parts=[TextPart("OK")]))
 
         app._agent = AgentCoordinator(app, model_context=model)
@@ -126,7 +128,10 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
                 expect(page.locator("#model-secret")).to_have_value("")
                 expect(page.locator("#model-secret-field")).to_be_hidden()
                 expect(page.locator("#model-secret-warning")).to_be_visible()
-                page.locator("#model-url").select_option("https://model.invalid/v1")
+                page.locator("#model-url").fill("https://model.invalid/v1")
+                assert page.locator("#model-url").evaluate(
+                    "el => getComputedStyle(el).borderRadius"
+                ) == page.locator("#model-name").evaluate("el => getComputedStyle(el).borderRadius")
                 page.locator("#model-name").fill("fixture")
                 page.locator("#model-secret-action").select_option("replace")
                 page.locator("#model-secret").fill("synthetic-browser-model-key")
@@ -208,14 +213,44 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
                 page.get_by_role("button", name="启用修订 1", exact=True).click()
                 page.locator("[data-confirm-accept]").click()
                 expect(page.locator(".notice")).to_contain_text("配置已启用")
-                page.get_by_label("确认可能计费，仅发送合成测试内容，不读取业务资料").check()
                 page.get_by_role("button", name="测试草稿连接", exact=True).click()
                 page.locator("[data-confirm-accept]").click()
-                expect(page.locator(".notice")).to_contain_text("合成连接测试通过")
+                expect(page.locator(".notice")).to_contain_text("基础合成调用通过")
                 page.get_by_role("button", name="停用助手", exact=True).click()
                 page.locator("[data-confirm-accept]").click()
                 expect(page.locator(".notice")).to_contain_text("智能助手已停用")
+                # 多按钮formaction：取消不保存；确认后保存并测试，无需提前批准业务外发。
+                page.locator("#model-name").fill("saved-and-tested")
+                page.locator("#model-name").press("Enter")
+                expect(page.locator("[data-confirm-accept]")).to_be_visible()
+                expect(
+                    page.get_by_text("保存新的模型草稿？不会立即启用或发起模型调用。", exact=True)
+                ).to_be_visible()
+                page.locator("[data-confirm-cancel]").click()
+                page.locator('[name="approved_model_data"]').uncheck()
+                page.get_by_role("button", name="保存并测试", exact=True).click()
+                page.locator("[data-confirm-cancel]").click()
+                expect(page.locator("#model-name")).to_have_value("saved-and-tested")
+                expect(page.locator("#model-edit-status")).to_have_text("有未保存修改")
+                page.get_by_role("button", name="保存并测试", exact=True).click()
+                page.locator("[data-confirm-accept]").click()
+                expect(page.locator(".notice")).to_contain_text("基础合成调用通过")
+                expect(page.locator("#model-name")).to_have_value("saved-and-tested")
+                expect(page.get_by_text("最近连接测试 · 修订 4", exact=True)).to_be_visible()
+                expect(page.locator('[name="approved_model_data"]')).not_to_be_checked()
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.locator("#model-name").fill("failed-model")
+                page.get_by_role("button", name="保存并测试", exact=True).click()
+                page.locator("[data-confirm-accept]").click()
+                expect(page.locator(".notice.error-feedback")).to_contain_text(
+                    "未收到兼容的模型响应"
+                )
+                expect(page.get_by_text("测试未通过", exact=True)).to_be_visible()
+                expect(page.locator("#model-name")).to_have_value("failed-model")
+                assert "provider-secret-do-not-expose" not in page.content()
+                page.screenshot(
+                    path="runtime/agent-research/browser/model-settings-result.png", full_page=True
+                )
                 plain = browser.new_context(java_script_enabled=False)
                 plain.add_cookies([{"name": "office_web_session", "value": cookie, "url": base}])
                 plain_page = plain.new_page()

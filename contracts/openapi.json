@@ -17759,6 +17759,25 @@
               }
             ]
           },
+          "url_policy": {
+            "type": "string",
+            "enum": [
+              "public",
+              "allowlist"
+            ],
+            "title": "Url Policy",
+            "default": "public"
+          },
+          "last_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelTestView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "allowed_urls": {
             "items": {
               "type": "string"
@@ -17829,6 +17848,33 @@
           "message": {
             "type": "string",
             "title": "Message"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "authentication",
+              "permission",
+              "endpoint_or_model",
+              "rate_limit",
+              "provider",
+              "dns",
+              "tls",
+              "connect",
+              "timeout",
+              "policy",
+              "invalid_response"
+            ],
+            "title": "Category"
+          },
+          "suggestion": {
+            "type": "string",
+            "title": "Suggestion"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Elapsed Ms"
           }
         },
         "additionalProperties": false,
@@ -17836,9 +17882,68 @@
         "required": [
           "revision",
           "passed",
-          "message"
+          "message",
+          "category",
+          "suggestion",
+          "elapsed_ms"
         ],
         "title": "ModelTestResult"
+      },
+      "ModelTestView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "api": {
+            "type": "string",
+            "title": "Api"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "started",
+              "completed",
+              "interrupted"
+            ],
+            "title": "State"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelTestResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "revision",
+          "api",
+          "model",
+          "state",
+          "created_at",
+          "result"
+        ],
+        "title": "ModelTestView"
       },
       "ModelVersion": {
         "properties": {

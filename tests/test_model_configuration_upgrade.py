@@ -106,6 +106,10 @@ def test_existing_database_upgrade_preserves_data_and_seeds_once(isolated_query_
                     ),
                     {"value": json.dumps({})},
                 )
+            with runtime.begin() as db:
+                assert db.scalar(text("SELECT count(*) FROM office.model_connection_test")) == 0
+            with pytest.raises(ProgrammingError), runtime.begin() as db:
+                db.execute(text("DELETE FROM office.model_connection_test"))
         finally:
             runtime.kw["bind"].dispose()
     finally:

@@ -22,13 +22,13 @@ def register_model_settings(router, operate, render, csrf, notify):
 
     @router.post("/console/model-settings/{action}")
     async def change(request: Request, action: str):
-        if action not in {"save", "apply", "disable", "test"}:
+        if action not in {"save", "save-test", "apply", "disable", "test"}:
             raise DomainError(404, "not_found", "模型配置操作不存在")
         form = dict(await request.form())
         csrf(request, form)
         try:
             payload: dict = {"version": int(str(form.get("version", "")))}
-            if action == "save":
+            if action in {"save", "save-test"}:
                 payload.update(
                     draft={
                         "api": form.get("api"),
@@ -54,11 +54,40 @@ def register_model_settings(router, operate, render, csrf, notify):
             raise DomainError(
                 422, "invalid_input", "配置格式无效，请核对版本、超时与预算"
             ) from None
-        result = await operate(request, "agent.config." + action, payload)
+        if action == "save-test":
+            # 先检查测试权限再保存，避免无权测试时意外保存；每阶段仍由应用重新授权。
+            me = await operate(request, "me")
+            if "agent.config.test" not in me["permissions"]:
+                raise DomainError(403, "permission_denied", "缺少模型测试权限")
+        result = await operate(
+            request, "agent.config." + ("save" if action == "save-test" else action), payload
+        )
+        if action == "save-test":
+            try:
+                result = await operate(
+                    request,
+                    "agent.config.test",
+                    {
+                        "version": result["version"],
+                        "revision": result["draft_revision"],
+                        "acknowledge_cost": True,
+                    },
+                )
+            except DomainError:
+                notify(
+                    request,
+                    "草稿已保存，但测试未完成。请核对当前修订及状态后再手动测试。",
+                    error=True,
+                )
+                return RedirectResponse("/console/model-settings", status_code=303)
         messages = {
             "save": "草稿已保存，尚未启用，也未调用模型。",
             "apply": "配置已启用，新任务将使用当前生效修订。",
             "disable": "智能助手已停用，不会回退到外部文件配置。",
         }
-        notify(request, result["message"] if action == "test" else messages[action])
+        notify(
+            request,
+            result["message"] if action in {"test", "save-test"} else messages[action],
+            error=action in {"test", "save-test"} and not result["passed"],
+        )
         return RedirectResponse("/console/model-settings", status_code=303)

@@ -74,13 +74,13 @@
   // 只有共享确认流程批准后才进入等待态，取消弹窗不会禁用操作。
   page.addEventListener('office:submit-approved', event => {
     const form = event.target;
-    const initiating = form.querySelector('button[type=submit]');
+    const initiating = event.detail?.submitter || form.querySelector('button[type=submit]');
     if (status) status.textContent = initiating?.dataset.pendingLabel || '正在处理…';
     form.setAttribute('aria-busy','true');
     form.inert = true;
     page.querySelectorAll('button[type=submit],button[type=reset]').forEach(button => {
       button.disabled = true;
-      if (button.form === form && button.type === 'submit') button.textContent = button.dataset.pendingLabel || '正在处理…';
+      if (button === initiating) button.textContent = button.dataset.pendingLabel || '正在处理…';
     });
   });
 })();

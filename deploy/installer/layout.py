@@ -258,6 +258,7 @@ def _prepare(root, host_root, source, value, image, pg_uid, pg_gid, kc_uid, kc_g
             "database_password_file": "secrets/app_password",
             "web_session_secret_file": "secrets/web_session_secret",
             "agent_secret_key_file": "secrets/model_encryption_key",
+            "agent_model_url_policy": "public",
             "agent_model_urls": [],
         },
     )

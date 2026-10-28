@@ -4,6 +4,7 @@ import ipaddress
 import json
 import os
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
@@ -68,6 +69,7 @@ class Settings(BaseModel):
     auth_workers: int = Field(default=8, ge=1, le=64)
     agent_config_file: Path | None = None
     agent_secret_key_file: Path | None = None
+    agent_model_url_policy: Literal["public", "allowlist"] = "public"
     agent_model_urls: list[str] = Field(default_factory=list, max_length=20)
     agent_max_running: int = Field(default=8, ge=1, le=64)
     agent_max_per_user: int = Field(default=2, ge=1, le=8)
@@ -80,6 +82,18 @@ class Settings(BaseModel):
     web_session_limit: int = Field(default=2048, ge=1, le=10000)
     web_pending_limit: int = Field(default=256, ge=1, le=10000)
     web_login_protection: LoginProtection = Field(default_factory=LoginProtection)
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_model_policy(cls, data):
+        # 旧实例非空白名单保留限制；只有显式选择public才扩大出口。
+        if (
+            isinstance(data, dict)
+            and data.get("agent_model_urls")
+            and "agent_model_url_policy" not in data
+        ):
+            return {**data, "agent_model_url_policy": "allowlist"}
+        return data
 
     @field_validator("agent_model_urls")
     @classmethod

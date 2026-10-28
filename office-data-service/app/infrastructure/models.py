@@ -316,3 +316,15 @@ class ModelConfigurationRevision(Base):
     secret_ciphertext: Mapped[str | None] = mapped_column(String(12000), nullable=True)
     actor_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ModelConnectionTest(Entity):
+    __tablename__ = "model_connection_test"
+    __table_args__ = (Index("ix_model_connection_test_created", "created_at", "id"),)
+    revision: Mapped[int] = mapped_column(ForeignKey("model_configuration_revision.revision"))
+    actor_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    api: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str] = mapped_column(String(200))
+    state: Mapped[str] = mapped_column(String(20), default="started")
+    result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

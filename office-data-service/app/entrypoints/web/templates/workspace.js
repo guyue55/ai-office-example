@@ -202,7 +202,8 @@
   reload.addEventListener('click', async () => {
     if (!busy && currentURL && await mayLeave(content)) load(currentURL);
   });
-  const confirmAction = form => window.OfficeUI.confirm(
+  const confirmAction = (form, submitter) => window.OfficeUI.confirm(
+    submitter?.dataset.confirmMessage ||
     form.querySelector('select[name="action"] option:checked')?.dataset.confirmMessage || form.dataset.confirmMessage
   );
   // 只有真正离开文档才确认助手草稿；抽屉fetch与异步保存不触发离页。
@@ -304,9 +305,11 @@
       const root = panel.open && content.contains(form) ? content : document.querySelector('main');
       // 提交当前表单不是放弃当前草稿；其他表单与上一步草稿仍需保护。
       if (!await mayLeave(root, form)) return;
-      if (form.dataset.confirmMessage && !await confirmAction(form)) return;
+      if ((event.submitter?.dataset.confirmMessage || form.dataset.confirmMessage) && !await confirmAction(form, event.submitter)) return;
       if (!await mayNavigate()) return;
-      form.dispatchEvent(new CustomEvent('office:submit-approved', {bubbles:true}));
+      const submitter = event.submitter;
+      if (submitter?.hasAttribute('formaction')) form.action = submitter.formAction;
+      form.dispatchEvent(new CustomEvent('office:submit-approved', {bubbles:true, detail:{submitter}}));
       leaving = true;
       HTMLFormElement.prototype.submit.call(form);
       return;

@@ -51,4 +51,4 @@ Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGE
 
 Agent前端下一阶段研究见[前端路线、产品范围与验证计划](docs/COPILOTKIT_FRONTEND_RESEARCH.md)：包含CopilotKit示例核查、替代UI候选、模型配置前置、状态／审批边界和阶段验收。目前为研究草案，不表示已引入React、AG-UI或第三方Runtime。
 
-管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、秘密加密、版本冲突、显式测试／启停和重启恢复；当前分支新增，已有实例需迁移与配置后才能使用。
+管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／可选严格出口、秘密加密、保存并测试、修订绑定结果、显式启停和重启恢复；当前分支新增，已有实例需迁移至0015并配置独立秘密后才能使用。

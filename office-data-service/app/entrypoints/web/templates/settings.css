@@ -52,3 +52,6 @@
 
 /* 首帧按服务端状态隐藏增强字段，避免脚本初始化时跳动；无脚本仍完整展示。 */
 .js .settings-field[data-model-auth=hidden],.js .settings-field[data-model-secret=keep],.js .settings-field[data-model-secret=clear] {display:none;}
+
+.settings-test-result {margin-top:12px;}
+.settings-test-result .badge {justify-self:start;}

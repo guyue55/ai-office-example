@@ -31,9 +31,9 @@ jobs:
       - run: uv run --project clients/agent --frozen ruff format --check clients/agent
       - run: uv run --project clients/agent --frozen mypy --config-file clients/agent/pyproject.toml clients/agent/src
       - run: uv run --project clients/agent --frozen pytest clients/agent/tests -q
-      - name: 内部异步应用工具适配
+      - name: 内部异步工具适配与托管模型出口
         if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
-        run: uv run --extra agent --locked pytest tests/test_agent_application_bridge.py -q
+        run: uv run --extra agent --locked pytest tests/test_agent_application_bridge.py tests/test_model_egress.py -q
       - name: 隔离助手浏览器交互
         if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
         shell: bash

@@ -14,7 +14,13 @@ from test_query_postgres import dataset, isolated_query_db  # noqa: F401
 
 pytest.importorskip("office_agent", reason="需可选Agent依赖")
 from app.application.agent_service import AgentCoordinator
-from app.infrastructure.models import AgentRun, Audit, ModelConfigurationRevision
+from app.infrastructure.models import (
+    AgentRun,
+    Audit,
+    Employee,
+    ModelConfigurationRevision,
+    ModelConnectionTest,
+)
 from app.main import create_app
 from pydantic_ai.messages import ModelResponse, TextPart
 from pydantic_ai.models.function import FunctionModel
@@ -28,7 +34,11 @@ def test_managed_model_full_lifecycle(request, tmp_path):
     key.write_bytes(Fernet.generate_key())
     key.chmod(0o600)
     enabled = settings.model_copy(
-        update={"agent_secret_key_file": key, "agent_model_urls": ["https://model.invalid/v1"]}
+        update={
+            "agent_model_url_policy": "allowlist",
+            "agent_secret_key_file": key,
+            "agent_model_urls": ["https://model.invalid/v1"],
+        }
     )
 
     async def scenario():
@@ -163,7 +173,7 @@ def test_managed_model_full_lifecycle(request, tmp_path):
                     },
                 )
                 assert disallowed.status_code == 422
-                # 未获数据许可可保存，但不能测试或启用；原配置继续有效。
+                # 未获数据许可可保存及合成测试，但不能启用；原配置继续有效。
                 pending = await client.post(
                     path + "/draft",
                     json={
@@ -172,6 +182,39 @@ def test_managed_model_full_lifecycle(request, tmp_path):
                     },
                 )
                 pending_state = pending.json()["data"]
+                synthetic = await client.post(
+                    path + "/test",
+                    json={
+                        "version": pending_state["version"],
+                        "revision": pending_state["draft_revision"],
+                        "acknowledge_cost": True,
+                    },
+                )
+                assert synthetic.status_code == 200 and synthetic.json()["data"]["passed"]
+                tested_status = (await client.get(path)).json()["data"]
+                assert tested_status["last_test"]["revision"] == pending_state["draft_revision"]
+                assert tested_status["last_test"]["result"]["category"] == "ok"
+
+                @asynccontextmanager
+                async def failed_model(config):
+                    raise ValueError("provider-secret-do-not-expose")
+                    yield  # pragma: no cover -- 保持异步上下文管理器协议。
+
+                coordinator.model_context = failed_model
+                failed_test = await client.post(
+                    path + "/test",
+                    json={
+                        "version": pending_state["version"],
+                        "revision": pending_state["draft_revision"],
+                        "acknowledge_cost": True,
+                    },
+                )
+                assert failed_test.status_code == 200 and not failed_test.json()["data"]["passed"]
+                assert "provider-secret-do-not-expose" not in failed_test.text
+                failed_status = (await client.get(path)).json()["data"]
+                assert not failed_status["last_test"]["result"]["passed"]
+                assert failed_status["active_revision"] == tested_status["active_revision"]
+                coordinator.model_context = models
                 blocked = await client.post(
                     path + "/apply",
                     json={
@@ -253,6 +296,84 @@ def test_managed_model_full_lifecycle(request, tmp_path):
                     assert all(
                         r.model_revision is not None for r in await db.scalars(select(AgentRun))
                     )
+                # 测试网络阶段并发保存与撤权：结果属于原修订，撤权不丢完成留痕。
+                state = (await client.get(path)).json()["data"]
+                saved = (
+                    await client.post(
+                        path + "/draft",
+                        json={
+                            "version": state["version"],
+                            "draft": state["draft"],
+                            "secret_action": "replace",
+                            "secret": "synthetic-key-concurrent",
+                        },
+                    )
+                ).json()["data"]
+                entered, release = asyncio.Event(), asyncio.Event()
+
+                @asynccontextmanager
+                async def paused_model(config):
+                    entered.set()
+                    await release.wait()
+                    yield FunctionModel(
+                        lambda messages, info: ModelResponse(parts=[TextPart("OK")])
+                    )
+
+                coordinator.model_context = paused_model
+                task = asyncio.create_task(
+                    client.post(
+                        path + "/test",
+                        json={
+                            "version": saved["version"],
+                            "revision": saved["draft_revision"],
+                            "acknowledge_cost": True,
+                        },
+                    )
+                )
+                await asyncio.wait_for(entered.wait(), 5)
+                newer = await client.post(
+                    path + "/draft",
+                    json={
+                        "version": saved["version"],
+                        "draft": {**saved["draft"], "model": "newer-model"},
+                    },
+                )
+                assert newer.status_code == 200
+                async with app.sessions.begin() as db:
+                    attempt = await db.scalar(
+                        select(ModelConnectionTest).where(ModelConnectionTest.state == "started")
+                    )
+                    actor_id, attempt_id = attempt.actor_id, attempt.id
+                    employee = await db.get(Employee, actor_id)
+                    employee.active = False
+                release.set()
+                assert (await task).status_code == 403
+                async with app.sessions.begin() as db:
+                    attempt = await db.get(ModelConnectionTest, attempt_id)
+                    assert attempt.state == "completed" and attempt.result["passed"]
+                    assert attempt.revision == saved["draft_revision"]
+                    employee = await db.get(Employee, actor_id)
+                    employee.active = True
+                status = (await client.get(path)).json()["data"]
+                assert status["last_test"]["revision"] != status["draft_revision"]
+                # 模拟进程在开始后中断，重启只标记未知／中断，不重发。
+                async with app.sessions.begin() as db:
+                    orphan = ModelConnectionTest(
+                        revision=saved["draft_revision"],
+                        actor_id=actor_id,
+                        api="openai-completions",
+                        model="interrupted",
+                        state="started",
+                    )
+                    db.add(orphan)
+                    await db.flush()
+                    orphan_id = orphan.id
+                await coordinator.close()
+                coordinator = AgentCoordinator(app, model_context=models)
+                app._agent = coordinator
+                await coordinator.start()
+                async with app.sessions() as db:
+                    assert (await db.get(ModelConnectionTest, orphan_id)).state == "interrupted"
         finally:
             await coordinator.close()
             await app.verifier.aclose()

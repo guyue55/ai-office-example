@@ -55,7 +55,7 @@ button.secondary,.button.secondary {
   background:white!important;
   border-color:#e2b9b5!important
 }
-input[type=text],input[type=search],input[type=email],input[type=password],input[type=date],input[type=number],select,textarea {
+input[type=text],input[type=search],input[type=email],input[type=url],input[type=password],input[type=date],input[type=number],select,textarea {
   padding:9px 12px;
   border:1px solid var(--control-border);
   border-radius:7px;
@@ -74,21 +74,21 @@ input[type=checkbox] {
   outline:2px solid var(--focus-ring);
   outline-offset:2px
 }
-input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number]),select,textarea {
+input:is([type=text],[type=search],[type=email],[type=url],[type=password],[type=date],[type=number]),select,textarea {
   border-radius:8px;
   transition:border-color 140ms ease,box-shadow 140ms ease,background-color 140ms ease
 }
-input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number]):focus,select:focus,textarea:focus {
+input:is([type=text],[type=search],[type=email],[type=url],[type=password],[type=date],[type=number]):focus,select:focus,textarea:focus {
   border-color:var(--focus-default);
   box-shadow:0 0 0 3px var(--focus-halo)
 }
 /* 输入类控件只保留一圈可见焦点，避免边框、光晕和外描边叠成多层。 */
-input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number]):focus-visible,select:focus-visible,textarea:focus-visible {
+input:is([type=text],[type=search],[type=email],[type=url],[type=password],[type=date],[type=number]):focus-visible,select:focus-visible,textarea:focus-visible {
   outline-offset:0;
   box-shadow:none
 }
 @media (hover:hover) {
-  input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number]):not(:disabled):not(:focus):not([aria-invalid=true]):hover,select:not(:disabled):not(:focus):not([aria-invalid=true]):hover,textarea:not(:disabled):not(:focus):not([aria-invalid=true]):hover {border-color:#596f7b}
+  input:is([type=text],[type=search],[type=email],[type=url],[type=password],[type=date],[type=number]):not(:disabled):not(:focus):not([aria-invalid=true]):hover,select:not(:disabled):not(:focus):not([aria-invalid=true]):hover,textarea:not(:disabled):not(:focus):not([aria-invalid=true]):hover {border-color:#596f7b}
 }
 h1,h2,h3,p {
   margin-top:0
@@ -661,7 +661,7 @@ button:disabled { opacity:.55; cursor:not-allowed; }
 input:not([type=hidden]):disabled,select:disabled,textarea:disabled {
   background:#f0f3f5;color:#657782;border-color:#c7d1d7;cursor:not-allowed;opacity:1
 }
-input:is([type=text],[type=search],[type=email],[type=password],[type=date],[type=number])[readonly],textarea[readonly] {
+input:is([type=text],[type=search],[type=email],[type=url],[type=password],[type=date],[type=number])[readonly],textarea[readonly] {
   background:#f5f7f9;color:var(--ink)
 }
 input::placeholder,textarea::placeholder {color:var(--muted);opacity:1}

@@ -143,6 +143,7 @@ def web_router(application):
             account_actions=ACCOUNT_ACTIONS,
             account_statuses=ACCOUNT_STATUSES,
             notice=token.pop("notice", None),
+            notice_error=token.pop("notice_error", False),
         )
         return TEMPLATES.TemplateResponse(request, template, context)
 
@@ -172,8 +173,9 @@ def web_router(application):
             raise DomainError(422, "invalid_input", "页面版本无效，请刷新后重试")
         return int(value)
 
-    def notify(request, message):
-        store.load(request.cookies.get(COOKIE))["notice"] = message
+    def notify(request, message, *, error=False):
+        session = store.load(request.cookies.get(COOKIE))
+        session["notice"], session["notice_error"] = message, error
 
     @router.get("/", include_in_schema=False)
     async def home():
