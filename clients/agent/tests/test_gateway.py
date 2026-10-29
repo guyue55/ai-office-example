@@ -24,6 +24,9 @@ class Client:
     def projects(self, **params):
         return {"items": [{"id": "p"}], "next": "more", "complete": False}
 
+    def records(self, **params):
+        return {"items": [], "next": None, "complete": True}
+
     def preview_data_change(self, change):
         return {"change": change, "confirmation_digest": "a" * 64, "after": {"name": "新项目"}}
 

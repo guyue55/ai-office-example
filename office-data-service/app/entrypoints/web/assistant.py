@@ -32,6 +32,8 @@ OUTCOMES = {
 }
 
 OPERATIONS = {
+    "list_toolgroups": "查看可加载的工具组",
+    "activate_toolgroup": "加载工具组",
     "whoami": "查看本人身份与权限",
     "capabilities": "查看可用能力",
     "projects": "查看数据容器",

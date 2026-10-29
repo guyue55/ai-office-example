@@ -176,6 +176,8 @@ class AgentRunner:
                     approve=lambda proposal: self.approve(identifier, proposal),
                     observe=ProgressWriter(self.sessions, identifier),
                     stream_output=getattr(self.config, "stream_output", True),
+                    # 页面标签只用于装载相关工具组，实际权限仍逐次核验。
+                    context_page=row.context_page,
                 )
             status = "completed" if result.status == "completed" else "failed"
             await self.finish(identifier, status, result.as_dict())
