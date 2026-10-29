@@ -11,6 +11,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 from pydantic_ai import Agent, DeferredToolRequests, DeferredToolResults, ToolApproved, ToolDenied
 from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior, UsageLimitExceeded
+from pydantic_ai.result import AgentStream
 from pydantic_ai.tools import Tool
 from pydantic_ai.usage import RunUsage, UsageLimits
 
@@ -137,6 +138,7 @@ async def run_with_gateway(
                         if Agent.is_model_request_node(node):
                             await gateway.ensure_identity()
                             if handler is not None:
+                                events: AgentStream[Any, Any]
                                 async with node.stream(run.ctx) as events:
                                     await handler(run.ctx, events)
                     if run.result is None:
