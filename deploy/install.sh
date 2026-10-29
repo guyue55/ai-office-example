@@ -33,7 +33,20 @@ if [[ "$(uname -s)" == Darwin ]]; then
   REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   ENDPOINT="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
   [[ "$ENDPOINT" == unix://* && -z "${DOCKER_HOST:-}" ]] || { echo 'macOS安装要求本机Docker Desktop上下文' >&2; exit 2; }
-  exec docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$REPO_ROOT:$REPO_ROOT" \
+  # 仓库外的公开配置在容器里也必须可见；否则会误报“配置不存在”。
+  CONFIG_HOST="${1:-$REPO_ROOT/deploy/.env}"
+  case "$CONFIG_HOST" in
+    /*) ;;
+    *) CONFIG_HOST="$REPO_ROOT/$CONFIG_HOST" ;;
+  esac
+  CONFIG_DIR="$(cd "$(dirname "$CONFIG_HOST")" 2>/dev/null && pwd || true)"
+  EXTRA_MOUNTS=()
+  if [[ -n "$CONFIG_DIR" && "$CONFIG_DIR/" != "$REPO_ROOT/"* ]]; then
+    EXTRA_MOUNTS=(-v "$CONFIG_DIR:$CONFIG_DIR:ro")
+  fi
+  CLI_ARGS=(run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$REPO_ROOT:$REPO_ROOT")
+  if [[ ${#EXTRA_MOUNTS[@]} -gt 0 ]]; then CLI_ARGS+=("${EXTRA_MOUNTS[@]}"); fi
+  exec docker "${CLI_ARGS[@]}" \
     -w "$REPO_ROOT" -e "OFFICE_IMAGE=${OFFICE_IMAGE:-}" -e "OFFICE_AGENT=${OFFICE_AGENT:-}" docker:28-cli \
     sh -c 'apk add --no-cache bash coreutils util-linux >/dev/null && exec bash deploy/install.sh "$@"' office-install "$@"
 fi

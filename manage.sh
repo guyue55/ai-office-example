@@ -937,7 +937,7 @@ recreate_stack() {
     return 1
   fi
   step '1/3' '刷新网关配置'
-  refresh_gateway
+  refresh_gateway || { bad '刷新网关配置失败；未执行容器重建'; return 1; }
   step '2/3' '保留数据并重建gateway/service'
   compose up -d --force-recreate --no-deps --wait --wait-timeout "$WAIT_SECONDS" gateway service || return 2
   after="$(protected_volume_state)"
@@ -1167,7 +1167,12 @@ install_environment() {
   section '新环境安装'
   note "将调用deploy/install.sh${INSTALL_CONFIG:+：$INSTALL_CONFIG}${INSTANCE:+；实例目录：$INSTANCE}"
   if [[ -n "$INSTANCE" ]]; then
-    case "$INSTANCE/" in
+    local instance_abs="$INSTANCE"
+    case "$instance_abs" in
+      /*) ;;
+      *) instance_abs="$ROOT/$instance_abs" ;;
+    esac
+    case "$instance_abs/" in
       "$RUNTIME_DIR/"*) ;;
       *) warn "实例目录不在运行目录内：$INSTANCE"; warn "后续命令将找不到该实例；请把 OFFICE_MANAGE_RUNTIME_DIR 设为 $INSTANCE 的上级，或始终用 --instance 指定" ;;
     esac
@@ -1473,7 +1478,7 @@ start_stack() {
   sync_address || return 2
   step '2/4' '刷新网关配置'
   local gateway_change
-  gateway_change="$(refresh_gateway)"
+  gateway_change="$(refresh_gateway)" || { bad '刷新网关配置失败'; return 1; }
   if all_services_running; then
     if [[ "$gateway_change" == updated ]] || ! health_once; then
       step '3/4' '重载网关与服务'
@@ -1519,7 +1524,7 @@ restart_stack() {
   step '1/4' '同步服务器地址'
   sync_address || return 2
   step '2/4' '刷新网关配置'
-  refresh_gateway >/dev/null
+  refresh_gateway >/dev/null || { bad '刷新网关配置失败'; return 1; }
   step '3/4' '重启全部容器'
   compose restart --timeout 20 || return 2
   compose up -d --wait --wait-timeout "$WAIT_SECONDS" || return 2
