@@ -99,7 +99,19 @@ async def run_with_gateway(
             def summary(name: str, spec, kind: str) -> str:
                 optional = "、".join(spec.arguments) or "无"
                 required = "、".join(spec.required) or "无"
-                return f"{kind}操作 {name}。可填参数：{optional}；必填：{required}。"
+                hints = {
+                    "data": "change 必须是对象，包含 operation（如 project.create）与 payload 对象。",
+                    "access": "change 必须是描述变更的对象，包含操作类型与目标字段。",
+                    "account": "request 必须是账号操作对象，包含 operation 与所需字段。",
+                    "submit_record": "values 必须是字段名到值的对象；project_id 与 schema_revision 必填。",
+                    "confirm_record": "record_id 与 version 必填。",
+                    "correct_record": "values 为对象，reason 说明更正原因。",
+                    "account_resume": "identifier 与 version 必填，mode 可选。",
+                    "describe_device": "device_name 与 platform 均为简短文本。",
+                    "change_authorization": "identifier、version、action、reason 必填。",
+                }.get(name, "")
+                suffix = f" {hints}" if hints else ""
+                return f"{kind}操作 {name}。可填参数：{optional}；必填：{required}。{suffix}"
 
             def check_arguments(spec, kwargs: dict[str, Any]) -> dict | None:
                 """参数不合规时返回结构化提示；不抛异常、不终止整轮对话。"""
