@@ -78,6 +78,9 @@ def test_management_entrypoint_is_valid_and_documents_all_commands():
         "recreate",
         "down",
         "backup",
+        "install",
+        "build",
+        "upgrade",
     ):
         assert command in result.stdout
     assert "--ip" in result.stdout
@@ -88,6 +91,23 @@ def test_management_entrypoint_is_valid_and_documents_all_commands():
         text=True,
     )
     assert detail.returncode == 0 and "完整重启" in detail.stdout
+
+
+def test_build_and_upgrade_require_explicit_targets():
+    build = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "build"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    upgrade = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "upgrade"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert build.returncode == 2 and "--agent" in build.stderr
+    assert upgrade.returncode == 2 and "--image" in upgrade.stderr
 
 
 @pytest.mark.parametrize(

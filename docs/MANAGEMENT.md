@@ -19,6 +19,9 @@
 | `recreate` | 保留所有卷，只强制重建gateway和service | 是 |
 | `down` | 删除容器和项目网络，保留卷、镜像、配置和秘密 | 是 |
 | `backup` | 备份两个数据库、配置和必要秘密 | 是，仅写备份目录 |
+| `install` | 在新环境调用安装器；可先构建镜像 | 是 |
+| `build` | 从本地源码构建普通或Agent镜像 | 是，仅新增镜像 |
+| `upgrade` | 使用已存在的本地镜像备份、迁移并升级实例 | 是 |
 
 ```bash
 ./manage.sh status
@@ -32,6 +35,9 @@
 ./manage.sh plan down
 ./manage.sh plan recreate
 ./manage.sh backup
+./manage.sh install
+./manage.sh build --agent 1 --tag office-data-service:local-agent
+./manage.sh upgrade --image office-data-service:local-agent
 ```
 
 ## 通用选项
@@ -43,8 +49,13 @@
 --tail <行数>      logs显示行数，默认100
 --follow           logs持续输出
 --timeout <秒>     启动、重启与健康等待上限，默认120
---confirm <值>     down/recreate确认串，必须为“项目名:动作”
+--confirm <值>     down/recreate/upgrade确认串
 --output <目录>    backup父目录，必须是绝对路径
+--config <文件>    install使用的公开.env
+--configure        install先进入配置向导
+--agent <0|1>      build目标镜像变体
+--tag <名称>       build目标镜像标签
+--image <镜像>     upgrade目标镜像；必须已在本地存在
 -h, --help         查看总帮助
 ```
 
@@ -71,6 +82,8 @@
 只有`start`、`stop`、`restart`、`recreate`、`down`会更新活动实例记录。`status`、`check`、`address`、`instances`、`logs`严格只读，不创建或修改该文件。`plan`只读；`backup`只写指定备份目录。
 
 ## 启动、停止和重启
+
+`start`和`restart`只管理已经安装的实例，不会自动构建镜像，也不会执行新环境安装。新服务器应执行`./manage.sh install`；已有实例镜像缺失时，`start/restart`会在执行Compose前明确拒绝，并提示先恢复镜像或执行`build`后再`upgrade`。
 
 `start`先检查Docker引擎，再检测活动IPv4和刷新gateway配置。实例已经完整运行且健康时保持原状，不无故重启容器；只有配置更新、健康异常或容器缺失时才启动或重载。
 
@@ -100,6 +113,36 @@
 ```
 
 `backup`把业务库、身份库、实例配置、网关配置、必要秘密和数据库卷标识写入权限为700的目录，文件禁止组和其他用户访问；两个数据库dump通过`pg_restore --list`校验，并提供SHA-256清单。备份不会自动覆盖、轮换或删除旧目录。
+
+## 安装、构建与升级
+
+`install`调用现有安装器：`./manage.sh install --configure`进入配置向导，或`./manage.sh install --config /secure/delivery.env`使用明确配置。如果未指定`OFFICE_IMAGE`，安装器从当前源码构建镜像。因此新环境不需要先运行`start/restart`。
+
+`build`用于开发或离线交付前生成镜像：
+
+```bash
+./manage.sh build --agent 0 --tag office-data-service:local-normal
+./manage.sh build --agent 1 --tag office-data-service:local-agent
+```
+
+构建会打印源码提交、是否含未提交修改、镜像ID和运行能力。有未提交修改的镜像会标记为仅本地使用，不当作已验收生产版本。构建不会安装实例、切换运行版本或删除旧镜像。
+
+`upgrade`只接受本机已存在的目标镜像，不会静默拉取或自动构建。升级流程：
+
+1. 核对镜像存在、service/setup一致、目标与当前Agent/普通变体一致、Alembic可用；
+2. 创建业务库、身份库、配置和秘密备份；
+3. 停止service和gateway，保持数据库和身份容器运行；
+4. 原子更新Compose与安装记录为migrating；
+5. 使用目标镜像执行Alembic升级和数据库检查；
+6. 启动新镜像，执行健康、端口、OIDC与Compose一致性检查；
+7. 成功后记录healthy；任一步失败则保持service/gateway停止并记录failed，备份保留。
+
+```bash
+./manage.sh upgrade --image office-data-service:local-agent \
+  --confirm office-93e42ff1ec92:upgrade:<镜像ID前12位>
+```
+
+`check`同时比对安装记录、Compose service/setup镜像以及镜像是否真实存在。任何版本元数据不一致都会返回失败，不能把“容器暂时健康”误当成镜像版本正确。旧镜像不删除，便于审计；脚本不提供自动回滚数据库迁移的承诺。
 
 ## 地址检测与多地址
 

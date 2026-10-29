@@ -9,6 +9,11 @@ INSTANCE="${OFFICE_INSTANCE_DIR:-}"
 REQUESTED_IP=""
 CONFIRM_TOKEN=""
 BACKUP_OUTPUT=""
+BUILD_AGENT=""
+BUILD_TAG=""
+INSTALL_CONFIG=""
+INSTALL_CONFIGURE=0
+UPGRADE_IMAGE=""
 COMMAND=""
 PLAN_TARGET=""
 LOG_SERVICE="service"
@@ -53,9 +58,12 @@ main_help() {
   recreate    强制重建无状态gateway/service，数据库卷和身份数据保留
   down        删除容器与项目网络，数据库卷、镜像、配置和密钥保留
   backup      备份业务库、身份库、配置和秘密到受限制目录
+  install     在新环境执行现有安装器；未指定OFFICE_IMAGE时由安装器构建
+  build       从本地源码构建普通或Agent镜像，不自动安装或升级
+  upgrade     使用已存在且已验证的镜像执行备份、迁移和受控升级
 
 高级操作
-  recreate与down必须先预览并输入实例：动作确认串，或对非交互调用显式传--confirm。
+  recreate、down与upgrade必须先用plan/预览确认影响，再输入精确确认串。
   不提供purge、delete、delete-data或uninstall；任何删除卷、镜像、实例密钥的请求都会被拒绝。
 
 选项
@@ -65,8 +73,13 @@ main_help() {
   --tail <行数>      logs显示行数，默认100
   --follow           logs持续跟随
   --timeout <秒>     启动、重启与健康等待上限，默认120
-  --confirm <值>     down/recreate确认串，必须精确等于“项目名:动作”
+  --confirm <值>     down/recreate/upgrade确认串
   --output <目录>    backup父目录，必须是绝对路径；默认runtime/backups
+  --config <文件>    install使用的公开配置文件
+  --configure        install先进入配置向导
+  --agent <0|1>      build镜像变体
+  --tag <名称>       build镜像标签
+  --image <镜像>     upgrade目标镜像；必须已在本地存在
   -h, --help         查看总帮助；命令后加--help查看该命令说明
 
 自动选择实例
@@ -94,6 +107,10 @@ main_help() {
   ./manage.sh plan recreate
   ./manage.sh recreate --confirm office-example:recreate
   ./manage.sh backup --output /secure/office-backups
+  ./manage.sh install
+  ./manage.sh build --agent 1 --tag office-data-service:local-agent
+  ./manage.sh upgrade --image office-data-service:local-agent \
+    --confirm office-example:upgrade:<镜像摘要前12位>
   ./manage.sh start
   ./manage.sh restart --ip 172.16.170.83
   ./manage.sh logs --service gateway --tail 200
@@ -201,6 +218,34 @@ backup：创建受限制的完整实例备份
 示例：./manage.sh backup --output /secure/office-backups
 EOF
       ;;
+    install)
+      cat <<'EOF'
+install：新环境安装
+  调用现有deploy/install.sh。未配置OFFICE_IMAGE时，安装器从当前源码构建镜像。
+  使用--configure可先进入配置向导；--config指定公开.env。
+示例：./manage.sh install --configure
+EOF
+      ;;
+    build)
+      cat <<'EOF'
+build：本地镜像构建
+  必须指定--agent 0（普通）或1（含Agent运行能力）。
+  只构建镜像，不安装实例，不切换运行版本，不删除旧镜像。
+示例：./manage.sh build --agent 1 --tag office-data-service:local-agent
+EOF
+      ;;
+    upgrade)
+      cat <<'EOF'
+upgrade：受控镜像升级
+  目标镜像必须已在本地存在；本命令不自动拉取、不自动构建。
+  执行顺序：镜像与变体预检 → 完整备份 → 停写service/gateway →
+  更新Compose镜像 → 数据库迁移 → 启动 → 健康及OIDC检查。
+  不删除旧镜像、数据库卷、配置、秘密或备份；失败时保留停写现场。
+  确认串为“项目名:upgrade:目标镜像ID前12位”。
+示例：./manage.sh upgrade --image office-data-service:local-agent \
+  --confirm office-example:upgrade:123456789abc
+EOF
+      ;;
     *) main_help ;;
   esac
 }
@@ -220,6 +265,11 @@ while [[ $# -gt 0 ]]; do
     --timeout) WAIT_SECONDS="${2:?--timeout需要秒数}"; shift 2 ;;
     --confirm) CONFIRM_TOKEN="${2:?--confirm需要确认串}"; shift 2 ;;
     --output) BACKUP_OUTPUT="${2:?--output需要目录}"; shift 2 ;;
+    --config) INSTALL_CONFIG="${2:?--config需要文件}"; shift 2 ;;
+    --configure) INSTALL_CONFIGURE=1; shift ;;
+    --agent) BUILD_AGENT="${2:?--agent需要0或1}"; shift 2 ;;
+    --tag) BUILD_TAG="${2:?--tag需要镜像标签}"; shift 2 ;;
+    --image) UPGRADE_IMAGE="${2:?--image需要镜像引用}"; shift 2 ;;
     -v|--volumes|--rmi|--remove-images|--delete-data|--purge)
       echo "拒绝危险选项：$1。本管理脚本不删除持久数据或镜像" >&2
       exit 2
@@ -246,7 +296,7 @@ if [[ "$HELP" == 1 ]]; then
 fi
 if [[ -z "$COMMAND" ]]; then main_help; exit 0; fi
 case "$COMMAND" in
-  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup) ;;
+  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup|install|build|upgrade) ;;
   purge|delete|delete-data|uninstall|uninstall-data|remove|rm)
     echo '拒绝：本管理脚本不提供删除数据或卸载命令；数据库卷、身份、审计、密钥和备份不会被删除' >&2
     exit 2
@@ -254,8 +304,8 @@ case "$COMMAND" in
   *) echo "未知命令：$COMMAND" >&2; main_help >&2; exit 2 ;;
 esac
 [[ "$WAIT_SECONDS" =~ ^[1-9][0-9]*$ ]] || { echo '--timeout须为正整数秒' >&2; exit 2; }
-if [[ -n "$CONFIRM_TOKEN" && "$COMMAND" != recreate && "$COMMAND" != down ]]; then
-  echo '--confirm只用于recreate和down' >&2
+if [[ -n "$CONFIRM_TOKEN" && "$COMMAND" != recreate && "$COMMAND" != down && "$COMMAND" != upgrade ]]; then
+  echo '--confirm只用于recreate、down和upgrade' >&2
   exit 2
 fi
 if [[ -n "$BACKUP_OUTPUT" && "$COMMAND" != backup ]]; then
@@ -264,6 +314,26 @@ if [[ -n "$BACKUP_OUTPUT" && "$COMMAND" != backup ]]; then
 fi
 if [[ "$COMMAND" == plan && "$PLAN_TARGET" != down && "$PLAN_TARGET" != recreate ]]; then
   echo 'plan目标必须是down或recreate' >&2
+  exit 2
+fi
+if [[ -n "$BUILD_AGENT" || -n "$BUILD_TAG" ]] && [[ "$COMMAND" != build ]]; then
+  echo '--agent和--tag只用于build' >&2
+  exit 2
+fi
+if [[ -n "$UPGRADE_IMAGE" && "$COMMAND" != upgrade ]]; then
+  echo '--image只用于upgrade' >&2
+  exit 2
+fi
+if [[ -n "$INSTALL_CONFIG" || "$INSTALL_CONFIGURE" == 1 ]] && [[ "$COMMAND" != install ]]; then
+  echo '--config和--configure只用于install' >&2
+  exit 2
+fi
+if [[ "$COMMAND" == build && "$BUILD_AGENT" != 0 && "$BUILD_AGENT" != 1 ]]; then
+  echo 'build必须使用--agent 0或--agent 1' >&2
+  exit 2
+fi
+if [[ "$COMMAND" == upgrade && -z "$UPGRADE_IMAGE" ]]; then
+  echo 'upgrade必须使用--image指定已在本地存在的目标镜像' >&2
   exit 2
 fi
 
@@ -374,6 +444,26 @@ PY
   fi
 }
 
+json_images() {
+  local file="$INSTANCE/installation.json" compose="$INSTANCE/compose.json"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$file" "$compose" <<'PY'
+import json, sys
+marker=json.load(open(sys.argv[1]))
+compose=json.load(open(sys.argv[2]))
+service=compose.get('services',{}).get('service',{}).get('image','')
+setup=compose.get('services',{}).get('setup',{}).get('image','')
+print('\t'.join(str(x or '') for x in (marker.get('image'),service,setup)))
+PY
+    return
+  fi
+  local marker service setup
+  marker="$(sed -n 's/^  "image": "\([^"]*\)",$/\1/p' "$file" | head -n 1)"
+  service="$(awk '/^    "service": \{/{found=1} found && /^      "image":/{gsub(/[",]/,"",$2); print $2; exit}' "$compose")"
+  setup="$(awk '/^    "setup": \{/{found=1} found && /^      "image":/{gsub(/[",]/,"",$2); print $2; exit}' "$compose")"
+  printf '%s\t%s\t%s\n' "$marker" "$service" "$setup"
+}
+
 is_private_ipv4() {
   local ip="$1"
   awk -F. 'NF==4 && $1==10 {ok=1} NF==4 && $1==192 && $2==168 {ok=1} NF==4 && $1==172 && $2>=16 && $2<=31 {ok=1} END {exit ok?0:1}' <<<"$ip"
@@ -424,12 +514,10 @@ record_instance() {
 }
 
 resolve_instance() {
-  local record="${1:-0}"
   local docker_ready=0
   probe_docker && docker_ready=1
   if valid_instance "$INSTANCE"; then
     INSTANCE="$(cd "$INSTANCE" && pwd)"
-    [[ "$record" == 1 ]] && record_instance
     return 0
   fi
   if [[ -f "$ACTIVE_POINTER" ]]; then
@@ -452,7 +540,6 @@ resolve_instance() {
     done <<<"$instances"
     if [[ -n "$running_folder" ]]; then
       INSTANCE="$(cd "$running_folder" && pwd)"
-      [[ "$record" == 1 ]] && record_instance
       return 0
     fi
   fi
@@ -460,7 +547,6 @@ resolve_instance() {
   count="$(printf '%s\n' "$instances" | awk 'NF{n++} END{print n+0}')"
   if [[ "$count" -eq 1 ]]; then
     INSTANCE="$(cd "$instances" && pwd)"
-    [[ "$record" == 1 ]] && record_instance
     return 0
   elif [[ "$count" -eq 0 ]]; then
     bad '未找到已安装的服务器实例；请用--instance指定'
@@ -482,17 +568,34 @@ resolve_instance() {
   INSTANCE="$(printf '%s\n' "$instances" | sed -n "${choice}p")"
   valid_instance "$INSTANCE" || return 2
   INSTANCE="$(cd "$INSTANCE" && pwd)"
-  [[ "$record" == 1 ]] && record_instance
   return 0
 }
 
 load_instance() {
-  resolve_instance "${1:-0}" || return 2
+  resolve_instance || return 2
   IFS=$'\t' read -r PROJECT IMAGE PUBLIC_URL PORT DEMO CURRENT_HOST <<<"$(json_marker "$INSTANCE/installation.json")"
   if [[ -z "$PROJECT" || -z "$IMAGE" || -z "$PORT" ]]; then
     bad '实例配置缺少项目、镜像或端口'
     return 2
   fi
+  IFS=$'\t' read -r MARKER_IMAGE SERVICE_IMAGE SETUP_IMAGE <<<"$(json_images)"
+  if [[ -z "$SERVICE_IMAGE" || "$SERVICE_IMAGE" != "$SETUP_IMAGE" ]]; then
+    bad 'Compose中的service/setup镜像不一致或缺失'
+    return 2
+  fi
+  IMAGE="$SERVICE_IMAGE"
+}
+
+require_instance_images() {
+  docker image inspect "$SERVICE_IMAGE" >/dev/null 2>&1 || {
+    bad "service镜像不存在：$SERVICE_IMAGE"
+    bad '请恢复原镜像，或先执行build再执行受控upgrade；start/restart不会自动构建'
+    return 2
+  }
+  docker image inspect "$SETUP_IMAGE" >/dev/null 2>&1 || {
+    bad "setup镜像不存在：$SETUP_IMAGE"
+    return 2
+  }
 }
 
 compose() {
@@ -520,7 +623,7 @@ protected_volume_state() {
 }
 
 confirmation_required() {
-  local action="$1" expected="$PROJECT:$1" entered
+  local action="$1" expected="${2:-$PROJECT:$1}" entered
   if [[ -n "$CONFIRM_TOKEN" ]]; then
     [[ "$CONFIRM_TOKEN" == "$expected" ]] && return 0
     bad "确认串不匹配；应精确输入 ${expected}"
@@ -718,6 +821,159 @@ backup_instance() {
   ok '本命令未删除任何旧备份或运行数据'
 }
 
+install_environment() {
+  local args=()
+  [[ "$INSTALL_CONFIGURE" == 1 ]] && args+=(--configure)
+  [[ -n "$INSTALL_CONFIG" ]] && args+=("$INSTALL_CONFIG")
+  section '新环境安装'
+  note "将调用deploy/install.sh${INSTALL_CONFIG:+：$INSTALL_CONFIG}"
+  bash "$ROOT/deploy/install.sh" "${args[@]}"
+}
+
+image_agent_variant() {
+  local image="$1" value
+  value="$(docker run --rm --network none --read-only --cap-drop=ALL "$image" python -c \
+    'import importlib.util; print(1 if importlib.util.find_spec("office_agent") else 0)' 2>/dev/null)" || {
+    bad "无法识别镜像运行能力：$image"
+    return 2
+  }
+  [[ "$value" == 0 || "$value" == 1 ]] || { bad "镜像能力回执异常：$image"; return 2; }
+  printf '%s' "$value"
+}
+
+build_image() {
+  local short_sha dirty tag image_id variant
+  section '镜像构建'
+  [[ "$BUILD_AGENT" == 0 || "$BUILD_AGENT" == 1 ]] || { bad '必须指定--agent 0或1'; return 2; }
+  short_sha="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo local)"
+  dirty=''
+  if [[ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null || true)" ]]; then dirty='-dirty'; fi
+  tag="${BUILD_TAG:-office-data-service:manage-${BUILD_AGENT}-${short_sha}${dirty}}"
+  note "源码提交：$short_sha${dirty:+（工作区有未提交修改）}"
+  note "镜像变体：OFFICE_AGENT=$BUILD_AGENT"
+  note "目标标签：$tag"
+  [[ -z "$dirty" ]] || warn '本地镜像包含未提交修改，不能作为未经验证的生产发布版本'
+  step '1/2' '构建镜像'
+  docker build --provenance=false \
+    --build-arg "OFFICE_AGENT=$BUILD_AGENT" \
+    -f "$ROOT/deploy/Dockerfile" -t "$tag" "$ROOT"
+  image_id="$(docker image inspect "$tag" --format '{{.Id}}')"
+  variant="$(image_agent_variant "$image_id")" || return 2
+  [[ "$variant" == "$BUILD_AGENT" ]] || { bad '构建镜像的运行能力与OFFICE_AGENT不一致'; return 2; }
+  step '2/2' '完成'
+  ok "镜像：$tag"
+  ok "镜像ID：$image_id"
+  note '本命令未安装实例，未切换运行版本，也未删除旧镜像'
+  note "切换已有实例：./manage.sh upgrade --image $tag"
+}
+
+set_instance_image() {
+  local target="$1" status="$2" migration="${3:-}" commit
+  commit="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 "$ROOT/deploy/installer/set_instance_image.py" "$INSTANCE" \
+      --image "$target" --status "$status" --from-image "$SERVICE_IMAGE" \
+      --backup "${BACKUP_DIR:-}" --migration "$migration" --commit "$commit" >/dev/null
+  else
+    docker run --rm --user 0:0 -v "$INSTANCE:$INSTANCE" \
+      -v "$ROOT/deploy/installer:/installer:ro" "$SERVICE_IMAGE" \
+      python /installer/set_instance_image.py "$INSTANCE" \
+      --image "$target" --status "$status" --from-image "$SERVICE_IMAGE" \
+      --backup "${BACKUP_DIR:-}" --migration "$migration" --commit "$commit" >/dev/null
+  fi
+}
+
+current_migration() {
+  compose --profile setup run --rm --entrypoint python setup \
+    -m alembic -c /opt/office/alembic.ini current 2>/dev/null | awk 'NF{line=$0} END{print line}'
+}
+
+upgrade_instance() {
+  local target_ref="$UPGRADE_IMAGE" target_id short current_variant target_variant
+  local expected old_migration migration
+  docker image inspect "$target_ref" >/dev/null 2>&1 || {
+    bad "目标镜像不存在：$target_ref"
+    bad '请先用build生成，或由管理员将已验证镜像加载到本机；upgrade不会静默拉取或构建'
+    return 2
+  }
+  target_id="$(docker image inspect "$target_ref" --format '{{.Id}}')"
+  if [[ "$target_id" == "$SERVICE_IMAGE" ]]; then
+    bad '目标镜像已经运行；请重新build生成新的镜像ID'
+    return 2
+  fi
+  current_variant="$(image_agent_variant "$SERVICE_IMAGE")" || return 2
+  target_variant="$(image_agent_variant "$target_id")" || return 2
+  if [[ "$current_variant" != "$target_variant" ]]; then
+    bad "镜像变体不匹配：当前=${current_variant}，目标=${target_variant}；不允许在普通与Agent镜像间直接升级"
+    return 2
+  fi
+  docker run --rm --network none "$target_id" python -m alembic \
+    -c /opt/office/alembic.ini heads >/dev/null 2>&1 || {
+      bad '目标镜像缺少可用的数据库迁移工具'
+      return 2
+    }
+  SELECTED="$CURRENT_HOST"
+  if [[ "$DEMO" == 1 ]]; then
+    current_candidates
+    address_is_active "$CURRENT_HOST" || { bad '当前登录地址已失效；请先执行start/restart完成地址迁移'; return 2; }
+  fi
+  short="${target_id#sha256:}"
+  short="${short:0:12}"
+  expected="$PROJECT:upgrade:$short"
+  section '维护计划：upgrade'
+  note "当前service镜像：$SERVICE_IMAGE"
+  note "目标镜像：$target_ref"
+  note "目标镜像ID：$target_id"
+  note '将先完整备份业务库、身份库、配置和秘密'
+  note '将停止service和gateway，执行数据库迁移后启动新镜像'
+  note '不删除旧镜像、卷、配置、秘密或备份；失败时保留停写现场'
+  printf '  确认串：%s\n' "$expected"
+  confirmation_required upgrade "$expected" || return 2
+  step '1/6' '创建升级前备份'
+  backup_instance || { bad '升级前备份未完成，取消镜像切换'; return 1; }
+  old_migration="$(current_migration || true)"
+  step '2/6' '停止写入入口'
+  compose stop --timeout 20 service gateway || return 2
+  step '3/6' '切换实例镜像记录'
+  if ! set_instance_image "$target_id" migrating "$old_migration"; then
+    bad '镜像记录更新失败；service/gateway保持停止'
+    return 1
+  fi
+  SERVICE_IMAGE="$target_id"; SETUP_IMAGE="$target_id"; MARKER_IMAGE="$target_id"
+  step '4/6' '执行数据库迁移'
+  if ! compose --profile setup run --rm --entrypoint python setup \
+    -m alembic -c /opt/office/alembic.ini upgrade head; then
+    set_instance_image "$target_id" failed "$old_migration" || true
+    bad '数据库迁移失败；service/gateway保持停止，使用备份目录核对恢复'
+    return 1
+  fi
+  compose --profile setup run --rm setup database-check || {
+    set_instance_image "$target_id" failed "$old_migration" || true
+    bad '数据库迁移后检查失败；service/gateway保持停止'
+    return 1
+  }
+  migration="$(current_migration || true)"
+  step '5/6' '启动新镜像'
+  if ! compose up -d --wait --wait-timeout "$WAIT_SECONDS" service gateway; then
+    compose stop --timeout 20 service gateway >/dev/null 2>&1 || true
+    set_instance_image "$target_id" failed "$migration" || true
+    bad '新镜像启动失败；service/gateway保持停止'
+    return 1
+  fi
+  step '6/6' '核验健康与身份入口'
+  if ! wait_health || ! run_check; then
+    compose stop --timeout 20 service gateway >/dev/null 2>&1 || true
+    set_instance_image "$target_id" failed "$migration" || true
+    bad '新镜像健康检查未通过；service/gateway保持停止'
+    return 1
+  fi
+  set_instance_image "$target_id" healthy "$migration" || { bad '运行健康但升级记录保存失败'; return 1; }
+  docker tag "$target_id" "office-instance:$PROJECT"
+  ok "升级完成；当前镜像：$target_id"
+  ok "升级前备份：$BACKUP_DIR"
+  ok '旧镜像和全部持久数据未删除'
+}
+
 current_candidates() {
   CANDIDATES="$(collect_candidates)"
   CANDIDATE_COUNT="$(printf '%s\n' "$CANDIDATES" | awk -F'|' 'NF==2{n++} END{print n+0}')"
@@ -885,6 +1141,10 @@ show_status() {
   note "模式：$([[ "$DEMO" == 1 ]] && echo 'HTTP验收' || echo 'HTTPS')"
   note "公开地址：$PUBLIC_URL"
   note "端口：${PORT}；监听：lan（0.0.0.0）"
+  note "镜像记录：$MARKER_IMAGE"
+  note "运行镜像：$SERVICE_IMAGE"
+  [[ "$MARKER_IMAGE" == "$SERVICE_IMAGE" && "$SERVICE_IMAGE" == "$SETUP_IMAGE" ]] \
+    || printf '  [注意] 镜像记录或Compose镜像不一致\n'
   current_candidates
   section '服务器地址'
   note "当前配置：$CURRENT_HOST"
@@ -921,6 +1181,18 @@ run_check() {
   if ! probe_docker; then bad 'Docker引擎不可用'; return 1; fi
   ok 'Docker引擎可用'
   if compose config --quiet >/dev/null 2>&1; then ok 'Compose配置有效'; else bad 'Compose配置无效'; failures=$((failures+1)); fi
+  if [[ "$MARKER_IMAGE" == "$SERVICE_IMAGE" && "$SERVICE_IMAGE" == "$SETUP_IMAGE" ]]; then
+    ok '镜像记录与Compose一致'
+  else
+    bad '镜像记录与Compose不一致'
+    failures=$((failures+1))
+  fi
+  if docker image inspect "$SERVICE_IMAGE" >/dev/null 2>&1; then
+    ok "service镜像存在：$SERVICE_IMAGE"
+  else
+    bad "service镜像缺失：$SERVICE_IMAGE"
+    failures=$((failures+1))
+  fi
   local name
   for name in postgres identity gateway service; do
     if compose ps --status running --services | grep -qx "$name"; then ok "容器运行：$name"; else bad "容器未运行：$name"; failures=$((failures+1)); fi
@@ -1008,57 +1280,81 @@ case "$COMMAND" in
   instances)
     show_instances
     ;;
+  install)
+    acquire_lock || exit 2
+    ensure_docker || exit 2
+    install_environment
+    ;;
+  build)
+    acquire_lock || exit 2
+    ensure_docker || exit 2
+    build_image
+    ;;
+  upgrade)
+    acquire_lock || exit 2
+    ensure_docker || exit 2
+    load_instance || exit 2
+    require_instance_images || exit 2
+    upgrade_instance
+    record_instance
+    ;;
   start|restart)
     acquire_lock || exit 2
     ensure_docker || exit 2
-    load_instance 1 || exit 2
+    load_instance || exit 2
+    require_instance_images || exit 2
     if [[ "$COMMAND" == start ]]; then
       start_stack
     else
       restart_stack
     fi
+    record_instance
     ;;
   stop)
     acquire_lock || exit 2
-    load_instance 1 || exit 2
+    load_instance || exit 2
     stop_stack
+    record_instance
     ;;
   plan)
-    load_instance 0 || exit 2
+    load_instance || exit 2
     show_plan "$PLAN_TARGET"
     ;;
   recreate)
     acquire_lock || exit 2
     ensure_docker || exit 2
-    load_instance 1 || exit 2
+    load_instance || exit 2
+    require_instance_images || exit 2
     recreate_stack
+    record_instance
     ;;
   down)
     acquire_lock || exit 2
     ensure_docker || exit 2
-    load_instance 1 || exit 2
+    load_instance || exit 2
     down_stack
+    record_instance
     ;;
   backup)
     acquire_lock || exit 2
     ensure_docker || exit 2
-    load_instance 0 || exit 2
+    load_instance || exit 2
     backup_instance
     ;;
   status)
-    load_instance 0 || exit 2
+    load_instance || exit 2
     show_status
     ;;
   check)
-    load_instance 0 || exit 2
+    load_instance || exit 2
     run_check
     ;;
   address)
-    load_instance 0 || exit 2
+    load_instance || exit 2
     show_addresses
     ;;
   logs)
-    load_instance 0 || exit 2
+    load_instance || exit 2
     show_logs
     ;;
 esac

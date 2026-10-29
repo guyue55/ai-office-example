@@ -637,6 +637,59 @@ def test_image_selection_unifies_file_and_environment(tmp_path):
             image_selection({"OFFICE_AGENT": value}, {})
 
 
+def test_instance_image_metadata_updates_compose_and_marker_together(tmp_path):
+    root = tmp_path / "instance"
+    root.mkdir()
+    old_image = "sha256:" + "1" * 64
+    new_image = "sha256:" + "2" * 64
+    installation = root / "installation.json"
+    compose = root / "compose.json"
+    installation.write_text(json.dumps({"format": 1, "project": "office-test", "image": old_image}))
+    compose.write_text(
+        json.dumps(
+            {
+                "services": {
+                    "service": {"image": old_image},
+                    "setup": {"image": old_image},
+                }
+            }
+        )
+    )
+    installation.chmod(0o600)
+    compose.chmod(0o600)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "deploy/installer/set_instance_image.py"),
+            str(root),
+            "--image",
+            new_image,
+            "--status",
+            "healthy",
+            "--from-image",
+            old_image,
+            "--backup",
+            "/secure/backup",
+            "--migration",
+            "0017",
+            "--commit",
+            "abc123",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    marker = json.loads(installation.read_text())
+    services = json.loads(compose.read_text())["services"]
+    assert marker["image"] == new_image
+    assert marker["last_upgrade"]["status"] == "healthy"
+    assert services["service"]["image"] == new_image
+    assert services["setup"]["image"] == new_image
+    assert installation.stat().st_mode & 0o077 == 0
+    assert compose.stat().st_mode & 0o077 == 0
+
+
 def test_bootstrap_image_selection_does_not_execute_env(tmp_path):
     config = tmp_path / "delivery.env"
     config.write_text(
