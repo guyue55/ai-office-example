@@ -10,7 +10,12 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 from pydantic_ai import Agent, DeferredToolRequests, DeferredToolResults, ToolApproved, ToolDenied
-from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior, UsageLimitExceeded
+from pydantic_ai.exceptions import (
+    ModelAPIError,
+    ModelRetry,
+    UnexpectedModelBehavior,
+    UsageLimitExceeded,
+)
 from pydantic_ai.result import AgentStream
 from pydantic_ai.tools import Tool
 from pydantic_ai.usage import RunUsage, UsageLimits
@@ -32,6 +37,7 @@ INSTRUCTIONS = """你是企业办公助手。只用注册的工具获取事实�
 write先prepare_write，再execute_write；真人批准由外部交互完成，你不能代替、伪造或绕过。
 批准拒绝后尊重决定，不通过重新提案重复同一意图。不自动重放未知结果的写入。
 不要索取密码、令牌或回调；不得把工具外未执行的操作说成成功。
+不能读取服务端文件路径、系统信息或执行shell；这类问题直接说明不在能力范围内。
 解释应简洁并明确覆盖与不确定性；最终文本只是解释，以真实工具回执为依据。
 优先用中文业务名称回答，先给结论与必要操作；权限码、工具名和技术细节仅在用户需要时展开。
 不重复整份工具清单，不将只读查询说成需批准的写入；公开处理说明应简短，不输出内部思维链。"""
@@ -87,12 +93,27 @@ async def run_with_gateway(
                 """列出受控操作及其参数；没有任意HTTP、SQL或shell。"""
                 return await progress.call("describe_operations", _describe)
 
-            async def read_office(operation: str, arguments: dict[str, Any]) -> dict:
-                """执行清单中的只读操作。例：operation="projects", arguments={}；两字段必填。"""
+            async def read_office(
+                operation: str = "", arguments: dict[str, Any] | None = None
+            ) -> dict:
+                """执行清单中的只读操作。例：operation="projects", arguments={}。"""
+                if not operation:
+                    # 校验前就已缺失参数时，返回一次性可纠正提示，不执行查询。
+                    raise ModelRetry(
+                        "请提供 operation（清单中的read名称）与 arguments；无筛选参数时传 {}。"
+                    )
+                arguments = {} if arguments is None else arguments
                 return await progress.call(operation, lambda: gateway.read(operation, arguments))
 
-            async def prepare_write(operation: str, arguments: dict[str, Any]) -> dict:
+            async def prepare_write(
+                operation: str = "", arguments: dict[str, Any] | None = None
+            ) -> dict:
                 """按write参数提出变更并冻结预览。此步骤不执行业务写入。"""
+                if not operation:
+                    raise ModelRetry(
+                        "请提供 operation（清单中的write名称）与 arguments；无参数时传 {}。"
+                    )
+                arguments = {} if arguments is None else arguments
                 ticket = await progress.call(
                     "prepare:" + operation, lambda: gateway.prepare(operation, arguments)
                 )
@@ -118,8 +139,10 @@ async def run_with_gateway(
                 },
                 tools=[
                     Tool(describe_operations, sequential=True),
-                    Tool(read_office, sequential=True),
-                    Tool(prepare_write, sequential=True),
+                    # 只读与冻结预览尚未执行任何业务操作，允许一次参数更正提示；
+                    # 执行工具与网络错误仍为零自动重试。
+                    Tool(read_office, sequential=True, max_retries=1),
+                    Tool(prepare_write, sequential=True, max_retries=1),
                     Tool(execute_write, sequential=True, requires_approval=True),
                 ],
             )
@@ -197,7 +220,7 @@ async def run_with_gateway(
         )
         explanation = f"模型请求未完成{label}；{advice}，未自动重试"
     except UnexpectedModelBehavior as error:
-        if isinstance(error.__cause__, ValidationError):
+        if isinstance(error.__cause__, (ValidationError, ModelRetry)):
             explanation = (
                 "模型生成的工具参数格式不正确，本次调用未执行；已完成操作以回执为准，未重试写入"
             )

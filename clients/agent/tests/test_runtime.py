@@ -197,12 +197,39 @@ def test_timeout_and_cancellation_close_client():
     asyncio.run(cancelled())
 
 
-def test_invalid_tool_arguments_stop_before_execution_without_retry():
+def test_empty_read_arguments_get_one_bounded_correction_and_then_stop():
     def invalid(messages, info):
         return ModelResponse(parts=[ToolCallPart("read_office", {}, tool_call_id="invalid")])
 
     result = asyncio.run(run_task(FunctionModel(invalid), Client, "查询容器"))
     assert result.status == "failed"
-    assert result.usage["requests"] == 1
+    # 一次纠正提示后仍无效即停止，不执行查询，也不无限重试。
+    assert result.usage["requests"] == 2
     assert not result.receipts
     assert "本次调用未执行" in result.explanation
+
+
+def test_empty_read_arguments_corrected_once_then_execute():
+    attempts = 0
+
+    def correcting(messages, info):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return ModelResponse(parts=[ToolCallPart("read_office", {}, tool_call_id="invalid")])
+        if attempts == 2:
+            return ModelResponse(
+                parts=[
+                    ToolCallPart(
+                        "read_office",
+                        {"operation": "projects"},
+                        tool_call_id="valid",
+                    )
+                ]
+            )
+        return ModelResponse(parts=[TextPart("已查询，覆盖范围以回执为准。")])
+
+    result = asyncio.run(run_task(FunctionModel(correcting), Client, "查询容器"))
+    assert result.status == "completed"
+    assert [item["operation"] for item in result.receipts] == ["projects"]
+    assert result.usage["requests"] == 3
