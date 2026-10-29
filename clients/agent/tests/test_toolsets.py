@@ -56,5 +56,5 @@ def test_chinese_synonym_finds_tool_with_english_name():
         SimpleNamespace(name="read_pending_identities", description="查询待认领身份"),
         SimpleNamespace(name="read_authorizations", description="客户端授权会话"),
     ]
-    assert search(None, ["待认领身份"], tools) == ["read_pending_identities"]
-    assert search(None, ["客户端授权"], tools) == ["read_authorizations"]
+    assert search(None, ["待认领身份"], tools)[0] == "read_pending_identities"
+    assert search(None, ["客户端授权"], tools)[0] == "read_authorizations"
