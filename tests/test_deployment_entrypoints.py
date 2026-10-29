@@ -248,6 +248,127 @@ def test_manage_install_passes_instance_directory_after_config(tmp_path):
     assert "ARG:runtime/t1" in result.stdout
 
 
+def _backup_fixture(tmp_path, project="office-testfixture"):
+    import json as _json
+
+    instance = tmp_path / "instance"
+    (instance / "service").mkdir(parents=True)
+    (instance / "installation.json").write_text(
+        _json.dumps(
+            {
+                "project": project,
+                "image": "sha256:fixture",
+                "settings": {
+                    "public_url": "http://192.168.1.10:8800",
+                    "port": 8800,
+                    "allow_lan_http_demo": True,
+                    "hostname": "192.168.1.10",
+                },
+            }
+        )
+    )
+    (instance / "compose.json").write_text(
+        _json.dumps(
+            {
+                "services": {
+                    "service": {"image": "sha256:fixture"},
+                    "setup": {"image": "sha256:fixture"},
+                }
+            }
+        )
+    )
+    (instance / "service/service.json").write_text("{}")
+    backups = tmp_path / "backups"
+    for index in range(1, 6):
+        folder = backups / f"{project}-2026010{index}T000000Z-{index}"
+        folder.mkdir(parents=True)
+        (folder / "MANIFEST.txt").write_text(f"project={project}\n")
+        (folder / "office.dump").write_text("x")
+    foreign = backups / "other-20260101T000000Z-9"
+    foreign.mkdir()
+    (foreign / "MANIFEST.txt").write_text("project=other\n")
+    return instance, backups, project
+
+
+def test_prune_keeps_newest_and_leaves_other_projects(tmp_path):
+    instance, backups, project = _backup_fixture(tmp_path)
+    result = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "manage.sh"),
+            "prune",
+            "--keep",
+            "2",
+            "--instance",
+            str(instance),
+            "--output",
+            str(backups),
+            "--confirm",
+            f"{project}:prune:2",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    remaining = sorted(item.name for item in backups.iterdir())
+    assert remaining == [
+        f"{project}-20260104T000000Z-4",
+        f"{project}-20260105T000000Z-5",
+        "other-20260101T000000Z-9",
+    ]
+
+
+def test_prune_requires_matching_confirmation(tmp_path):
+    instance, backups, project = _backup_fixture(tmp_path)
+    before = sorted(item.name for item in backups.iterdir())
+    result = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "manage.sh"),
+            "prune",
+            "--keep",
+            "1",
+            "--instance",
+            str(instance),
+            "--output",
+            str(backups),
+            "--confirm",
+            f"{project}:prune:9",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2
+    assert sorted(item.name for item in backups.iterdir()) == before
+
+
+def test_plan_prune_is_read_only(tmp_path):
+    instance, backups, project = _backup_fixture(tmp_path)
+    before = sorted(item.name for item in backups.iterdir())
+    result = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "manage.sh"),
+            "plan",
+            "prune",
+            "--keep",
+            "2",
+            "--instance",
+            str(instance),
+            "--output",
+            str(backups),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert f"{project}:prune:2" in result.stdout
+    assert sorted(item.name for item in backups.iterdir()) == before
+
+
 @pytest.mark.parametrize(
     "arguments",
     [

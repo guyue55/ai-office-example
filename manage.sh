@@ -17,6 +17,8 @@ INSTANCE=""
 REQUESTED_IP=""
 CONFIRM_TOKEN=""
 BACKUP_OUTPUT=""
+COPY_TARGET=""
+KEEP_COUNT=""
 BUILD_AGENT=""
 BUILD_TAG=""
 INSTALL_CONFIG=""
@@ -162,6 +164,7 @@ main_help() {
   recreate    强制重建无状态gateway/service，数据库卷和身份数据保留
   down        删除容器与项目网络，数据库卷、镜像、配置和密钥保留
   backup      备份业务库、身份库、配置和秘密到受限制目录
+  prune       只删除本项目旧备份，保留最新N份；须预览并确认
   install     在新环境执行现有安装器；未指定OFFICE_IMAGE时由安装器构建
   build       从本地源码构建普通或Agent镜像，不自动安装或升级
   upgrade     使用已存在且已验证的镜像执行备份、迁移和受控升级
@@ -180,6 +183,8 @@ main_help() {
   --timeout <秒>     启动、重启与健康等待上限，默认120
   --confirm <值>     down/recreate/upgrade确认串
   --output <目录>    backup父目录，必须是绝对路径；默认使用管理配置
+  --copy-to <目录>   backup完成后复制到第二个绝对目录并校验摘要
+  --keep <数量>      prune保留的最新备份份数，必须≥1
   --config <文件>    install使用的公开配置文件
   --configure        install先进入配置向导
   --agent <0|1>      build镜像变体
@@ -212,6 +217,9 @@ main_help() {
   ./manage.sh plan recreate
   ./manage.sh recreate --confirm office-example:recreate
   ./manage.sh backup --output /secure/backups
+  ./manage.sh backup --copy-to /mnt/offsite/backups
+  ./manage.sh plan prune --keep 10
+  ./manage.sh prune --keep 10 --confirm office-example:prune:10
   ./manage.sh install
   ./manage.sh build --agent 1 --tag office-data-service:local-agent
   ./manage.sh upgrade --image office-data-service:local-agent \
@@ -320,7 +328,19 @@ backup：创建受限制的完整实例备份
   备份业务库、身份库、实例配置、网关配置和必要秘密。
   默认写入管理配置中的备份目录；--output可指定其他绝对目录。
   不删除旧备份，不执行保留策略。
+  --copy-to把完成的备份复制到第二个目录（如挂载的异地盘）并复核SHA-256。
 示例：./manage.sh backup --output /secure/backups
+示例：./manage.sh backup --copy-to /mnt/offsite/backups
+EOF
+      ;;
+    prune)
+      cat <<'EOF'
+prune：删除本项目旧备份
+  只处理备份根目录下名称严格匹配“项目-UTC时间-PID”的目录，且清单project须一致。
+  永远保留最新N份；不会删除数据库卷、镜像、实例目录、审计或秘密。
+  先执行plan prune --keep N，再输入“项目名:prune:N”或传--confirm。
+示例：./manage.sh plan prune --keep 10
+示例：./manage.sh prune --keep 10 --confirm office-example:prune:10
 EOF
       ;;
     install)
@@ -385,6 +405,8 @@ while [[ $# -gt 0 ]]; do
     --timeout) WAIT_SECONDS="${2:?--timeout需要秒数}"; shift 2 ;;
     --confirm) CONFIRM_TOKEN="${2:?--confirm需要确认串}"; shift 2 ;;
     --output) BACKUP_OUTPUT="${2:?--output需要目录}"; shift 2 ;;
+    --copy-to) COPY_TARGET="${2:?--copy-to需要绝对目录}"; shift 2 ;;
+    --keep) KEEP_COUNT="${2:?--keep需要保留数量}"; shift 2 ;;
     --config) INSTALL_CONFIG="${2:?--config需要文件}"; shift 2 ;;
     --configure) INSTALL_CONFIGURE=1; shift ;;
     --agent) BUILD_AGENT="${2:?--agent需要0或1}"; shift 2 ;;
@@ -416,7 +438,7 @@ if [[ "$HELP" == 1 ]]; then
 fi
 if [[ -z "$COMMAND" ]]; then main_help; exit 0; fi
 case "$COMMAND" in
-  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup|install|build|upgrade|config) ;;
+  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup|prune|install|build|upgrade|config) ;;
   purge|delete|delete-data|uninstall|uninstall-data|remove|rm)
     echo '拒绝：本管理脚本不提供删除数据或卸载命令；数据库卷、身份、审计、密钥和备份不会被删除' >&2
     exit 2
@@ -424,16 +446,32 @@ case "$COMMAND" in
   *) echo "未知命令：$COMMAND" >&2; main_help >&2; exit 2 ;;
 esac
 [[ "$WAIT_SECONDS" =~ ^[1-9][0-9]*$ ]] || { echo '--timeout须为正整数秒' >&2; exit 2; }
-if [[ -n "$CONFIRM_TOKEN" && "$COMMAND" != recreate && "$COMMAND" != down && "$COMMAND" != upgrade ]]; then
-  echo '--confirm只用于recreate、down和upgrade' >&2
+if [[ -n "$CONFIRM_TOKEN" && "$COMMAND" != recreate && "$COMMAND" != down && "$COMMAND" != upgrade && "$COMMAND" != prune ]]; then
+  echo '--confirm只用于recreate、down、upgrade和prune' >&2
   exit 2
 fi
-if [[ -n "$BACKUP_OUTPUT" && "$COMMAND" != backup ]]; then
-  echo '--output只用于backup' >&2
+if [[ -n "$BACKUP_OUTPUT" && "$COMMAND" != backup && "$COMMAND" != prune ]] \
+  && ! [[ "$COMMAND" == plan && "$PLAN_TARGET" == prune ]]; then
+  echo '--output只用于backup和prune' >&2
   exit 2
 fi
-if [[ "$COMMAND" == plan && "$PLAN_TARGET" != down && "$PLAN_TARGET" != recreate ]]; then
-  echo 'plan目标必须是down或recreate' >&2
+if [[ -n "$COPY_TARGET" && "$COMMAND" != backup ]]; then
+  echo '--copy-to只用于backup' >&2
+  exit 2
+fi
+if [[ -n "$COPY_TARGET" && "$COPY_TARGET" != /* ]]; then
+  echo '--copy-to必须为绝对目录' >&2
+  exit 2
+fi
+if [[ "$COMMAND" == prune ]] || [[ "$COMMAND" == plan && "$PLAN_TARGET" == prune ]]; then
+  [[ -n "$KEEP_COUNT" ]] || { echo 'prune必须用--keep指定保留份数' >&2; exit 2; }
+  [[ "$KEEP_COUNT" =~ ^[1-9][0-9]*$ ]] || { echo '--keep须为不小于1的整数' >&2; exit 2; }
+elif [[ -n "$KEEP_COUNT" ]]; then
+  echo '--keep只用于prune' >&2
+  exit 2
+fi
+if [[ "$COMMAND" == plan && "$PLAN_TARGET" != down && "$PLAN_TARGET" != recreate && "$PLAN_TARGET" != prune ]]; then
+  echo 'plan目标必须是down、recreate或prune' >&2
   exit 2
 fi
 if [[ -n "$BUILD_AGENT" || -n "$BUILD_TAG" ]] && [[ "$COMMAND" != build ]]; then
@@ -803,10 +841,22 @@ show_plan() {
         [[ -n "$folder" ]] && echo "  数据卷保持不变：${folder}"
       fi
       ;;
+    prune)
+      note "备份目录：$(backup_root)"
+      note "保留最新${KEEP_COUNT}份本项目备份"
+      note '只处理名称匹配“项目-UTC时间-PID”且清单project一致的目录'
+      note '不删除卷、镜像、实例目录、审计、秘密或其他项目备份'
+      ;;
   esac
-  printf '\n  确认串：%s:%s\n' "$PROJECT" "$action"
-  printf '  预览：./manage.sh plan %s\n' "$action"
-  printf '  执行：./manage.sh %s --confirm %s:%s\n' "$action" "$PROJECT" "$action"
+  if [[ "$action" == prune ]]; then
+    printf '\n  确认串：%s:%s:%s\n' "$PROJECT" "$action" "$KEEP_COUNT"
+    printf '  预览：./manage.sh plan prune --keep %s\n' "$KEEP_COUNT"
+    printf '  执行：./manage.sh prune --keep %s --confirm %s:%s:%s\n' "$KEEP_COUNT" "$PROJECT" "$action" "$KEEP_COUNT"
+  else
+    printf '\n  确认串：%s:%s\n' "$PROJECT" "$action"
+    printf '  预览：./manage.sh plan %s\n' "$action"
+    printf '  执行：./manage.sh %s --confirm %s:%s\n' "$action" "$PROJECT" "$action"
+  fi
 }
 
 recreate_stack() {
@@ -946,6 +996,104 @@ backup_instance() {
   ok "备份目录：$BACKUP_DIR"
   ok '业务库与身份库已通过pg_restore清单校验'
   ok '本命令未删除任何旧备份或运行数据'
+  backup_copy_offsite || return 1
+}
+
+backup_copy_offsite() {
+  local source="$BACKUP_DIR" target="$COPY_TARGET" name
+  [[ -n "$target" ]] || return 0
+  [[ -f "$source/SHA256SUMS" ]] || { bad '备份缺少SHA256SUMS，拒绝无校验复制'; return 1; }
+  mkdir -p "$target" || { bad "无法创建异地目录：$target"; return 1; }
+  [[ ! -L "$target" ]] || { bad '异地目录不能是软链'; return 1; }
+  target="$(cd "$target" && pwd -P)"
+  case "$target/" in
+    "$source/"*|"$INSTANCE/"*) bad '异地目录不能位于备份或实例目录内'; return 2 ;;
+  esac
+  name="$(basename "$source")"
+  [[ ! -e "$target/$name" ]] || { bad "异地已存在同名备份：$target/$name"; return 1; }
+  step '附加' '复制到异地目录并复核摘要'
+  cp -Rp "$source" "$target/$name" || { bad '异地复制失败，原备份保留'; return 1; }
+  if command -v shasum >/dev/null 2>&1; then
+    (cd "$target/$name" && shasum -a 256 -c SHA256SUMS >/dev/null) \
+      || { bad '异地副本摘要不一致，请核对复制介质'; return 1; }
+  elif command -v sha256sum >/dev/null 2>&1; then
+    (cd "$target/$name" && sha256sum -c SHA256SUMS >/dev/null) \
+      || { bad '异地副本摘要不一致，请核对复制介质'; return 1; }
+  else
+    bad '缺少SHA-256工具，无法复核异地副本'; return 1
+  fi
+  ok "异地副本：$target/${name}（摘要一致）"
+  ok '本命令未删除任何旧备份或运行数据'
+}
+
+backup_root() {
+  printf '%s' "${BACKUP_OUTPUT:-$DEFAULT_BACKUP_ROOT}"
+}
+
+collect_project_backups() {
+  local root="$1" dir base list=''
+  [[ -d "$root" && ! -L "$root" ]] || return 0
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] || continue
+    [[ -L "$dir" ]] && continue
+    base="$(basename "$dir")"
+    [[ "$base" =~ ^${PROJECT}-[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]] || continue
+    [[ -f "$dir/MANIFEST.txt" ]] || continue
+    grep -qx "project=$PROJECT" "$dir/MANIFEST.txt" 2>/dev/null || continue
+    list="${list}${dir}"$'\n'
+  done < <(find "$root" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort)
+  printf '%s' "$list"
+}
+
+prune_backups() {
+  local root list total keep drop n dir remaining
+  keep="$KEEP_COUNT"
+  root="$(backup_root)"
+  [[ "$root" == /* ]] || { bad '备份目录必须为绝对路径'; return 2; }
+  [[ -d "$root" ]] || { bad "备份目录不存在：$root"; return 1; }
+  [[ ! -L "$root" ]] || { bad '备份目录不能是软链'; return 2; }
+  root="$(cd "$root" && pwd -P)"
+  [[ "$root" != / ]] || { bad '备份目录不能是根目录'; return 2; }
+  section "备份清理：保留最新${keep}份"
+  note "实例：$INSTANCE"
+  note "项目：$PROJECT"
+  note "备份目录：$root"
+  list="$(collect_project_backups "$root")"
+  total="$(printf '%s' "$list" | awk 'NF{n++} END{print n+0}')"
+  note "匹配的本项目备份：${total}份"
+  if (( total <= keep )); then
+    ok '备份数量未超过保留份数，无需清理'
+    return 0
+  fi
+  drop=$((total - keep))
+  printf '  将删除以下%s份最旧备份：\n' "$drop"
+  n=0
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] || continue
+    n=$((n + 1))
+    (( n <= drop )) && printf '    %s\n' "$dir"
+  done <<<"$list"
+  printf '  保留最新的%s份；不会删除其他项目、卷、镜像、实例目录或秘密\n' "$keep"
+  printf '  确认串：%s:prune:%s\n' "$PROJECT" "$keep"
+  confirmation_required prune "$PROJECT:prune:$keep" || return 2
+  n=0
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] || continue
+    n=$((n + 1))
+    (( n > drop )) && continue
+    case "$dir" in
+      "$root"/*) ;;
+      *) bad "拒绝删除备份目录之外的路径：$dir"; return 1 ;;
+    esac
+    [[ ! -L "$dir" && -f "$dir/MANIFEST.txt" ]] || { bad "备份目录状态异常：$dir"; return 1; }
+    grep -qx "project=$PROJECT" "$dir/MANIFEST.txt" || { bad "备份清单项目不符：$dir"; return 1; }
+    rm -rf -- "$dir" || { bad "删除失败：$dir"; return 1; }
+    ok "已删除旧备份：$dir"
+  done <<<"$list"
+  remaining="$(collect_project_backups "$root" | awk 'NF{n++} END{print n+0}')"
+  (( remaining >= keep )) || { bad '清理后保留数量不足，立即停止并核对'; return 1; }
+  ok "剩余本项目备份：${remaining}份"
+  ok '数据库卷、镜像、实例目录、审计和秘密未删除'
 }
 
 install_environment() {
@@ -1021,6 +1169,15 @@ set_instance_image() {
 current_migration() {
   compose --profile setup run --rm --entrypoint python setup \
     -m alembic -c /opt/office/alembic.ini current 2>/dev/null | awk 'NF{line=$0} END{print line}'
+}
+
+image_migrations() {
+  docker run --rm --network none "$SERVICE_IMAGE" python -m alembic \
+    -c /opt/office/alembic.ini heads 2>/dev/null
+}
+
+migration_revisions() {
+  awk 'NF{print $1}' | sort -u
 }
 
 upgrade_instance() {
@@ -1366,6 +1523,16 @@ run_check() {
   for name in postgres identity gateway service; do
     if compose ps --status running --services | grep -qx "$name"; then ok "容器运行：$name"; else bad "容器未运行：$name"; failures=$((failures+1)); fi
   done
+  local db_revs image_revs
+  db_revs="$(compose --profile setup run --rm --entrypoint python setup \
+    -m alembic -c /opt/office/alembic.ini current 2>/dev/null | migration_revisions)"
+  image_revs="$(image_migrations | migration_revisions)"
+  if [[ -n "$db_revs" && "$db_revs" == "$image_revs" ]]; then
+    ok "迁移版本一致：${db_revs//$'\n'/,}"
+  else
+    bad "迁移版本不一致：数据库=${db_revs:-未读取} 镜像=${image_revs:-未读取}"
+    failures=$((failures+1))
+  fi
   binding="$(docker port "$PROJECT-gateway-1" "$PORT/tcp" 2>/dev/null || true)"
   if [[ "$binding" == "0.0.0.0:$PORT" ]]; then ok "端口监听：$binding"; else bad "端口监听异常：${binding:-无}"; failures=$((failures+1)); fi
   SELECTED="$CURRENT_HOST"
@@ -1522,6 +1689,11 @@ case "$COMMAND" in
     ensure_docker || exit 2
     load_instance || exit 2
     backup_instance
+    ;;
+  prune)
+    acquire_lock || exit 2
+    load_instance || exit 2
+    prune_backups
     ;;
   status)
     load_instance || exit 2
