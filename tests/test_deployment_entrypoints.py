@@ -51,6 +51,23 @@ def test_manual_server_wizard_defaults_and_explicit_http(tmp_path):
     assert denied.returncode != 0 and target.read_bytes() == before
 
 
+def test_restart_entrypoints_are_valid_and_explain_ip_detection():
+    for path in (ROOT / "restart.sh", ROOT / "deploy/restart.sh"):
+        checked = subprocess.run(
+            ["bash", "-n", str(path)], check=False, capture_output=True, text=True
+        )
+        assert checked.returncode == 0, checked.stderr
+    result = subprocess.run(
+        ["bash", str(ROOT / "deploy/restart.sh"), "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "多个活动地址" in result.stdout or "多个活动内网地址" in result.stdout
+    assert "--ip" in result.stdout
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="Bash为服务器入口")
 def test_missing_docker_explains_prerequisite(tmp_path):
     # 只提供脚本本身依赖的dirname，不让测试读取宿主Docker。

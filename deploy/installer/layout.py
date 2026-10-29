@@ -309,6 +309,8 @@ def nginx(config):
     port = config["port"]
     demo = config.get("allow_lan_http_demo", False)
     scheme = "http" if demo else "https"
+    authority = config["hostname"] if port in (80, 443) else f"{config['hostname']}:{port}"
+    canonical = f"{scheme}://{authority}"
     tls = (
         ""
         if demo
@@ -322,6 +324,7 @@ http {{
   server {{
     listen {listen};
     server_name {config["hostname"]};
+    if ($host != "{config["hostname"]}") {{ return 308 {canonical}$request_uri; }}
     {tls}
     client_max_body_size 2m;
     proxy_set_header Host $http_host;

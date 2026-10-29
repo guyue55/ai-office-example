@@ -85,6 +85,10 @@ def test_compose_only_exposes_gateway_and_separates_maintenance():
     assert services["service"]["read_only"]
     assert "/identity/" in layout.nginx(config)
     assert "access_log off" in layout.nginx(config)
+    assert (
+        'if ($host != "office.example") { return 308 https://office.example$request_uri; }'
+        in layout.nginx(config)
+    )
 
 
 def test_existing_directory_refused_before_secret_write(tmp_path):
