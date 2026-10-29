@@ -49,3 +49,12 @@ def test_search_matches_chinese_and_english_keywords_with_bound():
     assert search(None, ["不存在的词"], tools) == []
     many = [SimpleNamespace(name=f"read_x{i}", description="记录") for i in range(30)]
     assert len(search(None, ["记录"], many)) <= 10
+
+
+def test_chinese_synonym_finds_tool_with_english_name():
+    tools = [
+        SimpleNamespace(name="read_pending_identities", description="查询待认领身份"),
+        SimpleNamespace(name="read_authorizations", description="客户端授权会话"),
+    ]
+    assert search(None, ["待认领身份"], tools) == ["read_pending_identities"]
+    assert search(None, ["客户端授权"], tools) == ["read_authorizations"]

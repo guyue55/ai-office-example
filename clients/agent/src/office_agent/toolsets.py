@@ -142,6 +142,36 @@ PROMPT_WRITE_HINTS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("开通账号", "重置", "恢复账号", "停用账号", "邀请账号"), "account_write"),
 )
 
+# 中文同义词按工具补充，避免仅靠英文 token 漏检。
+TOOL_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "read_pending_identities": ("待认领", "认领", "未绑定", "pending"),
+    "read_authorizations": ("客户端授权", "会话", "设备", "授权记录", "authorization"),
+    "read_access_list": ("人员", "员工", "角色", "权限集", "权限目录"),
+    "read_access_detail": ("权限详情", "授权详情"),
+    "read_access_links": ("关联", "直接授权"),
+    "read_employee_account": ("员工账号", "账号详情"),
+    "read_search_accounts": ("搜索账号", "账号候选"),
+    "read_account_history": ("账号历史", "账号操作记录"),
+    "read_account_operation": ("账号操作",),
+    "read_account_capabilities": ("账号能力",),
+    "read_schema": ("字段", "结构", "字段定义"),
+    "read_records": ("记录", "数据列表"),
+    "read_record": ("记录详情",),
+    "read_confirmed": ("确认数据", "已确认"),
+    "read_history": ("历史版本", "版本历史"),
+    "read_aggregate": ("聚合", "统计", "汇总", "分组"),
+    "read_export_confirmed": ("导出",),
+    "prepare_data": ("新建项目", "创建项目", "修改项目", "项目变更"),
+    "prepare_submit_record": ("上报记录", "提交记录"),
+    "prepare_confirm_record": ("确认记录",),
+    "prepare_correct_record": ("更正记录", "修改记录"),
+    "prepare_access": ("权限变更", "角色调整"),
+    "prepare_change_authorization": ("撤销授权", "停用授权", "授权变更"),
+    "prepare_describe_device": ("设备备注",),
+    "prepare_account": ("账号操作", "开通账号"),
+    "prepare_account_resume": ("恢复账号", "账号恢复"),
+}
+
 _TOOL_GROUP = {str(tool): name for name, spec in GROUPS.items() for tool in spec["tools"]}
 _ASCII = re.compile(r"[a-z0-9]+")
 
@@ -183,6 +213,8 @@ def search(_ctx, queries: Sequence[str], tools: Sequence) -> list[str]:
         score = len(terms & set(_ASCII.findall(name + " " + description)))
         if group is not None and any(word.lower() in text for word in KEYWORDS.get(group, ())):
             score += 2
+        if any(word.lower() in text for word in TOOL_KEYWORDS.get(name, ())):
+            score += 3
         if score:
             scored.append((score, name))
     scored.sort(key=lambda item: (-item[0], item[1]))
