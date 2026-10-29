@@ -91,6 +91,20 @@ def test_compose_only_exposes_gateway_and_separates_maintenance():
     )
 
 
+def test_infrastructure_images_are_digest_pinned_and_agree_with_installer():
+    layout = module("deploy/installer/layout.py")
+    config = layout.settings({"public_url": "https://office.example", "listen_address": "lan"})
+    services = layout.compose(
+        "/srv/instance", "/opt/source", config, "sha256:candidate", "isolated"
+    )["services"]
+    installer = (ROOT / "deploy/install.sh").read_text()
+    for name in ("postgres", "identity", "gateway"):
+        image = services[name]["image"]
+        assert "@sha256:" in image, image
+        reference = image.split("@", 1)[1]
+        assert reference in installer, f"install.sh未固定与布局一致的{name}摘要"
+
+
 def test_existing_directory_refused_before_secret_write(tmp_path):
     layout = module("deploy/installer/layout.py")
     (tmp_path / "foreign").write_text("keep")

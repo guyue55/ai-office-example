@@ -10,6 +10,8 @@
 
 管理脚本默认值见[manage.env.example](manage.env.example)，复制为`deploy/manage.env`后生效；配置只含运行目录、锁、备份、超时和Docker应用名，不保存秘密。
 
+安装器生成的实例把PostgreSQL、Keycloak与网关镜像固定到多架构索引摘要（`@sha256:...`），amd64与arm64服务器解析到各自平台，避免同名标签随时间漂移。升级基础设施镜像需同时更新`deploy/install.sh`与`deploy/installer/layout.py`的摘要，并重跑安装验收；`docker compose pull --dry-run`可先确认摘要可解析。
+
 同配置重跑保留卷、密码和数据；普通安装不提供静默升级或换址；显式HTTP演示迁址使用文末维护入口。监听取值`lan`、`local`或明确内网IPv4，默认`lan`；IP变化时由`./manage.sh start/restart`检测并保留数据迁址。`lan`会发布到所有宿主网卡，必须由主机防火墙／Docker `DOCKER-USER`链限制办公网段，不能把容器端口配置当作完整网络隔离。正式上线应验证HTTPS、备份恢复、目标容量及实际终端。初始化密码由本人查看受限first-login.txt并首次改密，不发给AI。
 
 开发辅助`uv run python scripts/dev_stack.py up`仅用于独立本机测试，使用固定本地端口、随机合成测试账号和独立卷，不用于员工部署。

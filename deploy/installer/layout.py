@@ -378,7 +378,7 @@ def compose(host, source, config, image, project, images=None):
             },
         },
         "identity": {
-            "image": "quay.io/keycloak/keycloak:26.8.1",
+            "image": "quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b",
             "environment": {
                 "KC_DB": "postgres",
                 "KC_DB_URL": "jdbc:postgresql://postgres:5432/office_identity",
@@ -399,7 +399,7 @@ def compose(host, source, config, image, project, images=None):
             "depends_on": {"postgres": {"condition": "service_healthy"}},
         },
         "gateway": {
-            "image": "nginx:1.28-alpine",
+            "image": "nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236",
             "ports": [f"{config['listen_address']}:{config['port']}:{config['port']}"],
             "volumes": [
                 bind("gateway/nginx.conf", "/etc/nginx/nginx.conf"),

@@ -93,8 +93,9 @@ for OFFSET in 5 6 7; do
 done
 # 所有组件固定到本机实际镜像ID；不在重跑时静默拉取新版。
 PG_IMAGE="$(resolve_image pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0)"
-KC_IMAGE="$(resolve_image quay.io/keycloak/keycloak:26.8.1)"
-GW_IMAGE="$(resolve_image nginx:1.28-alpine)"
+# 多架构索引摘要：amd64与arm64服务器解析到各自平台，避免同名标签跨时间漂移。
+KC_IMAGE="$(resolve_image quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b)"
+GW_IMAGE="$(resolve_image nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236)"
 PG_UID="$(docker run --rm --entrypoint id "$PG_IMAGE" -u postgres)"
 PG_GID="$(docker run --rm --entrypoint id "$PG_IMAGE" -g postgres)"
 KC_UID="$(docker run --rm --entrypoint id "$KC_IMAGE" -u)"
