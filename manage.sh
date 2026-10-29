@@ -749,7 +749,7 @@ resolve_instance() {
   if [[ "$docker_ready" == 1 ]]; then
     while read -r folder; do
       [[ -n "$folder" ]] || continue
-      project="$(sed -n 's/^  "project": "\([^"]*\)",$/\1/p' "$folder/installation.json" | head -n 1)"
+      project="$(sed -n 's/^  "project": "\([^"]*\)",$/\1/p' "$folder/installation.json" 2>/dev/null | head -n 1 || true)"
       if [[ -n "$project" ]] && docker ps --filter "name=${project}-gateway-1" --format '{{.Names}}' | grep -qx "${project}-gateway-1"; then
         if [[ -n "$running_folder" ]]; then running_folder=""; break; fi
         running_folder="$folder"
@@ -999,7 +999,7 @@ dump_database() {
   [[ -n "$pg" ]] || { bad 'postgres容器未运行，无法备份'; return 1; }
   docker exec "$pg" sh -c \
     'export PGPASSWORD="$(cat /run/secrets/postgres_password)"; exec pg_dump -h 127.0.0.1 -U postgres -d "$1" -Fc' \
-    office-backup "$database" >"$target"
+    office-backup "$database" >"$target" || { bad "数据库导出失败：$database"; return 1; }
   chmod 600 "$target"
   docker exec -i "$pg" pg_restore --list <"$target" >/dev/null || { bad "备份校验失败：$database"; return 1; }
 }
@@ -1392,7 +1392,8 @@ sync_address() {
   if [[ "$SELECTED" != "$CURRENT_HOST" ]]; then
     warn "HTTP实例地址由 $CURRENT_HOST 变为 ${SELECTED}，执行保留数据迁址"
     bash "$ROOT/deploy/relocate.sh" "$INSTANCE" \
-      --url "http://$SELECTED:$PORT" --listen lan --image "$IMAGE" --apply
+      --url "http://$SELECTED:$PORT" --listen lan --image "$IMAGE" --apply \
+      || { bad '地址迁移失败；实例保持停写或原配置，请查看上方输出后再处理'; return 1; }
     IFS=$'\t' read -r PROJECT IMAGE PUBLIC_URL PORT DEMO CURRENT_HOST <<<"$(json_marker "$INSTANCE/installation.json")"
   fi
 }
@@ -1438,9 +1439,9 @@ read_issuer() {
   local url
   url="$(issuer_url)/.well-known/openid-configuration"
   if [[ -f "$INSTANCE/service/ca.pem" ]]; then
-    curl -fsS --noproxy '*' --max-time 3 --cacert "$INSTANCE/service/ca.pem" "$url" 2>/dev/null
+    { curl -fsS --noproxy '*' --max-time 3 --cacert "$INSTANCE/service/ca.pem" "$url" 2>/dev/null || true; }
   else
-    curl -fsS --noproxy '*' --max-time 3 "$url" 2>/dev/null
+    { curl -fsS --noproxy '*' --max-time 3 "$url" 2>/dev/null || true; }
   fi | sed -n 's/.*"issuer"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
 }
 
@@ -1598,8 +1599,8 @@ run_check() {
   done
   local db_revs image_revs
   db_revs="$(compose --profile setup run --rm --entrypoint python setup \
-    -m alembic -c /opt/office/alembic.ini current 2>/dev/null | migration_revisions)"
-  image_revs="$(image_migrations | migration_revisions)"
+    -m alembic -c /opt/office/alembic.ini current 2>/dev/null | migration_revisions || true)"
+  image_revs="$(image_migrations | migration_revisions || true)"
   if [[ -n "$db_revs" && "$db_revs" == "$image_revs" ]]; then
     ok "迁移版本一致：${db_revs//$'\n'/,}"
   else
@@ -1650,7 +1651,7 @@ preferred_instance_dir() {
 }
 
 run_preflight() {
-  local failures=0 warnings=0 instances=0 port='' parent available_kb skew
+  local failures=0 warnings=0 instances=0 running=0 docker_ready=0 port='' parent available_kb skew
   section '部署预检'
   ok "平台：$(uname -s) $(uname -m)；Bash ${BASH_VERSION%%(*}"
   if command -v docker >/dev/null 2>&1; then
@@ -1658,7 +1659,7 @@ run_preflight() {
   else
     bad '缺少docker命令'; failures=$((failures + 1))
   fi
-  if probe_docker; then ok 'Docker引擎响应正常'; else bad 'Docker引擎未响应或当前账号无权限'; failures=$((failures + 1)); fi
+  if probe_docker; then docker_ready=1; ok 'Docker引擎响应正常'; else bad 'Docker引擎未响应或当前账号无权限'; failures=$((failures + 1)); fi
   if docker compose version >/dev/null 2>&1; then
     ok "compose：$(docker compose version --short 2>/dev/null || docker compose version 2>/dev/null | head -n 1)"
   else
@@ -1678,7 +1679,16 @@ run_preflight() {
     instances="$(instance_candidates | awk 'NF{n++} END{print n+0}')"
   fi
   if [[ "$instances" -gt 0 ]]; then
-    ok "已安装实例：${instances}个"
+    if [[ "$docker_ready" == 1 ]]; then
+      local folder project
+      while read -r folder; do
+        [[ -n "$folder" ]] || continue
+        project="$(sed -n 's/^  "project": "\([^"]*\)",$/\1/p' "$folder/installation.json" 2>/dev/null | head -n 1 || true)"
+        [[ -n "$project" ]] || continue
+        if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "${project}-gateway-1"; then running=$((running + 1)); fi
+      done <<<"$(instance_candidates)"
+    fi
+    ok "已安装实例：${instances}个（运行中${running}个）"
   else
     note '尚未安装实例；下一步执行 ./manage.sh install（或 install --config <公开配置>）'
   fi
@@ -1687,6 +1697,7 @@ run_preflight() {
       if [[ -w "$DEFAULT_BACKUP_ROOT" ]]; then ok "备份目录可写：$DEFAULT_BACKUP_ROOT"; else bad "备份目录不可写：$DEFAULT_BACKUP_ROOT"; failures=$((failures + 1)); fi
     else
       parent="$(dirname "$DEFAULT_BACKUP_ROOT")"
+      while [[ ! -d "$parent" && "$parent" != / ]]; do parent="$(dirname "$parent")"; done
       if [[ -d "$parent" && -w "$parent" ]]; then note "备份目录尚未创建：$DEFAULT_BACKUP_ROOT"; else warn "备份目录父级不可写：$parent"; warnings=$((warnings + 1)); fi
     fi
   fi
@@ -1718,7 +1729,7 @@ run_preflight() {
     if [[ -f "$ROOT/deploy/.env" ]]; then
       port="$(env_value "$ROOT/deploy/.env" OFFICE_PORT)"
     fi
-    [[ -n "$port" ]] || port=18880
+    [[ -n "$port" ]] || port=8800
     port_listening "$port" || port_state=$?
     case "$port_state" in
       0) warn "端口${port}已有进程监听；install会因端口冲突失败，请先释放或改配置"; warnings=$((warnings + 1)) ;;
@@ -1728,7 +1739,8 @@ run_preflight() {
   fi
   local remote_date skew_ok=0
   if [[ "${OFFICE_PREFLIGHT_OFFLINE:-0}" == 1 ]]; then
-    note '已跳过多网络检查（OFFICE_PREFLIGHT_OFFLINE=1）'
+    note '已跳过多网络检查（OFFICE_PREFLIGHT_OFFLINE=1）：时钟与镜像摘要'
+    skew_ok=2
   elif command -v curl >/dev/null 2>&1; then
     remote_date="$(curl -sS --max-time 5 -I https://quay.io/v2/ 2>/dev/null | sed -n 's/^[Dd]ate: //p' | tr -d '\r' | head -n 1 || true)"
     if [[ -n "$remote_date" ]]; then
@@ -1747,7 +1759,7 @@ run_preflight() {
   fi
   if [[ "$skew_ok" == 0 ]]; then note '无法自动校验时钟（需要网络与curl）；部署前请确认时间同步'; fi
   if [[ "${OFFICE_PREFLIGHT_OFFLINE:-0}" == 1 ]]; then
-    note '已跳过镜像摘要解析检查（OFFICE_PREFLIGHT_OFFLINE=1）'
+    :
   elif command -v docker >/dev/null 2>&1 && docker buildx version >/dev/null 2>&1; then
     local ref bad_refs=''
     for ref in \
@@ -1782,7 +1794,7 @@ show_instances() {
   fi
   while read -r folder; do
     [[ -n "$folder" ]] || continue
-    project="$(sed -n 's/^  "project": "\([^"]*\)",$/\1/p' "$folder/installation.json" | head -n 1)"
+    project="$(sed -n 's/^  "project": "\([^"]*\)",$/\1/p' "$folder/installation.json" 2>/dev/null | head -n 1 || true)"
     state='未运行'
     if probe_docker && docker ps --filter "name=${project}-gateway-1" --format '{{.Names}}' | grep -qx "${project}-gateway-1"; then state='运行中'; fi
     local mark=' '
