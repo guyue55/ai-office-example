@@ -128,6 +128,16 @@ async def run_with_gateway(
                             "message": str(error),
                             "outcome_unknown": error.outcome_unknown,
                         }
+                    except Exception as error:  # noqa: BLE001 -- 工具异常转为结果，避免整轮崩溃。
+                        logging.getLogger(__name__).error(
+                            "[Trace: OfficeAgent/tool] name=%s type=%s",
+                            name,
+                            type(error).__name__,
+                        )
+                        return {
+                            "status": "failed",
+                            "message": "查询未完成，请核对参数或服务状态；未自动重试",
+                        }
 
                 tool = Tool.from_schema(
                     handler,
@@ -151,6 +161,16 @@ async def run_with_gateway(
                         )
                     except AgentError as error:
                         return {"status": "failed", "message": str(error)}
+                    except Exception as error:  # noqa: BLE001 -- 工具异常转为结果，避免整轮崩溃。
+                        logging.getLogger(__name__).error(
+                            "[Trace: OfficeAgent/tool] prepare=%s type=%s",
+                            name,
+                            type(error).__name__,
+                        )
+                        return {
+                            "status": "failed",
+                            "message": "变更预览未完成：参数结构不符合预期，请按工具说明以对象结构重试；未执行任何变更。",
+                        }
                     return {
                         "ticket": ticket,
                         "preview": gateway.proposal(ticket).preview,
