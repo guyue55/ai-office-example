@@ -67,6 +67,7 @@ async def execute(config: AgentConfig, prompt: str):
             prompt,
             limits=config.limits,
             approve=terminal_approval,
+            stream_output=config.stream_output,
         )
 
 

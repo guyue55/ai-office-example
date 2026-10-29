@@ -24,6 +24,28 @@
     walk(value);
     return list;
   }
+  function businessResult(value){
+    if(!value||typeof value!=='object')return fields(value);
+    if(Array.isArray(value.permission_details)&&typeof value.name==='string'){
+      const box=el('div');box.append(el('p',value.name+' · '+(value.permissions?.length||value.permission_details.length)+'项权限'));
+      const groups=new Map();
+      for(const item of value.permission_details.slice(0,100)){
+        if(!item||typeof item.name!=='string')continue;
+        const name=typeof item.group==='string'?item.group:'其他';if(!groups.has(name))groups.set(name,[]);groups.get(name).push(item);
+      }
+      for(const [name,items] of groups){const group=el('details'),list=el('ul',undefined,'assistant-receipt-permissions');group.append(el('summary',name+' · '+items.length+'项'));
+        for(const item of items)list.append(el('li',item.name+(typeof item.description==='string'?'：'+item.description:'')));group.append(list);box.append(group);}
+      return box;
+    }
+    const rows=Array.isArray(value.rows)?value.rows:Array.isArray(value.items)?value.items:null;
+    if(rows?.length&&rows[0]&&typeof rows[0]==='object'&&!Array.isArray(rows[0])){
+      const columns=Object.keys(rows[0]).filter(key=>rows.slice(0,10).every(row=>row&&typeof row==='object'&&(row[key]===null||['string','number','boolean','undefined'].includes(typeof row[key])))).slice(0,6);
+      if(columns.length){const wrap=el('div',undefined,'assistant-table-scroll'),table=el('table'),head=el('thead'),tr=el('tr'),body=el('tbody');
+        columns.forEach(key=>tr.append(el('th',names[key]||key)));head.append(tr);table.append(head);
+        for(const row of rows.slice(0,10)){const line=el('tr');for(const key of columns){const text=String(row[key]??'—');line.append(el('td',text.length>200?text.slice(0,200)+'…':text));}body.append(line);}table.append(body);wrap.append(table,el('p','摘要显示当前回执中的前'+Math.min(rows.length,10)+'项，字段或内容省略时请展开完整回执。','small muted'));wrap.tabIndex=0;wrap.setAttribute('aria-label','查询结果摘要，可横向滚动');return wrap;}
+    }
+    return fields(value);
+  }
   function detail(title, value) {const node=el('details'); node.append(el('summary',title),el('pre',JSON.stringify(value,null,2))); return node;}
   const impacts={access:'权限配置变更：以服务端预览的对象、关联及版本为准。',account:'登录账号操作：请核对目标人员与账号；此处不展示密码。',account_resume:'继续原账号操作：只处理本次预览允许的步骤。',data:'数据管理变更：请核对容器、字段定义和版本。',submit_record:'提交候选数据：提交成功不等于业务已确认。',confirm_record:'确认当前版本：确认后冻结，更正需生成新版本。',correct_record:'创建更正候选：不覆盖原确认历史，需要重新确认。',describe_device:'登记当前授权设备备注，不改变授权权限。',change_authorization:'变更客户端授权：停用后旧凭证不可重新激活，请核对目标设备。'};
   function preview(pending){
@@ -66,6 +88,7 @@
     if(turn.context_page){const context=el('span',controls.pageName(turn.context_page),'assistant-message-context');context.setAttribute('aria-label','本轮关联页面：'+context.textContent);section.append(context);}
     if(turn.history_hidden){if(active.has(turn.status)&&!turn.cancel_requested)section.append(button('停止任务',()=>controls.stop(turn)));return section;}
     if(turn.detail_truncated){const note=el('div',undefined,'assistant-warning');note.append(el('p','本轮预览或回执较大，会话未完整展示。请先打开完整任务核对。'));const link=el('a','打开完整任务详情');link.href='/console/assistant/'+encodeURIComponent(turn.id);note.append(link);section.append(note);}
+    if(turn.progress)section.append(api.progress.render(turn));
     if(turn.pending){
       const pending=turn.pending,card=el('section',undefined,'assistant-preview');card.setAttribute('aria-label','本次操作预览');
       card.append(el('h3',('decision' in pending?'决定已记录：':'需要您确认：')+(labels.operations[pending.operation]||pending.operation)),preview(pending),detail('完整预览与参数',{preview:pending.preview,arguments:pending.arguments}));
@@ -75,6 +98,7 @@
     }
     const result=turn.result;
     if(result){
+      if(result.usage?.unmeasured_requests>0)section.append(el('p','模型服务未返回完整用量，Token统计与预算判断可能不完整。','assistant-warning'));
       if(result.explanation)section.append(api.content.markdown(result.explanation));
       const receipts=result.receipts||[];
       for(const text of [...new Set(receipts.flatMap(receipt=>notices(receipt.result)))])section.append(el('p',text,'assistant-warning'));
@@ -82,7 +106,7 @@
       function receiptCard(receipt,index){
         const card=el('section',undefined,'assistant-receipt');
         card.append(el('h4',receipt.status==='denied'?'已拒绝，未执行此操作':labels.operations[receipt.operation]||receipt.operation||'工具回执'));
-        if(receipt.result){card.append(fields(receipt.result));const raw=detail('完整回执',receipt.result);raw.dataset.detailKey='receipt-'+index;card.append(raw);}
+        if(receipt.result){card.append(businessResult(receipt.result));const raw=detail('完整回执',receipt.result);raw.dataset.detailKey='receipt-'+index;card.append(raw);}
         return card;
       }
       if(reads.length){const group=el('details',undefined,'assistant-receipt-group');group.dataset.detailKey='read-receipts';group.append(el('summary','工具回执（'+reads.length+'条）'));reads.forEach(receipt=>group.append(receiptCard(receipt,receipts.indexOf(receipt))));section.append(group);}
@@ -98,7 +122,7 @@
     }
     if(active.has(turn.status)){
       const stage=turn.cancel_requested?'已请求停止；已完成操作不会撤回。':turn.pending?('decision' in turn.pending?'决定已记录，等待执行回执':'等待您的确认'):turn.write_inflight?'正在执行已批准操作，结果以回执为准':turn.status==='queued'?'任务已排队，尚未开始':'任务正在处理';
-      const row=el('div',undefined,'assistant-stage');row.append(el('span',stage));if(!turn.cancel_requested)row.append(button('停止任务',()=>controls.stop(turn),'ui-text-action small'));section.append(row);
+      const row=el('div',undefined,'assistant-stage');if(!turn.progress||turn.pending||turn.cancel_requested)row.append(el('span',stage));if(!turn.cancel_requested)row.append(button('停止任务',()=>controls.stop(turn),'ui-text-action small'));section.append(row);
     }
     const outcome=result?.outcome_unknown?'outcome_unknown':turn.status;
     if(outcomes[outcome]&&outcome!=='completed')section.append(el('p',outcomes[outcome],outcome==='cancelled'?'small muted':'assistant-warning'));

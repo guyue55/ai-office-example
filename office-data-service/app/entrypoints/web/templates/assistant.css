@@ -115,3 +115,16 @@ body.assistant-modal-open {overflow:hidden}
 @media (forced-colors:active) {.assistant-input-box:focus-within {outline:2px solid Highlight;box-shadow:none}}
 
 @media (pointer:coarse) {.assistant-compose-actions button,.assistant-options-panel > :is(button,a) {min-height:44px}}
+
+/* 过程与正文分层，真实文本草稿保持纯文本；展开不改变其他页面表格布局。 */
+.assistant-progress {border-left:2px solid var(--line);padding:8px 12px;margin:8px 0 14px;min-width:0;font-size:.875rem}
+.assistant-progress summary {display:flex;gap:10px;flex-wrap:wrap;align-items:center;cursor:pointer;color:var(--muted);padding:4px 0}
+.assistant-progress ol {padding-left:20px;margin:8px 0;display:grid;gap:8px}
+.assistant-progress li[data-state="failed"] {color:var(--danger)}
+.assistant-progress li[data-state="running"] {font-weight:600}
+.assistant-stream-text {white-space:pre-wrap;overflow-wrap:anywhere;margin-top:12px;line-height:1.7;color:var(--ink)}
+.assistant-receipt-permissions {display:grid;gap:8px;margin:8px 0;padding-left:20px}
+
+.assistant-progress summary::before {content:"";width:6px;height:6px;flex:0 0 6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform 150ms ease}
+.assistant-progress details[open] summary::before {transform:rotate(45deg)}
+@media (prefers-reduced-motion:reduce){.assistant-progress summary::before{transition:none}}

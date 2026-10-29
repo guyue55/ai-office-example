@@ -83,3 +83,13 @@ OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --froz
 ```
 
 第一项包含0013已有库升级、重复执行权限不重复增加与运行账号不能修改历史配置；第二项含真实Web保存、确认取消、密钥不回填、合成模型测试及启停。浏览器与模型身份仍为隔离夹具，不读取真实密钥或调用付费模型。Linux CI的Agent任务已登记这两层，远端结果需实际触发后确认。
+
+## 会话增量与事件验收
+
+共享引擎变更运行`uv run --project clients/agent --frozen pytest clients/agent/tests -q`；服务端、客户端与Agent联合类型检查使用`uv run mypy office-data-service/app clients/python/src clients/agent/src --check-untyped-defs`，不要在缺少office_client源码上下文的独立环境将import-untyped误判为新功能错误。
+
+```sh
+OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome uv run --extra agent --frozen pytest tests/test_agent_progress_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_assistant_progress_browser.py tests/test_assistant_workspace_browser.py tests/test_assistant_browser_postgres.py tests/test_model_configuration_upgrade.py tests/test_model_settings_browser.py -q
+```
+
+该组合只用临时PG、隔离浏览器和合成模型，不连接在用实例。订阅、断线恢复不得增加模型调用或写入；流式文本验收使用事件握手，不用短sleep赌瞬态。构建和PG验收前核对磁盘；磁盘I/O或Docker故障应单列环境失败，恢复后重跑，不静默删掉断言。

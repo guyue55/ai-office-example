@@ -290,6 +290,7 @@ def test_managed_three_protocols_over_real_loopback_http(api):
             api=api,
             model="fixture",
             approved_model_data=True,
+            stream_output=False,  # 本夹具返回JSON，显式验收非流式兼容路径。
         )
 
         @asynccontextmanager

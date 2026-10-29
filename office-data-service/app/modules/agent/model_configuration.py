@@ -51,6 +51,7 @@ class ModelConnection(Input):
     auth_header: str = Field(default="x-api-key", min_length=1, max_length=100)
     extra_headers: dict[str, str] = Field(default_factory=dict, max_length=16)
     extra_query: dict[str, str] = Field(default_factory=dict, max_length=16)
+    stream_output: bool = True
     request_timeout: float = Field(default=30, gt=0, le=300)
 
     @model_validator(mode="after")

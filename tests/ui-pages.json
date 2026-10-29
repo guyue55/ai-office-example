@@ -219,6 +219,7 @@
     "assistant-shell.js",
     "assistant-transport.js",
     "assistant-view.js",
+    "assistant-progress.js",
     "assistant.css",
     "base.html",
     "floating-panels.js",

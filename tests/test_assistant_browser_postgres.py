@@ -1,6 +1,7 @@
 """独立Chrome→真实BFF／应用／Agent→临时PG；仅身份与模型使用确定性夹具。"""
 
 import asyncio
+import json
 import os
 import socket
 import threading
@@ -22,12 +23,15 @@ from app.entrypoints.web.session import SessionStore
 from app.infrastructure.models import Audit, Record
 from app.main import create_app
 from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
-from pydantic_ai.models.function import FunctionModel
+from pydantic_ai.models.function import DeltaToolCall, FunctionModel
 
 pytestmark = pytest.mark.live
 
 
-def test_browser_approval_commits_one_candidate_with_agent_audit(request, tmp_path, monkeypatch):
+@pytest.mark.parametrize("streamed", [False, True])
+def test_browser_approval_commits_one_candidate_with_agent_audit(
+    request, tmp_path, monkeypatch, streamed
+):
     if os.environ.get("OFFICE_AGENT_BROWSER_TESTS") != "1":
         pytest.skip("需OFFICE_AGENT_BROWSER_TESTS=1与OFFICE_QUERY_PG_TESTS=1")
     settings = request.getfixturevalue("isolated_query_db")
@@ -59,6 +63,8 @@ def test_browser_approval_commits_one_candidate_with_agent_audit(request, tmp_pa
 
     async def serve():
         factory, _seed, _call, _admin, user, project, *_ = await dataset(settings)
+        stream_release = asyncio.Event()
+        shared["release_stream"] = stream_release
 
         def model(messages, info):
             returns = [
@@ -93,9 +99,25 @@ def test_browser_approval_commits_one_candidate_with_agent_audit(request, tmp_pa
                 )
             return ModelResponse(parts=[TextPart("候选已上报，尚未业务确认。")])
 
+        async def stream_model(messages, info):
+            response = model(messages, info)
+            for index, part in enumerate(response.parts):
+                if isinstance(part, TextPart):
+                    yield "候选已上报"
+                    await asyncio.wait_for(stream_release.wait(), 20)
+                    yield "，尚未业务确认。"
+                elif isinstance(part, ToolCallPart):
+                    yield {
+                        index: DeltaToolCall(
+                            name=part.tool_name,
+                            json_args=json.dumps(part.args),
+                            tool_call_id=part.tool_call_id,
+                        )
+                    }
+
         @asynccontextmanager
         async def models(_config):
-            yield FunctionModel(model)
+            yield FunctionModel(stream_function=stream_model) if streamed else FunctionModel(model)
 
         web = create_app(enabled)
         app = web.state.application
@@ -176,6 +198,11 @@ def test_browser_approval_commits_one_candidate_with_agent_audit(request, tmp_pa
                 assert facts() == ([], [])  # 取消确认同样没有写入。
                 page.get_by_role("button", name="批准本次操作", exact=True).click()
                 page.locator("[data-confirm-accept]").click()
+                if streamed:
+                    expect(page.locator("[data-progress-text]")).to_contain_text(
+                        "候选已上报", timeout=15000
+                    )
+                    shared["loop"].call_soon_threadsafe(shared["release_stream"].set)
                 expect(page.locator(".assistant-markdown")).to_contain_text(
                     "候选已上报", timeout=15000
                 )

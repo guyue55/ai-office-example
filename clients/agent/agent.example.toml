@@ -4,6 +4,8 @@ api = "openai-completions" # 或openai-responses、anthropic-messages
 # Anthropic官方base URL为https://api.anthropic.com；旧网关可设anthropic_auth="x-api-key"
 request_timeout = 30
 model_url = "https://model.company.example/v1"
+# 模型网关不支持流式时可显式关闭；连接测试与正式会话共用该选择。
+stream_output = true
 model = "your-tool-capable-model"
 api_key_env = "OFFICE_MODEL_API_KEY"
 # 也可显式指定受限文件；指定后不回退环境变量，路径相对本配置。

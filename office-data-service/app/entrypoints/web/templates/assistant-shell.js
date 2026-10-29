@@ -59,11 +59,13 @@
     if(!turn){say('会话已同步。');return;}
     const phase=turn.result?.outcome_unknown?'outcome_unknown':turn.status;
     const terminal=view.outcomes;
-    const text=terminal[phase]||(turn.cancel_requested?'已请求停止；已完成操作不会撤回。':turn.pending?('decision' in turn.pending?'决定已记录，等待执行回执。':'有操作等待您核对，批准后才会继续。'):turn.write_inflight?'正在执行已批准操作，结果以回执为准。':phase==='queued'?'任务已排队，尚未开始。':'任务正在处理。');
-    const key=[state.id,turn.id,phase,!!turn.cancel_requested,!!turn.write_inflight,turn.pending?.ticket||'',turn.pending?.decision??''].join(':');
+    const text=terminal[phase]||(turn.cancel_requested?'已请求停止；已完成操作不会撤回。':turn.pending?('decision' in turn.pending?'决定已记录，等待执行回执。':'有操作等待您核对，批准后才会继续。'):turn.write_inflight?'正在执行已批准操作，结果以回执为准。':phase==='queued'?'任务已排队，尚未开始。':turn.progress?(api.progress.stages[turn.progress.stage]||'任务正在处理。'):'任务正在处理。');
+    const key=[state.id,turn.id,phase,!!turn.cancel_requested,!!turn.write_inflight,turn.pending?.ticket||'',turn.pending?.decision??'',turn.progress?.stage||'',turn.progress?.steps.at(-1)?.id||'',turn.progress?.steps.at(-1)?.status||''].join(':');
     say(text,{key,visible:!!terminal[phase]&&phase!=='completed',error:phase==='failed'});
   }
-  function clearPoll(){clearTimeout(state.timer);state.timer=null;}
+  let subscription=null,subscribed='',streamFallback=false,streamEpoch=0;
+  function clearPoll(){streamEpoch++;clearTimeout(state.timer);state.timer=null;if(subscription)subscription.close();subscription=null;subscribed='';}
+
   function rememberDraft(){drafts.set(state.id,input.value);}
   ui.confirmNavigation=async()=>{
     if(state.busy){ui.notify('助手操作正在提交，请等待回执后再切换页面。',true);return false;}
@@ -129,6 +131,11 @@
     let changed=false;
     for(const turn of state.turns){
       const signature=JSON.stringify(turn),entry=rendered.get(turn.id);if(entry?.signature===signature)continue;
+      if(selecting&&entry?.node.contains(selection.anchorNode))continue;
+      const structural=JSON.stringify({...turn,progress:null});
+      if(entry?.structural===structural&&entry.node.querySelector('[data-progress]')&&turn.progress){
+        api.progress.update(entry.node.querySelector('[data-progress]'),turn);entry.signature=signature;changed=true;continue;
+      }
       const node=view.renderTurn(turn,controls);
       if(entry){
         const expanded=new Map(Array.from(entry.node.querySelectorAll('details')).map((item,index)=>[item.dataset.detailKey||index,item.open]));
@@ -136,7 +143,7 @@
         entry.node.replaceWith(node);node.querySelectorAll('details').forEach((item,index)=>{if(expanded.has(item.dataset.detailKey||index))item.open=expanded.get(item.dataset.detailKey||index);});
         if(focused)Array.from(node.querySelectorAll('button')).find(item=>(item.getAttribute('aria-label')||item.textContent)===focused)?.focus({preventScroll:true});
       }
-      rendered.set(turn.id,{node,signature});changed=true;
+      rendered.set(turn.id,{node,signature,structural});changed=true;
     }
     let cursor=messages.firstElementChild;
     state.turns.forEach(turn=>{const node=rendered.get(turn.id).node;if(node!==cursor)messages.insertBefore(node,cursor);cursor=node.nextElementSibling;});
@@ -148,8 +155,27 @@
     updateControls();
   }
   function schedule(){
-    clearPoll();if(root.hidden||document.hidden||state.blocked||!state.id||state.polls>=120||state.failures>=4)return;
-    if(state.turns.some(turn=>view.active.has(turn.status)))state.timer=setTimeout(()=>loadConversation(),Math.min(15000,2000*2**state.failures));
+    if(root.hidden||document.hidden||state.blocked||!state.id||state.polls>=120||state.failures>=4){clearPoll();return;}
+    const current=state.turns.find(turn=>view.active.has(turn.status));
+    if(!current){clearPoll();return;}
+    if(subscription&&subscribed===current.id)return;
+    clearPoll();
+    if(!streamFallback&&state.failures===0){
+      const conversationId=state.id,runId=current.id,generation=streamEpoch;
+      const resync=()=>{if(streamEpoch!==generation)return;subscription=null;subscribed='';if(state.id!==conversationId)return;streamFallback=true;schedule();};
+      const incoming=turn=>{
+        if(streamEpoch!==generation||state.id!==conversationId||state.blocked||turn.id!==runId)return;
+        const index=state.turns.findIndex(item=>item.id===turn.id),old=state.turns[index];
+        if(index<0||turn.version<old.version||turn.version===old.version&&(turn.progress?.seq||0)<(old.progress?.seq||0))return;
+        if(turn.history_hidden){state.turns=[];rendered.clear();messages.replaceChildren();clearPoll();state.actionError='权限配置已变化，旧内容已隐藏。';loadConversation();return;}
+        state.turns[index]=turn;paint();if(!state.actionError)announceTurn();
+        if(!view.active.has(turn.status)){clearPoll();loadConversation();}
+      };
+      subscribed=runId;
+      subscription=api.subscribe(runId,incoming,resync,()=>{if(streamEpoch!==generation)return;clearPoll();showError(new api.RequestError('当前身份或权限不可用，请重新登录或联系管理员。',403));});
+      if(subscription)return;
+    }
+    state.timer=setTimeout(()=>loadConversation(),Math.min(15000,2000*2**state.failures));
   }
   async function loadConversation(before=''){
     if(state.loading||state.busy||!state.id||state.blocked)return;
@@ -184,7 +210,7 @@
   }
   function resetConversation(id=''){
     navigationApproved=false;
-    rememberDraft();clearPoll();rendered.clear();messages.replaceChildren();followLatest=true;state.id=id;restoreDraft();state.conversation=null;state.turns=[];state.next='';state.version=0;state.epoch='';state.polls=0;state.failures=0;state.intent=null;state.actionError='';save();paint();
+    rememberDraft();clearPoll();rendered.clear();messages.replaceChildren();followLatest=true;state.id=id;restoreDraft();state.conversation=null;state.turns=[];state.next='';state.version=0;state.epoch='';state.polls=0;state.failures=0;state.intent=null;state.actionError='';streamFallback=false;save();paint();
   }
   async function withAction(fn){
     if(state.busy||state.blocked)return false;
@@ -215,6 +241,7 @@
   input.addEventListener('input',()=>{navigationApproved=false;rememberDraft();sizeInput();updateControls();});
   latest.addEventListener('click',jumpLatest);
   messages.addEventListener('scroll',()=>{followLatest=messages.scrollHeight-messages.scrollTop-messages.clientHeight<40;if(followLatest)latest.hidden=true;},{passive:true});
+  document.addEventListener('selectionchange',()=>{if(!root.hidden&&!window.getSelection()?.toString())paint();});
   messages.addEventListener('toggle',event=>{if(event.target.tagName==='DETAILS'&&event.target.open)followLatest=false;},true);
   $('[data-assistant-new]').addEventListener('click',()=>{const running=state.turns.some(turn=>view.active.has(turn.status));resetConversation();input.focus();say(running?'新会话已准备，原任务仍可在任务记录中核对。':'新会话将在首次发送时创建。',{visible:running});});
   $('#assistant-search').addEventListener('submit',event=>{event.preventDefault();state.actionError='';bootstrap();});
@@ -242,7 +269,7 @@
   root.querySelectorAll('[data-assistant-help]').forEach(node=>node.addEventListener('click',()=>{
     const box=view.el('div');box.append(view.el('p','Enter 换行，Ctrl / ⌘ + Enter 发送。中文输入法组合期间不会触发发送。'),view.el('p','页面关联只说明讨论位置，不会自动上传整页或隐藏字段。仅提交您获准使用的资料。'),view.el('p','写入前请核对完整预览。收起不会停止任务；停止不会撤回已完成操作。'),view.el('p','草稿仅保存在当前页面内存，刷新后不恢复。续问使用有界历史，权限变化时旧内容可能隐藏。'));ui.present('使用说明与快捷键',box);
   }));
-  async function sync(){if(state.blocked){location.reload();return;}state.polls=0;state.failures=0;state.actionError='';if(state.id)await loadConversation();else await bootstrap();}
+  async function sync(){if(state.blocked){location.reload();return;}state.polls=0;state.failures=0;state.actionError='';streamFallback=false;clearPoll();if(state.id)await loadConversation();else await bootstrap();}
   $('[data-assistant-sync]').addEventListener('click',sync);reconnect.addEventListener('click',sync);
   if(!full){
     try{setWidth(Number(JSON.parse(sessionStorage.getItem(storeKey)||'{}').width)||420);}catch(_){}

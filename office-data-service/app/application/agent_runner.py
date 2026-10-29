@@ -7,6 +7,7 @@ from importlib import import_module
 from sqlalchemy import select
 
 from app.application.agent_history import ConversationContext
+from app.application.agent_progress import ProgressWriter
 from app.application.agent_tools import ApplicationToolBridge
 from app.common.security_context import agent_run_context
 from app.infrastructure.models import AgentRun, Audit
@@ -173,6 +174,8 @@ class AgentRunner:
                     gateway,
                     prompt,
                     approve=lambda proposal: self.approve(identifier, proposal),
+                    observe=ProgressWriter(self.sessions, identifier),
+                    stream_output=getattr(self.config, "stream_output", True),
                 )
             status = "completed" if result.status == "completed" else "failed"
             await self.finish(identifier, status, result.as_dict())

@@ -51,7 +51,9 @@ Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGE
 
 Agent前端下一阶段研究见[前端路线、产品范围与验证计划](docs/COPILOTKIT_FRONTEND_RESEARCH.md)：包含CopilotKit示例核查、替代UI候选、模型配置前置、状态／审批边界和阶段验收。目前为研究草案，不表示已引入React、AG-UI或第三方Runtime。
 
-管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／显式内网HTTP、默认或自定义密钥头／无密钥模式、非秘密网关参数、秘密加密、当前输入获取模型／测试、保存并启用、修订与临时回执区分、显式启停、响应字节预算、独立连接测试时限与取消／遗留回执恢复；当前分支新增，已有实例需迁移至0016并配置独立秘密后才能使用。
+管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／显式内网HTTP、默认或自定义密钥头／无密钥模式、非秘密网关参数、秘密加密、当前输入获取模型／测试、保存并启用、修订与临时回执区分、显式启停、响应字节预算、独立连接测试时限与取消／遗留回执恢复；当前分支新增，已有实例需迁移至0017并配置独立秘密后才能使用。
+
+会话体验新增真实阶段／有界工具过程、同源SSE进度快照、增量文本、原位更新及中文结果卡片；侧栏和全页复用。流式／非流式在模型高级设置显式选择，连接测试使用相同设置，不在错误后自动重试。公开推理摘要未默认启用，不展示原始思维。方案、边界与验收见[会话事件实施计划](docs/plans/2026-10-29-conversation-events.md)。本轮源码尚未升级既有实例。
 
 
 服务器安装可在 `deploy/.env` 选择 `OFFICE_AGENT=0/1` 与可选 `OFFICE_IMAGE`；两变体共用安装链路，建库前验证能力。Agent 依赖安装后还需管理员配置模型。双变体构建、恢复及未验收边界见[交付计划](docs/plans/2026-10-28-agent-delivery-implementation.md)，安装步骤见[INSTALL.md](INSTALL.md)。

@@ -19,7 +19,7 @@
 
 ## 运维先完成一次
 
-1. 备份，按原流程执行正式迁移至当前head **0016**。普通镜像仍无可选Agent依赖；需要运行模型时使用包含Agent的镜像。
+1. 备份，按原流程执行正式迁移至当前head **0017**。普通镜像仍无可选Agent依赖；需要运行模型时使用包含Agent的镜像。
 2. 新安装器已生成 `service/secrets/model_encryption_key`，0600、服务UID/GID所有，独立于Web会话密钥。已有实例不会自动生成或覆盖根密钥：运维用`cryptography.fernet.Fernet.generate_key()`生成URL-safe 32字节随机根密钥，写入独立受限文件；不要粘贴到聊天／配置值／Git。
 3. 在该实例`service/service.json`设置如下**文件引用与出口策略**，按原流程重启该实例；不要重装现有数据库：
 
@@ -90,7 +90,7 @@ HTTP演示页面仍提示明文传输；真实企业密钥应经HTTPS配置，�
 
 `ok`为基础合成调用通过；失败类别固定为authentication、permission、endpoint_or_model、rate_limit、provider、dns、tls、connect、timeout、policy、invalid_response。页面用中文说明并给下一步建议，技术类别便于排障；不返回密钥、供应商响应正文或原异常字符串。测试元数据保存在model_connection_test，配置查询提供最近一次；revision=null表示临时配置，不与活动修订混同。历史清理策略及完整测试历史列表不在本轮范围。
 
-实现与本轮分层验收见[连接流程计划](plans/2026-10-28-model-connection-flow.md)。当前运行实例没有自动升级；升级须先备份并迁移至当前head 0016。
+实现与本轮分层验收见[连接流程计划](plans/2026-10-28-model-connection-flow.md)。当前运行实例没有自动升级；升级须先备份并迁移至当前head 0017。
 
 
 ## 响应预算与测试异常恢复（2026-10-28加固）
@@ -159,3 +159,10 @@ Token参数不能替代HTTP内存限制。控制台托管模型的普通请求�
 员工端 TOML 使用同名字段，秘密仍通过 api_key_file 或 api_key_env。服务端通过人工 Web／HTTP 配置，不开放给助手或MCP改密钥。三种标准协议继续共用一套SDK模型适配；专用供应商API、Azure身份协议或任意网关语义并不因能传参数就自动兼容。
 
 依据：[RFC6265 §8.5](https://www.rfc-editor.org/rfc/rfc6265#section-8.5) 明确Cookie不按端口隔离；[OpenAI客户端源码](https://github.com/openai/openai-python/blob/main/src/openai/_client.py) 与 [Anthropic客户端源码](https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/_client.py) 支持 default_query／default_headers。实现使用现有异步客户端、结构化查询参数和受控请求钩子，未引入新的网关框架。
+
+
+### 流式问答与连接测试（2026-10-29）
+
+高级设置中的“回复传输”控制stream_output，默认true；不支持流式的网关可显式选非流式兼容。保存并启用后新任务使用该修订；连接测试／当前输入测试同样使用该值，只发送一次合成请求，不自动降级重发。测试通过仍不保证所有工具和模型能力可用。旧修订缺少该字段时按默认true解析；上线前应在新版本上重新检查当前配置，必要时显式选择非流式。不要因为先前非流式测试通过就声称流式已验收。
+
+新问答过程通过已有任务的有界快照更新，不传模型密钥或供应商原始事件。任务progress更新不改变人工批准版本；0017迁移只增加可空JSONB列，已有任务继续可读。升级先备份并执行正式迁移，不能只覆盖静态页面。供应商未返回完整用量时，结果会提示Token统计／预算判断可能不完整。

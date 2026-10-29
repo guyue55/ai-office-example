@@ -4,15 +4,17 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import Query, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from office_contracts import Meta, prepare_success
 from pydantic import Field
+from starlette.background import BackgroundTask
 
 from app.application.codebook import build_registry
 from app.application.contracts import OPERATION_OUTPUTS
 from app.common.errors import DomainError
 from app.common.inputs import Input
 from app.common.outputs import AccessPage, Output
+from app.entrypoints.web.assistant_events import Subscriptions, snapshots
 from app.modules.agent.outputs import AgentCapability, ConversationSummary
 
 
@@ -39,6 +41,7 @@ ACTIONS = {
 
 def register_assistant_ui(router, operate, render, csrf):
     registry = build_registry()
+    subscriptions = Subscriptions()
 
     @router.get("/assets/assistant/markdown-it-15.0.3.js", include_in_schema=False)
     async def markdown_parser():
@@ -98,6 +101,36 @@ def register_assistant_ui(router, operate, render, csrf):
             {"identifier": identifier, "before": before, "limit": limit},
         )
         return respond(request, result, OPERATION_OUTPUTS["agent.conversation.get"])
+
+    @router.get("/console/assistant-ui/runs/{identifier}/events", include_in_schema=False)
+    async def events(request: Request, identifier: str):
+        async def load():
+            return await operate(request, "agent.get", {"identifier": identifier})
+
+        initial = await load()  # 响应头发出前鉴权，仍返回统一HTTP错误。
+        release = subscriptions.acquire(identifier)
+
+        def encode(value):
+            return prepare_success(
+                value,
+                OPERATION_OUTPUTS["agent.get"],
+                Meta(trace_id=request.state.trace_id),
+                registry=registry,
+            ).body
+
+        async def stream():
+            try:
+                async for item in snapshots(request, initial, load, encode):
+                    yield item
+            finally:
+                release()
+
+        return StreamingResponse(
+            stream(),
+            media_type="text/event-stream",
+            background=BackgroundTask(release),
+            headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+        )
 
     @router.post("/console/assistant-ui/action")
     async def action(request: Request):

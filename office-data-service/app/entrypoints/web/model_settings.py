@@ -69,6 +69,7 @@ def register_model_settings(router, operate, render, csrf, notify):
                         "api": form.get("api"),
                         "model": form.get("model"),
                         "model_url": form.get("model_url"),
+                        "stream_output": form.get("stream_output", "true") == "true",
                         "anthropic_auth": form.get("anthropic_auth", "bearer"),
                         "auth_mode": form.get("auth_mode", "api-key"),
                         "auth_header": form.get("auth_header", "x-api-key"),

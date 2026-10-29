@@ -46,7 +46,7 @@
   function result(message, state='idle') {output.textContent = message; output.dataset.state = state;}
   function payload(kind) {
     const data = new FormData(editor);
-    const connection = {api:data.get('api'), model_url:String(data.get('model_url') || ''), auth_mode:data.get('auth_mode'), anthropic_auth:data.get('anthropic_auth'), auth_header:data.get('auth_header'), extra_headers:JSON.parse(String(data.get('extra_headers') || '{}')), extra_query:JSON.parse(String(data.get('extra_query') || '{}')), request_timeout:Number(data.get('request_timeout'))};
+    const connection = {api:data.get('api'), model_url:String(data.get('model_url') || ''), auth_mode:data.get('auth_mode'), anthropic_auth:data.get('anthropic_auth'), auth_header:data.get('auth_header'), extra_headers:JSON.parse(String(data.get('extra_headers') || '{}')), extra_query:JSON.parse(String(data.get('extra_query') || '{}')), stream_output:data.get('stream_output')!=='false', request_timeout:Number(data.get('request_timeout'))};
     const body = {version:Number(data.get('version')), secret_action:data.get('secret_action') || 'keep', reuse_secret_at_new_url:data.get('reuse_secret_at_new_url') === 'on'};
     if (data.get('secret')) body.secret = data.get('secret');
     if (kind === 'models') body.connection = connection;

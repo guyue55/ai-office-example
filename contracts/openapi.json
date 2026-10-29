@@ -18076,6 +18076,11 @@
             "maxProperties": 16,
             "title": "Extra Query"
           },
+          "stream_output": {
+            "type": "boolean",
+            "title": "Stream Output",
+            "default": true
+          },
           "request_timeout": {
             "type": "number",
             "maximum": 300.0,
@@ -18266,6 +18271,11 @@
             "type": "object",
             "maxProperties": 16,
             "title": "Extra Query"
+          },
+          "stream_output": {
+            "type": "boolean",
+            "title": "Stream Output",
+            "default": true
           },
           "request_timeout": {
             "type": "number",
@@ -19259,6 +19269,43 @@
         ],
         "title": "PreviewChangeInput"
       },
+      "ProgressStep": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Id"
+          },
+          "operation": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Operation"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "operation",
+          "status",
+          "elapsed_ms"
+        ],
+        "title": "ProgressStep"
+      },
       "ProjectChange": {
         "properties": {
           "operation": {
@@ -19776,6 +19823,69 @@
         ],
         "title": "RunDecision"
       },
+      "RunProgress": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Schema Version",
+            "default": 1
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Seq"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Elapsed Ms"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "identity",
+              "model",
+              "reply",
+              "tool",
+              "awaiting_confirmation",
+              "completed",
+              "failed",
+              "timeout",
+              "budget_exceeded"
+            ],
+            "title": "Stage"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 16000,
+            "title": "Text"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressStep"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "title": "Steps"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "seq",
+          "elapsed_ms",
+          "stage",
+          "text",
+          "steps"
+        ],
+        "title": "RunProgress"
+      },
       "RunStart": {
         "properties": {
           "conversation_id": {
@@ -19926,6 +20036,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "model_revision": {
             "anyOf": [

@@ -229,6 +229,7 @@ class AgentCoordinator:
                             pending=None,
                             result=None,
                             history_hidden=True,
+                            progress=None,
                         )
                 elif operation == "agent.decide":
                     result = await records.decide(**payload)

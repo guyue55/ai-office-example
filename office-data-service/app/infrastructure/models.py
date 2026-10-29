@@ -278,6 +278,7 @@ class AgentRun(Entity):
     version: Mapped[int] = mapped_column(Integer, default=1)
     pending: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    progress: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     write_inflight: Mapped[bool] = mapped_column(Boolean, default=False)
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     trace_id: Mapped[str] = mapped_column(String(36))

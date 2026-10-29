@@ -39,6 +39,7 @@ class AgentConfig(BaseModel):
     extra_headers: dict[str, str] = Field(default_factory=dict, max_length=16)
     extra_query: dict[str, str] = Field(default_factory=dict, max_length=16)
     allow_model_http: bool = False
+    stream_output: bool = True
     request_timeout: float = Field(default=30, gt=0, le=300)
     api_key_env: str = "OFFICE_MODEL_API_KEY"
     api_key_file: str | None = Field(default=None, min_length=1, max_length=4096)

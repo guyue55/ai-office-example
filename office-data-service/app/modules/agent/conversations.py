@@ -141,11 +141,12 @@ class Conversations:
                         pending=None,
                         result=None,
                         history_hidden=True,
+                        progress=None,
                     )
                 # 大结果序列化移出事件循环；逐行读取，避免先加载多页JSON到内存。
                 size = await asyncio.to_thread(_view_bytes, view)
                 if size > 128000:
-                    view.update(pending=None, result=None, detail_truncated=True)
+                    view.update(pending=None, result=None, progress=None, detail_truncated=True)
                     size = await asyncio.to_thread(_view_bytes, view)
                 if byte_count + size > 500000:
                     more = True

@@ -25,6 +25,22 @@
   }
   window.OfficeAssistant = {
     root, RequestError,
+    subscribe(identifier,onSnapshot,onClose,onLost) {
+      if(!window.EventSource)return null;
+      const source=new EventSource('/console/assistant-ui/runs/'+encodeURIComponent(identifier)+'/events');
+      let closed=false;
+      const close=()=>{if(closed)return;closed=true;source.close();};
+      source.addEventListener('snapshot',event=>{
+        if(closed)return;
+        try{const value=JSON.parse(event.data);if(value.code!==0)throw new Error();onSnapshot(value.data);}
+        catch(_){close();onClose();}
+      });
+      source.addEventListener('end',()=>{close();onClose();});
+      source.addEventListener('resync',()=>{close();onClose();});
+      source.addEventListener('access_lost',()=>{close();onLost();});
+      source.onerror=()=>{close();onClose();};
+      return {close};
+    },
     get: path => request(path),
     action: (action, payload) => request('action', {action, payload, csrf:root.dataset.csrf}),
   };

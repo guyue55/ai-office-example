@@ -96,9 +96,14 @@ async def test_runtime(config, runner):
             )
         ):
             async with runner.model_context(config) as model:
+                progress_module = import_module("office_agent.progress")
+                handler = progress_module.stream_handler(
+                    model, progress_module.Progress(None), config.stream_output
+                )
                 await Agent(model, retries=0).run(
                     "仅回复OK。这是连接测试，不需要调用任何工具。",
                     model_settings={"max_tokens": 32},
+                    event_stream_handler=handler,
                     usage_limits=UsageLimits(request_limit=1, total_tokens_limit=512),
                 )
         return {

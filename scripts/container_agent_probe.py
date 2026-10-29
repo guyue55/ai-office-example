@@ -80,7 +80,12 @@ async def main():
                 path + "/draft",
                 json={
                     "version": state["version"],
-                    "draft": {"model_url": url, "model": "synthetic", "approved_model_data": True},
+                    "draft": {
+                        "model_url": url,
+                        "model": "synthetic",
+                        "approved_model_data": True,
+                        "stream_output": False,
+                    },
                     "secret_action": "replace",
                     "secret": "synthetic-model-key",
                 },
