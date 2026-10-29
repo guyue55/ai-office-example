@@ -96,7 +96,7 @@ class Progress:
 
     async def call(self, operation, execute):
         # 非法模型参数仍交网关拒绝；展示层只记录注册名称，不回显任意输入。
-        known = operation in READS or operation in WRITES or operation == "describe_operations"
+        known = operation in READS or operation in WRITES
         if not known and not (operation.startswith("prepare:") and operation[8:] in WRITES):
             operation = "unregistered"
         step = None

@@ -95,10 +95,8 @@ def local_server(api="openai-completions", anthropic_auth="bearer", failure_stat
                             "type": "function_call",
                             "id": "fc_1",
                             "call_id": "read-1",
-                            "name": "read_office",
-                            "arguments": json.dumps(
-                                {"operation": "projects", "arguments": {"limit": 10}}
-                            ),
+                            "name": "read_projects",
+                            "arguments": json.dumps({"limit": 10}),
                             "status": "completed",
                         }
                     ]
@@ -137,8 +135,8 @@ def local_server(api="openai-completions", anthropic_auth="bearer", failure_stat
                         {
                             "type": "tool_use",
                             "id": "read-1",
-                            "name": "read_office",
-                            "input": {"operation": "projects", "arguments": {"limit": 10}},
+                            "name": "read_projects",
+                            "input": {"limit": 10},
                         }
                     ]
                     reason = "tool_use"
@@ -168,10 +166,8 @@ def local_server(api="openai-completions", anthropic_auth="bearer", failure_stat
                             "id": "read-1",
                             "type": "function",
                             "function": {
-                                "name": "read_office",
-                                "arguments": json.dumps(
-                                    {"operation": "projects", "arguments": {"limit": 10}}
-                                ),
+                                "name": "read_projects",
+                                "arguments": json.dumps({"limit": 10}),
                             },
                         }
                     ],

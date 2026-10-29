@@ -74,20 +74,17 @@ def test_browser_approval_commits_one_candidate_with_agent_audit(
                 return ModelResponse(
                     parts=[
                         ToolCallPart(
-                            "prepare_write",
+                            "prepare_submit_record",
                             {
-                                "operation": "submit_record",
-                                "arguments": {
-                                    "project_id": project["id"],
-                                    "schema_revision": 1,
-                                    "values": {"v": "0.40", "tag": "browser-acceptance"},
-                                },
+                                "project_id": project["id"],
+                                "schema_revision": 1,
+                                "values": {"v": "0.40", "tag": "browser-acceptance"},
                             },
                             tool_call_id="preview",
                         )
                     ]
                 )
-            if returns[-1].tool_name == "prepare_write":
+            if returns[-1].tool_name == "prepare_submit_record":
                 return ModelResponse(
                     parts=[
                         ToolCallPart(

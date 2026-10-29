@@ -49,20 +49,17 @@ def test_hosted_runner_waits_for_owned_decision_then_records_result(request, sto
                 return ModelResponse(
                     parts=[
                         ToolCallPart(
-                            "prepare_write",
+                            "prepare_submit_record",
                             {
-                                "operation": "submit_record",
-                                "arguments": {
-                                    "project_id": project["id"],
-                                    "schema_revision": 1,
-                                    "values": {"v": "0.40"},
-                                },
+                                "project_id": project["id"],
+                                "schema_revision": 1,
+                                "values": {"v": "0.40"},
                             },
                             tool_call_id="p",
                         )
                     ]
                 )
-            if tools[-1].tool_name == "prepare_write":
+            if tools[-1].tool_name == "prepare_submit_record":
                 return ModelResponse(
                     parts=[
                         ToolCallPart(

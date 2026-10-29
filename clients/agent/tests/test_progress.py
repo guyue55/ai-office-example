@@ -73,8 +73,8 @@ def test_text_before_tool_does_not_end_run_or_skip_actual_read():
                 yield "先读取数据。"
                 yield {
                     0: DeltaToolCall(
-                        name="read_office",
-                        json_args='{"operation":"projects","arguments":{}}',
+                        name="read_projects",
+                        json_args="{}",
                         tool_call_id="read-test",
                     )
                 }
@@ -277,12 +277,12 @@ def test_fragmented_tool_arguments_finish_before_read_with_slow_observer():
             if not last_tool(messages):
                 yield "开始查询。"
                 yield {
-                    0: DeltaToolCall(name="read_office", json_args="", tool_call_id="fragmented")
+                    0: DeltaToolCall(name="read_projects", json_args="", tool_call_id="fragmented")
                 }
                 await asyncio.sleep(0.01)
-                yield {0: DeltaToolCall(json_args='{"operation":"projects",')}
+                yield {0: DeltaToolCall(json_args='{"limit":')}
                 await asyncio.sleep(0.01)
-                yield {0: DeltaToolCall(json_args='"arguments":{}}')}
+                yield {0: DeltaToolCall(json_args="10}")}
                 finished.set()
             else:
                 yield "已读取，存在下一页。"

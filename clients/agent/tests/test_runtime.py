@@ -21,18 +21,13 @@ def write_model(messages, info):
         return ModelResponse(
             parts=[
                 ToolCallPart(
-                    "prepare_write",
-                    {
-                        "operation": "data",
-                        "arguments": {
-                            "change": {"operation": "project.create", "payload": {"name": "项目A"}}
-                        },
-                    },
+                    "prepare_data",
+                    {"change": {"operation": "project.create", "payload": {"name": "项目A"}}},
                     tool_call_id="p",
                 )
             ]
         )
-    if results[-1].tool_name == "prepare_write":
+    if results[-1].tool_name == "prepare_data":
         return ModelResponse(
             parts=[
                 ToolCallPart(
@@ -105,13 +100,7 @@ def test_budget_carries_across_approval_resume():
 def test_loop_is_bounded():
     def loop(messages, info):
         return ModelResponse(
-            parts=[
-                ToolCallPart(
-                    "read_office",
-                    {"operation": "projects", "arguments": {}},
-                    tool_call_id=str(len(messages)),
-                )
-            ]
+            parts=[ToolCallPart("read_projects", {}, tool_call_id=str(len(messages)))]
         )
 
     result = asyncio.run(run_task(FunctionModel(loop), Client, "查询", limits=Limits(requests=2)))
@@ -125,13 +114,7 @@ def test_revocation_stops_next_model_request():
 
     def model(messages, info):
         requests.append(True)
-        return ModelResponse(
-            parts=[
-                ToolCallPart(
-                    "read_office", {"operation": "projects", "arguments": {}}, tool_call_id="read"
-                )
-            ]
-        )
+        return ModelResponse(parts=[ToolCallPart("read_projects", {}, tool_call_id="read")])
 
     original = client.projects
 
@@ -148,17 +131,16 @@ def test_revocation_stops_next_model_request():
 
 def test_bad_tool_and_raw_exception_do_not_leak(caplog):
     def malicious(messages, info):
-        return ModelResponse(
-            parts=[
-                ToolCallPart(
-                    "read_office", {"operation": "request", "arguments": {}}, tool_call_id="x"
-                )
-            ]
-        )
+        if not last_tool(messages):
+            return ModelResponse(
+                parts=[ToolCallPart("read_projects", {"unknown": "x"}, tool_call_id="x")]
+            )
+        return ModelResponse(parts=[TextPart("参数不合规，未执行查询。")])
 
     result = asyncio.run(run_task(FunctionModel(malicious), Client, "读取"))
-    assert result.status == "failed"
-    assert "未注册" in result.explanation
+    assert result.status == "completed"
+    assert not result.receipts
+    assert "参数不合规" in result.explanation
 
     def broken(messages, info):
         raise RuntimeError("Bearer super-secret https://secret.example")
@@ -197,39 +179,32 @@ def test_timeout_and_cancellation_close_client():
     asyncio.run(cancelled())
 
 
-def test_empty_read_arguments_get_one_bounded_correction_and_then_stop():
-    def invalid(messages, info):
-        return ModelResponse(parts=[ToolCallPart("read_office", {}, tool_call_id="invalid")])
-
-    result = asyncio.run(run_task(FunctionModel(invalid), Client, "查询容器"))
-    assert result.status == "failed"
-    # 一次纠正提示后仍无效即停止，不执行查询，也不无限重试。
-    assert result.usage["requests"] == 2
-    assert not result.receipts
-    assert "本次调用未执行" in result.explanation
-
-
-def test_empty_read_arguments_corrected_once_then_execute():
-    attempts = 0
-
-    def correcting(messages, info):
-        nonlocal attempts
-        attempts += 1
-        if attempts == 1:
-            return ModelResponse(parts=[ToolCallPart("read_office", {}, tool_call_id="invalid")])
-        if attempts == 2:
+def test_invalid_arguments_return_hint_and_model_can_correct():
+    def model(messages, info):
+        results = last_tool(messages)
+        if not results:
             return ModelResponse(
-                parts=[
-                    ToolCallPart(
-                        "read_office",
-                        {"operation": "projects"},
-                        tool_call_id="valid",
-                    )
-                ]
+                parts=[ToolCallPart("read_projects", {"unknown": 1}, tool_call_id="bad")]
             )
+        if results[-1].content.get("status") == "invalid_arguments":
+            return ModelResponse(parts=[ToolCallPart("read_projects", {}, tool_call_id="ok")])
         return ModelResponse(parts=[TextPart("已查询，覆盖范围以回执为准。")])
 
-    result = asyncio.run(run_task(FunctionModel(correcting), Client, "查询容器"))
+    result = asyncio.run(run_task(FunctionModel(model), Client, "查询容器"))
     assert result.status == "completed"
     assert [item["operation"] for item in result.receipts] == ["projects"]
     assert result.usage["requests"] == 3
+
+
+def test_missing_required_arguments_never_abort_the_run():
+    def model(messages, info):
+        results = last_tool(messages)
+        if not results:
+            return ModelResponse(parts=[ToolCallPart("read_schema", {}, tool_call_id="bad")])
+        return ModelResponse(parts=[TextPart("缺少项目参数，请补充后我再查询。")])
+
+    result = asyncio.run(run_task(FunctionModel(model), Client, "查询结构"))
+    assert result.status == "completed"
+    assert not result.receipts
+    assert result.usage["requests"] == 2
+    assert "缺少项目参数" in result.explanation

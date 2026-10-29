@@ -38,20 +38,17 @@ def test_real_pg_candidate_write_is_confirmed_by_human_gate_and_audited(request)
                 return ModelResponse(
                     parts=[
                         ToolCallPart(
-                            "prepare_write",
+                            "prepare_submit_record",
                             {
-                                "operation": "submit_record",
-                                "arguments": {
-                                    "project_id": project["id"],
-                                    "schema_revision": 1,
-                                    "values": {"v": "0.30", "tag": "agent-test"},
-                                },
+                                "project_id": project["id"],
+                                "schema_revision": 1,
+                                "values": {"v": "0.30", "tag": "agent-test"},
                             },
                             tool_call_id="prepare",
                         )
                     ]
                 )
-            if tools[-1].tool_name == "prepare_write":
+            if tools[-1].tool_name == "prepare_submit_record":
                 return ModelResponse(
                     parts=[
                         ToolCallPart(
