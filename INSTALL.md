@@ -10,6 +10,12 @@
 
 Linux服务器准备Docker Engine、Compose插件、Bash与flock（util-linux）。macOS验收使用Docker Desktop。缺少环境时安装入口提供提示；不自动改系统权限、组或证书信任。
 
+安装前建议先跑只读预检，确认Docker、Compose、目录可写、端口、磁盘、时钟与镜像摘要都能满足：
+
+```sh
+./manage.sh preflight
+```
+
 ```sh
 sudo bash deploy/install.sh
 ```
@@ -21,6 +27,8 @@ macOS使用`bash deploy/install.sh`。没有deploy/.env且有终端时进入交�
 也可先`bash deploy/configure.sh`或填写deploy/.env.example中的公开配置。已有外部PG18支持连接、账号与秘密文件引用，安装器会初始化必要数据库结构与权限，不额外启动PG容器。完整字段见deploy/.env.example；没有授权的数据库不能拿来测试。
 
 管理脚本的运行目录、锁、活动实例、备份目录和默认超时可在`deploy/manage.env`中设置，模板为`deploy/manage.env.example`；`./manage.sh config`可查看解析后的最终值。管理配置不包含任何秘密。
+
+`runtime/`是生成目录，不随仓库提交：实例配置、秘密、网关配置、备份与迁址记录都在其中，具体布局见[服务统一管理](docs/MANAGEMENT.md)。仓库内的`./runtime`适合开发与演示；生产建议在`deploy/manage.env`把`OFFICE_MANAGE_RUNTIME_DIR`指到数据盘（Linux常见`/var/lib/ai-office`），并把备份放到独立挂载点，仓库保持纯源码。
 
 重复运行同配置安装不删除卷、不重置密码。配置／镜像变化会阻断静默升级；生产升级、改址与身份标识迁移应另行规划备份和恢复，模板不提供无条件覆盖。
 

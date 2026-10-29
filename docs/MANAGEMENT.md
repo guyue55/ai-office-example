@@ -16,6 +16,7 @@
 | `address` | 展示活动内网地址和登录主地址 | 否 |
 | `logs` | 查看指定容器日志 | 否 |
 | `instances` | 列出发现的服务器实例及活动标记 | 否 |
+| `preflight` | 新环境部署预检：Docker、Compose、目录、端口、磁盘、时钟与镜像摘要 | 否 |
 | `plan down` | 只读预览删除容器和网络的影响 | 否 |
 | `plan recreate` | 只读预览无状态容器重建影响 | 否 |
 | `recreate` | 保留所有卷，只强制重建gateway和service | 是 |
@@ -37,6 +38,7 @@
 ./manage.sh address
 ./manage.sh logs --service gateway --tail 200
 ./manage.sh instances
+./manage.sh preflight
 ./manage.sh plan down
 ./manage.sh plan recreate
 ./manage.sh backup
@@ -109,6 +111,37 @@
 相对路径自动基于项目根目录或运行目录解析。`./manage.sh config`展示最终生效路径；未知键、重复键、软链配置、父目录跳转和执行表达式都会被拒绝。活动实例文件与管理锁必须位于运行目录内；Docker应用名不接受路径。按需从`deploy/manage.env.example`复制为`deploy/manage.env`，后者被Git忽略。
 
 `OFFICE_MANAGE_RUNTIME_DIR`只决定管理脚本扫描和记录的位置。安装器实际写入的实例目录来自`deploy/.env`的`OFFICE_INSTANCE_DIR`（缺省`runtime/instance`）；若改动了运行目录，应让两者指向同一位置，或用`OFFICE_MANAGE_INSTANCE_DIR`把默认实例固定到安装器实际写入的目录，否则`status`和`check`会找不到实例。
+
+## 状态目录与首次部署
+
+`runtime/`是生成目录，不随仓库提交（`.gitignore`已忽略），也不应手工放入示例实例。它的典型布局是：
+
+```text
+runtime/
+├── <实例>/            installation.json、compose.json、service/、gateway/、identity/、credentials/、postgres/
+├── backups/           带 MANIFEST.txt 与 SHA256SUMS 的备份快照
+├── relocations/       迁址运行与恢复资料
+├── .active-server-instance   活动实例记录（0600）
+└── .manage.lock      管理操作目录锁
+```
+
+仓库内默认`./runtime`适合开发和演示；生产建议把`OFFICE_MANAGE_RUNTIME_DIR`指到数据盘（Linux常见`/var/lib/ai-office`，macOS可用`/usr/local/var/ai-office`或用户目录下的应用支持目录），把备份放在独立挂载点，仓库始终保持纯源码。状态目录应由安装过程创建，权限保持`0700`，秘密文件`0600`。
+
+状态目录不存在时，只读命令不会静默退出：`instances`会显示“状态目录尚未初始化”并提示先执行`./manage.sh install`；`status`、`check`等返回2并给出同样提示。`--instance`显式指定的无效目录会直接报错，不再回退到活动实例。
+
+备份快照永远不会被当作服务器实例：备份目录带有`.backup-snapshot`标记和`MANIFEST.txt`，`instances`只列出可运行实例，并单独显示备份份数；把备份目录传给`--instance`会被拒绝，避免对正式项目误执行`start`、`down`或`upgrade`。
+
+新机器安装前先跑只读预检：
+
+```bash
+./manage.sh preflight
+```
+
+它检查Docker与Compose、引擎响应、状态与备份目录可写、实例或待用端口、磁盘余量、时钟偏差和基础设施镜像摘要能否解析。阻塞项返回1，仅提示项返回0；离线环境可用`OFFICE_PREFLIGHT_OFFLINE=1`跳过时钟与镜像仓库检查。
+
+未捕获的脚本错误会输出失败的函数名、命令与退出码，便于定位；需要精确行号时用`bash -x ./manage.sh <命令>`重跑。
+
+历史实验目录（`runtime/`下已停止的验收实例）可以人工清理，删除前先执行`./manage.sh instances`确认对应实例“未运行”，且不删除当前活动实例、数据库卷或备份。管理脚本不提供删除实例的命令。
 
 ## 启动、停止和重启
 
