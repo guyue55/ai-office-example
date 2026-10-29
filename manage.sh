@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 企业办公服务统一管理入口：启动、停止、重启、状态、检查、地址与日志。
-set -euo pipefail
+set -eEuo pipefail
 umask 077
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,6 +14,7 @@ ACTIVE_POINTER=""
 DEFAULT_BACKUP_ROOT=""
 DOCKER_APP_NAME="Docker"
 INSTANCE=""
+INSTANCE_EXPLICIT=0
 REQUESTED_IP=""
 CONFIRM_TOKEN=""
 BACKUP_OUTPUT=""
@@ -46,6 +47,10 @@ ok() { printf '  [正常] %s\n' "$*" ; }
 note() { printf '  [信息] %s\n' "$*" ; }
 warn() { printf '  [注意] %s\n' "$*" >&2 ; }
 bad() { printf '  [失败] %s\n' "$*" >&2 ; }
+
+# 未捕获的失败给出可定位的诊断；显式return由调用处负责，不重复报错。
+code=0
+trap 'code=$?; case "$BASH_COMMAND" in return*) ;; *) printf "  [失败] 未捕获的错误（函数=%s，退出码=%s）：%s；需要精确行号请用 bash -x 重跑\n" "${FUNCNAME[0]:-main}" "$code" "$BASH_COMMAND" >&2 ;; esac' ERR
 
 manage_path() {
   local value="$1" base="$2" fallback="$3"
@@ -128,6 +133,7 @@ load_manage_config() {
   LOCK_DIR="$(normalize_path "$(manage_path "${OFFICE_MANAGE_LOCK_DIR:-$cfg_lock}" "$RUNTIME_DIR" .manage.lock)")"
   DOCKER_APP_NAME="${OFFICE_MANAGE_DOCKER_APP:-${cfg_docker:-Docker}}"
   INSTANCE="${OFFICE_INSTANCE_DIR:-$(manage_path "$cfg_instance" "$ROOT" "")}"
+  if [[ -n "${OFFICE_INSTANCE_DIR:-}" ]]; then INSTANCE_EXPLICIT=1; fi
   [[ "$RUNTIME_DIR" != "/" && "$RUNTIME_DIR" != "$ROOT" ]] \
     || { echo "运行目录不能是根目录或项目根目录" >&2; return 2; }
   case "$ACTIVE_POINTER" in
@@ -169,6 +175,7 @@ main_help() {
   build       从本地源码构建普通或Agent镜像，不自动安装或升级
   upgrade     使用已存在且已验证的镜像执行备份、迁移和受控升级
   config      展示生效的管理配置和路径，不输出秘密
+  preflight   新环境部署预检：Docker、Compose、目录、端口、时钟与镜像摘要
 
 高级操作
   recreate、down与upgrade必须先用plan/预览确认影响，再输入精确确认串。
@@ -228,6 +235,7 @@ main_help() {
   ./manage.sh restart --ip 192.0.2.10
   ./manage.sh logs --service gateway --tail 200
   ./manage.sh address --instance runtime/instance
+  ./manage.sh preflight
 EOF
 }
 
@@ -381,6 +389,15 @@ config：查看生效配置
 示例：./manage.sh config
 EOF
       ;;
+    preflight)
+      cat <<'EOF'
+preflight：新环境部署预检
+  检查Docker与Compose、状态与备份目录可写、端口占用、磁盘空间、时钟偏差
+  以及基础设施镜像摘要是否可解析。只读，不创建实例、不启动容器。
+  阻塞项返回1；仅提示项返回0。
+示例：./manage.sh preflight
+EOF
+      ;;
     *) main_help ;;
   esac
 }
@@ -397,7 +414,7 @@ esac
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --instance) INSTANCE="${2:?--instance需要目录}"; shift 2 ;;
+    --instance) INSTANCE="${2:?--instance需要目录}"; INSTANCE_EXPLICIT=1; shift 2 ;;
     --ip) REQUESTED_IP="${2:?--ip需要IPv4}"; shift 2 ;;
     --service) LOG_SERVICE="${2:?--service需要名称}"; shift 2 ;;
     --tail) LOG_TAIL="${2:?--tail需要行数}"; shift 2 ;;
@@ -438,7 +455,7 @@ if [[ "$HELP" == 1 ]]; then
 fi
 if [[ -z "$COMMAND" ]]; then main_help; exit 0; fi
 case "$COMMAND" in
-  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup|prune|install|build|upgrade|config) ;;
+  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup|prune|install|build|upgrade|config|preflight) ;;
   purge|delete|delete-data|uninstall|uninstall-data|remove|rm)
     echo '拒绝：本管理脚本不提供删除数据或卸载命令；数据库卷、身份、审计、密钥和备份不会被删除' >&2
     exit 2
@@ -657,13 +674,31 @@ collect_candidates() {
 }
 
 instance_candidates() {
+  [[ -d "$RUNTIME_DIR" ]] || return 0
+  local backup_root='' folder
+  [[ -n "$DEFAULT_BACKUP_ROOT" && "$DEFAULT_BACKUP_ROOT" != / ]] && backup_root="$DEFAULT_BACKUP_ROOT"
   find "$RUNTIME_DIR" -type f -name installation.json \
-    ! -path '*/relocations/*' ! -path '*/.office/*' -print 2>/dev/null | while read -r file; do
+    ! -path '*/relocations/*' ! -path '*/.office/*' ! -path '*/backups/*' -print 2>/dev/null | while read -r file; do
       local folder
       folder="$(dirname "$file")"
       [[ -f "$folder/compose.json" && -f "$folder/service/service.json" ]] || continue
+      is_backup_snapshot "$folder" && continue
+      if [[ -n "$backup_root" ]]; then
+        case "$folder/" in
+          "$backup_root/"*) continue ;;
+        esac
+      fi
       grep -q '"project": "office-' "$file" && printf '%s\n' "$folder"
-    done | sort -u
+    done | sort -u || true
+}
+
+is_backup_snapshot() {
+  local folder="$1"
+  [[ -e "$folder/.backup-snapshot" ]] && return 0
+  if [[ -f "$folder/MANIFEST.txt" ]] && grep -q '^project=' "$folder/MANIFEST.txt" 2>/dev/null; then
+    return 0
+  fi
+  return 1
 }
 
 valid_instance() {
@@ -681,9 +716,26 @@ record_instance() {
 resolve_instance() {
   local docker_ready=0
   probe_docker && docker_ready=1
+  if [[ "$INSTANCE_EXPLICIT" == 1 ]]; then
+    if is_backup_snapshot "$INSTANCE"; then
+      bad "指定目录是备份快照，不能当作运行实例：$INSTANCE"
+      bad '请用 ./manage.sh instances 选择运行实例；备份只用于恢复'
+      return 2
+    fi
+    if ! valid_instance "$INSTANCE"; then
+      bad "指定目录不是有效实例：$INSTANCE"
+      bad '有效实例需包含 installation.json、compose.json 与 service/service.json'
+      return 2
+    fi
+  fi
   if valid_instance "$INSTANCE"; then
     INSTANCE="$(cd "$INSTANCE" && pwd)"
     return 0
+  fi
+  if [[ ! -d "$RUNTIME_DIR" ]]; then
+    bad "状态目录尚未初始化：$RUNTIME_DIR"
+    bad '新环境请先执行 ./manage.sh install；已有实例可用 --instance 指定目录，或设置 OFFICE_MANAGE_RUNTIME_DIR'
+    return 2
   fi
   if [[ -f "$ACTIVE_POINTER" ]]; then
     INSTANCE="$(sed -n '1p' "$ACTIVE_POINTER")"
@@ -738,6 +790,11 @@ resolve_instance() {
 
 load_instance() {
   resolve_instance || return 2
+  if is_backup_snapshot "$INSTANCE"; then
+    bad "该目录是备份快照，不能当作运行实例：$INSTANCE"
+    bad '请用 ./manage.sh instances 选择运行实例；备份只用于恢复，不能直接 start/restart/down/upgrade'
+    return 2
+  fi
   IFS=$'\t' read -r PROJECT IMAGE PUBLIC_URL PORT DEMO CURRENT_HOST <<<"$(json_marker "$INSTANCE/installation.json")"
   if [[ -z "$PROJECT" || -z "$IMAGE" || -z "$PORT" ]]; then
     bad '实例配置缺少项目、镜像或端口'
@@ -964,6 +1021,8 @@ backup_instance() {
   BACKUP_DIR="$root/${PROJECT}-${stamp}-$$"
   mkdir "$BACKUP_DIR" || { bad '备份目录已存在或无法创建'; return 2; }
   chmod 700 "$BACKUP_DIR"
+  printf '%s\n' "$PROJECT" >"$BACKUP_DIR/.backup-snapshot"
+  chmod 600 "$BACKUP_DIR/.backup-snapshot"
   step '1/4' '备份业务库和身份库'
   dump_database office || return 1
   dump_database office_identity || return 1
@@ -1032,6 +1091,7 @@ backup_root() {
 
 collect_project_backups() {
   local root="$1" dir base list=''
+  [[ -n "${PROJECT:-}" ]] || return 0
   [[ -d "$root" && ! -L "$root" ]] || return 0
   while IFS= read -r dir; do
     [[ -n "$dir" ]] || continue
@@ -1106,11 +1166,24 @@ install_environment() {
   fi
   section '新环境安装'
   note "将调用deploy/install.sh${INSTALL_CONFIG:+：$INSTALL_CONFIG}${INSTANCE:+；实例目录：$INSTANCE}"
+  if [[ -n "$INSTANCE" ]]; then
+    case "$INSTANCE/" in
+      "$RUNTIME_DIR/"*) ;;
+      *) warn "实例目录不在运行目录内：$INSTANCE"; warn "后续命令将找不到该实例；请把 OFFICE_MANAGE_RUNTIME_DIR 设为 $INSTANCE 的上级，或始终用 --instance 指定" ;;
+    esac
+  fi
   if [[ ${#args[@]} -gt 0 ]]; then
     bash "$ROOT/deploy/install.sh" "${args[@]}"
   else
     bash "$ROOT/deploy/install.sh"
   fi
+  if [[ -z "$(instance_candidates)" ]]; then
+    bad "安装结束，但运行目录中未发现实例：$RUNTIME_DIR"
+    [[ -n "$INSTANCE" ]] && bad "安装目标可能是：${INSTANCE}（不在运行目录内）"
+    bad '请让 OFFICE_MANAGE_RUNTIME_DIR 与安装实例目录保持一致后重试 ./manage.sh status'
+    return 1
+  fi
+  ok '安装后在运行目录中发现实例，可用 ./manage.sh check 验收'
 }
 
 image_agent_variant() {
@@ -1545,13 +1618,168 @@ run_check() {
   return 1
 }
 
+env_value() {
+  local file="$1" key="$2"
+  [[ -f "$file" ]] || return 0
+  sed -n "s/^${key}=//p" "$file" | tail -n 1 | sed 's/^"//; s/"$//'
+}
+
+port_listening() {
+  local port="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1 && return 0
+    return 1
+  fi
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | awk '{print $4}' | grep -q ":${port}\$" && return 0
+    return 1
+  fi
+  return 2
+}
+
+preferred_instance_dir() {
+  local folder=''
+  if [[ -f "$ACTIVE_POINTER" ]]; then
+    folder="$(sed -n '1p' "$ACTIVE_POINTER")"
+    if valid_instance "$folder" && ! is_backup_snapshot "$folder"; then
+      printf '%s' "$folder"
+      return 0
+    fi
+  fi
+  instance_candidates | head -n 1
+}
+
+run_preflight() {
+  local failures=0 warnings=0 instances=0 port='' parent available_kb skew
+  section '部署预检'
+  ok "平台：$(uname -s) $(uname -m)；Bash ${BASH_VERSION%%(*}"
+  if command -v docker >/dev/null 2>&1; then
+    ok "docker：$(docker --version 2>/dev/null | head -n 1)"
+  else
+    bad '缺少docker命令'; failures=$((failures + 1))
+  fi
+  if probe_docker; then ok 'Docker引擎响应正常'; else bad 'Docker引擎未响应或当前账号无权限'; failures=$((failures + 1)); fi
+  if docker compose version >/dev/null 2>&1; then
+    ok "compose：$(docker compose version --short 2>/dev/null || docker compose version 2>/dev/null | head -n 1)"
+  else
+    bad '缺少docker compose插件'; failures=$((failures + 1))
+  fi
+  if [[ -d "$RUNTIME_DIR" ]]; then
+    if [[ -w "$RUNTIME_DIR" ]]; then ok "状态目录可写：$RUNTIME_DIR"; else bad "状态目录不可写：$RUNTIME_DIR"; failures=$((failures + 1)); fi
+  else
+    parent="$(dirname "$RUNTIME_DIR")"
+    if [[ -d "$parent" && -w "$parent" ]]; then
+      note "状态目录尚未创建：${RUNTIME_DIR}（install时会自动创建）"
+    else
+      warn "状态目录父级不存在或不可写：${parent}；请先创建目录并授权"; warnings=$((warnings + 1))
+    fi
+  fi
+  if [[ -d "$RUNTIME_DIR" ]]; then
+    instances="$(instance_candidates | awk 'NF{n++} END{print n+0}')"
+  fi
+  if [[ "$instances" -gt 0 ]]; then
+    ok "已安装实例：${instances}个"
+  else
+    note '尚未安装实例；下一步执行 ./manage.sh install（或 install --config <公开配置>）'
+  fi
+  if [[ -z "$BACKUP_OUTPUT" ]]; then
+    if [[ -d "$DEFAULT_BACKUP_ROOT" ]]; then
+      if [[ -w "$DEFAULT_BACKUP_ROOT" ]]; then ok "备份目录可写：$DEFAULT_BACKUP_ROOT"; else bad "备份目录不可写：$DEFAULT_BACKUP_ROOT"; failures=$((failures + 1)); fi
+    else
+      parent="$(dirname "$DEFAULT_BACKUP_ROOT")"
+      if [[ -d "$parent" && -w "$parent" ]]; then note "备份目录尚未创建：$DEFAULT_BACKUP_ROOT"; else warn "备份目录父级不可写：$parent"; warnings=$((warnings + 1)); fi
+    fi
+  fi
+  local base_dir="$RUNTIME_DIR"
+  [[ -d "$base_dir" ]] || base_dir="$(dirname "$RUNTIME_DIR")"
+  available_kb="$(df -Pk "$base_dir" 2>/dev/null | awk 'NR==2{print $4}' || true)"
+  if [[ "$available_kb" =~ ^[0-9]+$ ]]; then
+    if (( available_kb < 5 * 1024 * 1024 )); then
+      warn "磁盘可用空间偏少：$((available_kb / 1024))MB（建议至少5GB）"; warnings=$((warnings + 1))
+    else
+      ok "磁盘可用空间：$((available_kb / 1024 / 1024))GB"
+    fi
+  fi
+  local port_state=0 inst_dir='' inst_project='' inst_port='' _a _b _c _d
+  if [[ "$instances" -gt 0 ]]; then
+    inst_dir="$(preferred_instance_dir)"
+    IFS=$'\t' read -r inst_project _a _b inst_port _c _d <<<"$(json_marker "$inst_dir/installation.json")"
+  fi
+  if [[ -n "$inst_port" ]]; then
+    port="$inst_port"
+    if ! probe_docker || ! docker ps --format '{{.Names}}' | grep -qx "${inst_project}-gateway-1"; then
+      note "实例当前未运行，端口${port}在启动时再校验"
+    elif docker port "${inst_project}-gateway-1" "$port/tcp" 2>/dev/null | grep -qx "0.0.0.0:$port"; then
+      ok "端口${port}由本实例网关监听"
+    else
+      warn "实例端口${port}未由本实例网关监听；请检查容器状态或端口冲突"; warnings=$((warnings + 1))
+    fi
+  else
+    if [[ -f "$ROOT/deploy/.env" ]]; then
+      port="$(env_value "$ROOT/deploy/.env" OFFICE_PORT)"
+    fi
+    [[ -n "$port" ]] || port=18880
+    port_listening "$port" || port_state=$?
+    case "$port_state" in
+      0) warn "端口${port}已有进程监听；install会因端口冲突失败，请先释放或改配置"; warnings=$((warnings + 1)) ;;
+      1) ok "端口${port}空闲" ;;
+      *) note "无法检测端口${port}占用（缺少lsof/ss）" ;;
+    esac
+  fi
+  local remote_date skew_ok=0
+  if [[ "${OFFICE_PREFLIGHT_OFFLINE:-0}" == 1 ]]; then
+    note '已跳过多网络检查（OFFICE_PREFLIGHT_OFFLINE=1）'
+  elif command -v curl >/dev/null 2>&1; then
+    remote_date="$(curl -sS --max-time 5 -I https://quay.io/v2/ 2>/dev/null | sed -n 's/^[Dd]ate: //p' | tr -d '\r' | head -n 1 || true)"
+    if [[ -n "$remote_date" ]]; then
+      skew="$(TZ=UTC date -j -f '%a, %d %b %Y %H:%M:%S GMT' "$remote_date" +%s 2>/dev/null || date -u -d "$remote_date" +%s 2>/dev/null || true)"
+      if [[ "$skew" =~ ^[0-9]+$ ]]; then
+        skew=$((skew - $(date -u +%s)))
+        skew=${skew#-}
+        if (( skew > 120 )); then
+          warn "本机时钟与注册表相差约${skew}秒；证书与令牌校验可能失败"; warnings=$((warnings + 1))
+        else
+          ok "时钟偏差：${skew}秒"
+        fi
+        skew_ok=1
+      fi
+    fi
+  fi
+  if [[ "$skew_ok" == 0 ]]; then note '无法自动校验时钟（需要网络与curl）；部署前请确认时间同步'; fi
+  if [[ "${OFFICE_PREFLIGHT_OFFLINE:-0}" == 1 ]]; then
+    note '已跳过镜像摘要解析检查（OFFICE_PREFLIGHT_OFFLINE=1）'
+  elif command -v docker >/dev/null 2>&1 && docker buildx version >/dev/null 2>&1; then
+    local ref bad_refs=''
+    for ref in \
+      'quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b' \
+      'nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236'; do
+      docker buildx imagetools inspect "$ref" >/dev/null 2>&1 || bad_refs="${bad_refs}${ref} ";
+    done
+    if [[ -z "$bad_refs" ]]; then ok '基础设施镜像摘要可解析'; else warn "以下镜像摘要无法解析：${bad_refs}（检查网络或镜像仓库）"; warnings=$((warnings + 1)); fi
+  else
+    note '缺少docker buildx，跳过镜像摘要解析检查'
+  fi
+  printf '\n'
+  if (( failures > 0 )); then printf '预检失败：%s项阻塞，%s项提示。\n' "$failures" "$warnings" >&2; return 1; fi
+  if (( warnings > 0 )); then printf '预检通过，但有%s项提示；确认后继续install。\n' "$warnings"; return 0; fi
+  printf '预检通过，可以执行 ./manage.sh install。\n'
+}
+
 show_instances() {
-  local folders folder project state active
-  folders="$(instance_candidates)"
+  local folders folder project state active backups=0
   section '服务器实例'
+  if [[ ! -d "$RUNTIME_DIR" ]]; then
+    note "状态目录尚未初始化：$RUNTIME_DIR"
+    note '请先执行 ./manage.sh install 创建实例；备份快照不会作为实例出现在这里'
+    return 0
+  fi
+  folders="$(instance_candidates)"
   active=""
   [[ -f "$ACTIVE_POINTER" ]] && active="$(sed -n '1p' "$ACTIVE_POINTER")"
-  if [[ -z "$folders" ]]; then warn '未发现服务器实例'; return 0; fi
+  if [[ -z "$folders" ]]; then
+    note '未发现服务器实例'
+    note '新环境请先执行 ./manage.sh install；已有实例可用 --instance 指定目录'
+  fi
   while read -r folder; do
     [[ -n "$folder" ]] || continue
     project="$(sed -n 's/^  "project": "\([^"]*\)",$/\1/p' "$folder/installation.json" | head -n 1)"
@@ -1561,6 +1789,10 @@ show_instances() {
     [[ "$folder" == "$active" ]] && mark='*'
     printf '  %s %-10s %s\n' "$mark" "$state" "$folder"
   done <<<"$folders"
+  if [[ -d "$DEFAULT_BACKUP_ROOT" && ! -L "$DEFAULT_BACKUP_ROOT" ]]; then
+    backups="$(find "$DEFAULT_BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | awk 'NF{n++} END{print n+0}' || true)"
+  fi
+  note "备份快照：${backups}份（目录 ${DEFAULT_BACKUP_ROOT}，不参与实例发现）"
 }
 
 show_config() {
@@ -1628,6 +1860,9 @@ case "$COMMAND" in
     ;;
   config)
     show_config
+    ;;
+  preflight)
+    run_preflight
     ;;
   install)
     acquire_lock || exit 2

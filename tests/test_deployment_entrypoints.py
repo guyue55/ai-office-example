@@ -83,6 +83,7 @@ def test_management_entrypoint_is_valid_and_documents_all_commands():
         "build",
         "upgrade",
         "config",
+        "preflight",
     ):
         assert command in result.stdout
     assert "--ip" in result.stdout
@@ -235,7 +236,18 @@ def test_manage_install_passes_instance_directory_after_config(tmp_path):
     (tmp_path / "deploy").mkdir()
     shutil.copy2(ROOT / "manage.sh", tmp_path / "manage.sh")
     stub = tmp_path / "deploy/install.sh"
-    stub.write_text('#!/usr/bin/env bash\nfor a in "$@"; do printf "ARG:%s\\n" "$a"; done\n')
+    stub.write_text(
+        """#!/usr/bin/env bash
+for a in "$@"; do printf "ARG:%s\\n" "$a"; done
+inst="${2:-}"
+[[ -n "$inst" ]] || exit 0
+mkdir -p "$inst/service"
+printf '{"project": "office-test", "image": "sha256:x", "settings": {}}\\n' > "$inst/installation.json"
+printf '{"services": {"service": {"image": "sha256:x"}, "setup": {"image": "sha256:x"}}}\\n' > "$inst/compose.json"
+: > "$inst/service/service.json"
+"""
+    )
+    stub.chmod(0o755)
     result = subprocess.run(
         ["bash", str(tmp_path / "manage.sh"), "install", "--instance", "runtime/t1"],
         check=False,
@@ -367,6 +379,76 @@ def test_plan_prune_is_read_only(tmp_path):
     assert result.returncode == 0, result.stderr
     assert f"{project}:prune:2" in result.stdout
     assert sorted(item.name for item in backups.iterdir()) == before
+
+
+def test_instances_reports_uninitialized_state_dir(tmp_path):
+    runtime = tmp_path / "absent-runtime"
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "instances"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_RUNTIME_DIR": str(runtime)},
+    )
+    assert result.returncode == 0, result.stderr
+    assert "状态目录尚未初始化" in result.stdout
+    assert "install" in result.stdout
+
+
+def test_status_reports_uninitialized_state_dir(tmp_path):
+    runtime = tmp_path / "absent-runtime"
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "status"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_RUNTIME_DIR": str(runtime)},
+    )
+    assert result.returncode == 2
+    assert "状态目录尚未初始化" in result.stderr
+    assert "install" in result.stderr
+
+
+def test_instances_excludes_backup_snapshots(tmp_path):
+    instance, backups, project = _backup_fixture(tmp_path)
+    (backups / f"{project}-20260105T000000Z-5/.backup-snapshot").write_text(f"{project}\n")
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "instances"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_RUNTIME_DIR": str(tmp_path)},
+    )
+    assert result.returncode == 0, result.stderr
+    assert str(instance) in result.stdout
+    assert str(backups / f"{project}-20260105T000000Z-5") not in result.stdout
+
+
+def test_backup_snapshot_is_rejected_as_instance(tmp_path):
+    _instance, backups, project = _backup_fixture(tmp_path)
+    snapshot = backups / f"{project}-20260105T000000Z-5"
+    (snapshot / ".backup-snapshot").write_text(f"{project}\n")
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "check", "--instance", str(snapshot)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2
+    assert "备份快照" in result.stderr
+
+
+def test_preflight_reports_environment_without_network():
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "preflight"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_PREFLIGHT_OFFLINE": "1"},
+    )
+    assert result.returncode in (0, 1)
+    assert "部署预检" in result.stdout
+    assert "Docker引擎" in result.stdout + result.stderr
 
 
 @pytest.mark.parametrize(
