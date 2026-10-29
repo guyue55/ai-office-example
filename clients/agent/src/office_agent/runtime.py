@@ -302,6 +302,32 @@ async def run_with_gateway(
         await progress.cancel()
         raise
     except Exception as error:  # noqa: BLE001 -- 仅记录类型和代码位置，不输出异常正文。
+        if type(error).__name__ == "ModelEgressError":
+            category = getattr(error, "category", "")
+            logging.getLogger(__name__).error(
+                "[Trace: OfficeAgent/egress] category=%s", category or "policy"
+            )
+            explanation = (
+                "模型服务域名解析失败，请求未发出；请检查出口网络或稍后重试，未自动重试"
+                if category == "dns"
+                else "模型服务出口策略拒绝了连接，请求未发出；请核对允许的模型地址，未自动重试"
+            )
+            await progress.emit(status)
+            await progress.flush()
+            return RunResult(
+                run_id,
+                status,
+                explanation,
+                gateway.receipts,
+                {
+                    "requests": usage.requests,
+                    "unmeasured_requests": usage.unmeasured_requests,
+                    "tool_calls": usage.tool_calls,
+                    "input_tokens": usage.input_tokens,
+                    "output_tokens": usage.output_tokens,
+                },
+                gateway.outcome_unknown,
+            )
         frames = traceback.extract_tb(error.__traceback__)
         cause = error.__cause__
         details = []
