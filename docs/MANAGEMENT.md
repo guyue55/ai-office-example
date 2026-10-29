@@ -21,7 +21,7 @@
 | `recreate` | 保留所有卷，只强制重建gateway和service | 是 |
 | `down` | 删除容器和项目网络，保留卷、镜像、配置和秘密 | 是 |
 | `backup` | 备份两个数据库、配置和必要秘密 | 是，仅写备份目录 |
-| `install` | 在新环境调用安装器；可先构建镜像 | 是 |
+| `install` | 在新环境调用安装器；可先构建镜像，`--instance`可指定首装目录 | 是 |
 | `build` | 从本地源码构建普通或Agent镜像 | 是，仅新增镜像 |
 | `upgrade` | 使用已存在的本地镜像备份、迁移并升级实例 | 是 |
 | `config` | 展示生效的管理配置和解析后的路径 | 否 |
@@ -109,7 +109,7 @@
 
 `start`先检查Docker引擎，再检测活动IPv4和刷新gateway配置。实例已经完整运行且健康时保持原状，不无故重启容器；只有配置更新、健康异常或容器缺失时才启动或重载。
 
-容器启动使用Docker Compose原生`up -d --wait --wait-timeout`等待运行和健康条件，之后继续执行外部`/health/ready`、端口和OIDC核验。自定义等待只用于最终业务入口检查。
+容器启动使用Docker Compose原生`up -d --wait --wait-timeout`等待运行和健康条件，之后等待外部`/health/ready`与OIDC发现返回一致的issuer（`wait_ready`）。`start`、`restart`、`recreate`和`upgrade`都以这一步作为成功条件，因此Keycloak冷启动未就绪时不会提前宣告完成。
 
 `stop`只停止容器，不关闭Docker Desktop，不删除卷、数据库、镜像或配置。停止后`status`显示停止状态，并以非零退出码提示当前不健康。
 
@@ -135,6 +135,45 @@
 ```
 
 `backup`把业务库、身份库、实例配置、网关配置、必要秘密和数据库卷标识写入权限为700的目录，文件禁止组和其他用户访问；两个数据库dump通过`pg_restore --list`校验，并提供SHA-256清单。备份不会自动覆盖、轮换或删除旧目录。
+
+### 从备份恢复
+
+备份目录用于同一实例、同一迁移版本窗口内的恢复，会覆盖备份之后的所有写入，执行前需确认时间点并停止业务入口：
+
+1. 校验完整性，任何一条不匹配立即停止：
+
+```bash
+cd /path/to/<project>-<时间>-<PID>
+shasum -a 256 -c SHA256SUMS          # Linux使用 sha256sum -c
+```
+
+2. 停写后只启动数据库，其余服务保持停止：
+
+```bash
+./manage.sh stop
+docker compose -p <项目名> -f <实例目录>/compose.json up -d --wait postgres
+```
+
+3. 在同一事务中恢复两个库。`--clean --if-exists`会先删除同名对象，只应在确认的恢复窗口内执行：
+
+```bash
+PG=<项目名>-postgres-1
+for db in office office_identity; do
+  docker exec -i "$PG" sh -c \
+    'export PGPASSWORD="$(cat /run/secrets/postgres_password)"; exec pg_restore -h 127.0.0.1 -U postgres -d "$1" --clean --if-exists --exit-on-error --single-transaction' \
+    office-restore "$db" < "$db.dump"
+done
+```
+
+4. 恢复配置与秘密，再启动并验收：
+
+```bash
+cp -Rp {installation.json,compose.json,gateway,service,identity,credentials,postgres,maintenance} <实例目录>/
+./manage.sh start
+./manage.sh check
+```
+
+恢复后旧会话失效，员工需重新登录。模型密钥依赖`credentials`中的根密钥，缺失会让助手降级；跨镜像或迁移版本恢复前先核对Alembic版本，不能把备份当作自动回滚迁移的手段。
 
 ## 安装、构建与升级
 
