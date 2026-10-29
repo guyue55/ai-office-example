@@ -22,14 +22,20 @@ fi
 IP=''
 if command -v ipconfig >/dev/null 2>&1; then IP="$(ipconfig getifaddr en0 2>/dev/null || true)"
 elif command -v hostname >/dev/null 2>&1; then IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"; fi
-printf '请在公司服务器上执行。员工电脑不能用自己的IP替代服务器地址。\n建议服务器使用固定IP或稳定域名；默认新建专用数据库，账号密码随机生成，首次登录须本人改密。\n' >&2
+printf '请在公司服务器上执行。员工电脑不能用自己的IP替代服务器地址。\n正式入口应使用稳定内部域名；监听默认覆盖服务器当前所有内网地址，IP变化不必重新发布端口。\n' >&2
+ask_listen() {
+  ask '监听范围：lan=局域网可访问，local=仅服务器本机，也可直接填写内网IPv4' lan; LISTEN="$ANSWER"
+  if [[ "$LISTEN" != lan && "$LISTEN" != local ]]; then
+    [[ "$LISTEN" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || { echo '监听范围须为 lan、local 或内网IPv4。' >&2; exit 2; }
+  fi
+}
 ask '部署模式：1=HTTPS，2=局域网HTTP验收（明文，禁止正式业务）' 1
 case "$ANSWER" in
   1)
     MODE=https
-    ask '对外服务根地址，例如https://office.example' ''; URL="$ANSWER"
+    ask '稳定内部域名根地址，例如https://office.company.internal' ''; URL="$ANSWER"
     [[ "$URL" == https://* && "$URL" != *'@'* ]] || { echo 'HTTPS模式必须填写https://根地址。' >&2; exit 2; }
-    ask '服务器监听的局域网IPv4' "$IP"; LISTEN="$ANSWER"
+    ask_listen
     ask '现有证书fullchain的绝对路径' ''; CERT="$ANSWER"
     ask '现有证书私钥的绝对路径（只引用文件，不读取内容）' ''; KEY="$ANSWER"
     [[ "$CERT" == /* && -f "$CERT" && "$KEY" == /* && -f "$KEY" ]] || { echo '证书路径不存在；未自动创建或信任企业证书。' >&2; exit 2; }
@@ -38,14 +44,15 @@ case "$ANSWER" in
     MODE=lan-http-demo
     ask '确认HTTP明文验收模式，输入yes继续' no
     [[ "$ANSWER" == yes ]] || exit 2
-    ask '服务器可被员工电脑访问的局域网IPv4' "$IP"; LISTEN="$ANSWER"
+    ask '员工访问用的稳定内网IPv4（HTTP演示无法跨IP保持登录身份）' "$IP"; PUBLIC_HOST="$ANSWER"
+    [[ "$PUBLIC_HOST" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || { echo 'HTTP演示的访问地址须为IPv4。' >&2; exit 2; }
     ask '服务端口' 8800; PORT="$ANSWER"
     [[ "$PORT" =~ ^[0-9]{1,5}$ ]] && ((10#$PORT >= 1 && 10#$PORT <= 65535)) || { echo '端口须为1至65535。' >&2; exit 2; }
-    URL="http://$LISTEN:$PORT"
+    ask_listen
+    URL="http://$PUBLIC_HOST:$PORT"
     ;;
   *) echo '请选择1或2。' >&2; exit 2 ;;
 esac
-[[ "$LISTEN" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || { echo '必须填写服务器IPv4地址。' >&2; exit 2; }
 ask '服务类型：0=普通数据服务，1=含智能助手运行能力（仍需配置模型）' 0; AGENT="$ANSWER"
 [[ "$AGENT" == 0 || "$AGENT" == 1 ]] || { echo '请选择0或1。' >&2; exit 2; }
 ask '业务镜像（留空则从交付源码构建）' ''; IMAGE="$ANSWER"

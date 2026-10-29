@@ -24,7 +24,7 @@ def client(monkeypatch):
 @pytest.mark.skipif(sys.platform == "win32", reason="Bash为服务器入口，Windows员工入口另验")
 def test_manual_server_wizard_defaults_and_explicit_http(tmp_path):
     target = tmp_path / "delivery.env"
-    answers = "2\nyes\n192.168.1.8\n" + "\n" * 7
+    answers = "2\nyes\n192.168.1.8\n" + "\n" * 8
     result = subprocess.run(
         ["bash", str(ROOT / "deploy/configure.sh"), str(target)],
         input=answers,
@@ -38,6 +38,7 @@ def test_manual_server_wizard_defaults_and_explicit_http(tmp_path):
     assert "OFFICE_ADMIN_USERNAME=admin" in values
     assert "OFFICE_AGENT=0" in values
     assert "OFFICE_IMAGE=" in values
+    assert "OFFICE_LISTEN_ADDRESS=lan" in values
     assert "PASSWORD" not in values
     before = target.read_bytes()
     denied = subprocess.run(

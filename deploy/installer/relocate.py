@@ -50,12 +50,8 @@ def plan(root, url, listen, image):
             "listen_address": listen,
         }
     )
-    if (
-        cfg["public_url"] == old["public_url"]
-        or cfg["port"] != old["port"]
-        or cfg["hostname"] != listen
-    ):
-        raise ValueError("只允许同端口迁到明确指定的内网IP，不能原址重跑或扩大监听范围")
+    if cfg["public_url"] == old["public_url"] or cfg["port"] != old["port"]:
+        raise ValueError("只允许改动公开地址与监听范围，且必须保持原端口")
     if marker["project"] != "office-" + hashlib.sha256(str(root).encode()).hexdigest()[:12]:
         raise ValueError("实例目录与项目标识不匹配")
     image_id = (
@@ -81,7 +77,9 @@ def plan(root, url, listen, image):
         )
     service["token_introspection"]["client_id"] = service["audience"]
     compose["services"]["identity"]["environment"]["KC_HOSTNAME"] = cfg["public_url"] + "/identity"
-    compose["services"]["gateway"]["ports"] = [f"{listen}:{cfg['port']}:{cfg['port']}"]
+    compose["services"]["gateway"]["ports"] = [
+        f"{cfg['listen_address']}:{cfg['port']}:{cfg['port']}"
+    ]
     for name in ("service", "setup"):
         compose["services"][name]["image"] = image_id
     digest = hashlib.sha256()

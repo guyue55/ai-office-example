@@ -41,22 +41,45 @@ def test_server_rejects_unsafe_public_address(url):
 
 
 @pytest.mark.parametrize("address", ["0.0.0.0", "8.8.8.8", "::1"])
-def test_server_requires_explicit_private_listen(address):
+def test_server_rejects_unsafe_listen(address):
     layout = module("deploy/installer/layout.py")
     with pytest.raises(ValueError):
         layout.settings({"public_url": "https://office.example", "listen_address": address})
 
 
+@pytest.mark.parametrize(
+    "listen,expected_mode,expected_address",
+    [
+        (None, "lan", "0.0.0.0"),
+        ("lan", "lan", "0.0.0.0"),
+        ("local", "local", "127.0.0.1"),
+        ("192.168.1.10", "address", "192.168.1.10"),
+    ],
+)
+def test_server_bind_modes_are_explicit(listen, expected_mode, expected_address):
+    layout = module("deploy/installer/layout.py")
+    value = {"public_url": "https://office.example"}
+    if listen is not None:
+        value["listen_address"] = listen
+    config = layout.settings(value)
+    assert config["bind_mode"] == expected_mode
+    assert config["listen_address"] == expected_address
+
+
+def test_https_public_address_cannot_be_literal_ip():
+    layout = module("deploy/installer/layout.py")
+    with pytest.raises(ValueError, match="稳定DNS"):
+        layout.settings({"public_url": "https://192.168.1.10", "listen_address": "lan"})
+
+
 def test_compose_only_exposes_gateway_and_separates_maintenance():
     layout = module("deploy/installer/layout.py")
-    config = layout.settings(
-        {"public_url": "https://office.example", "listen_address": "192.168.1.10"}
-    )
+    config = layout.settings({"public_url": "https://office.example", "listen_address": "lan"})
     services = layout.compose(
         "/srv/instance", "/opt/source", config, "sha256:candidate", "isolated"
     )["services"]
     assert [name for name, service in services.items() if service.get("ports")] == ["gateway"]
-    assert services["gateway"]["ports"] == ["192.168.1.10:443:443"]
+    assert services["gateway"]["ports"] == ["0.0.0.0:443:443"]
     assert services["setup"]["profiles"] == ["setup"]
     assert all("maintenance" not in row["source"] for row in services["service"]["volumes"])
     assert services["service"]["read_only"]
@@ -227,6 +250,28 @@ def test_server_still_requires_explicit_demo(tmp_path):
             issuer="http://192.168.1.5/identity/realms/office",
             audience="http://192.168.1.5/mcp",
         )
+
+
+def test_delivery_defaults_to_lan_binding_and_stable_https_name():
+    import tempfile
+
+    from delivery_config import read_env, server_settings
+
+    values = server_settings(
+        {
+            "OFFICE_PUBLIC_URL": "https://office.example",
+            "OFFICE_DEPLOYMENT_MODE": "https",
+        }
+    )
+    assert values["listen_address"] == "lan"
+    with tempfile.NamedTemporaryFile("w", delete=False) as handle:
+        handle.write("OFFICE_DEPLOYMENT_MODE=https\nOFFICE_PUBLIC_URL=https://192.168.1.10\n")
+        path = handle.name
+    try:
+        with pytest.raises(ValueError, match="稳定DNS"):
+            read_env(path)
+    finally:
+        Path(path).unlink()
 
 
 def test_editable_connection_preserves_package_integrity(tmp_path):

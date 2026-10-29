@@ -81,15 +81,21 @@ def read_env(path):
             raise ValueError("HTTP演示仅支持显式RFC1918私有IPv4地址")
     elif parsed.scheme != "https":
         raise ValueError("正式模式需要HTTPS")
+    else:
+        try:
+            ipaddress.ip_address(parsed.hostname)
+        except ValueError:
+            pass
+        else:
+            raise ValueError("正式模式必须使用稳定DNS名称，不能把IP写死为登录地址")
     return {**values, "OFFICE_PUBLIC_URL": url, "OFFICE_DEPLOYMENT_MODE": mode}
 
 
 def server_settings(values):
-    parsed = urlsplit(values["OFFICE_PUBLIC_URL"])
     result = {
         "public_url": values["OFFICE_PUBLIC_URL"],
         "allow_lan_http_demo": values["OFFICE_DEPLOYMENT_MODE"] == "lan-http-demo",
-        "listen_address": values.get("OFFICE_LISTEN_ADDRESS") or parsed.hostname,
+        "listen_address": values.get("OFFICE_LISTEN_ADDRESS") or "lan",
         "admin_username": values.get("OFFICE_ADMIN_USERNAME") or "admin",
         "admin_name": values.get("OFFICE_ADMIN_NAME") or "企业管理员",
     }

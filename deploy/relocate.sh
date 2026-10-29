@@ -2,7 +2,7 @@
 # 显式维护入口；宿主仅需Docker，预检默认不修改实例。
 set -euo pipefail
 if [[ "${1:-}" == -h || "${1:-}" == --help || $# -eq 0 ]]; then
-  echo '用法：bash deploy/relocate.sh <实例目录> --url http://新内网IP:端口 --listen 新内网IP --image 已验证镜像 [--apply]'
+  echo '用法：bash deploy/relocate.sh <实例目录> --url http://新入口:端口 --listen lan|local|内网IPv4 --image 已验证镜像 [--apply]'
   echo '仅支持内置PG、同端口HTTP演示实例。--apply会停写、备份、迁址并要求所有终端重新登录。'
   exit 0
 fi

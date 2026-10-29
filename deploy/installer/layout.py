@@ -49,7 +49,16 @@ def settings(value):
     if not isinstance(value, dict) or set(value) - allowed:
         raise ValueError("安装配置包含未知字段")
     url = urlsplit(value.get("public_url", ""))
-    address = ipaddress.ip_address(value.get("listen_address", ""))
+    listen = value.get("listen_address") or "lan"
+    if not isinstance(listen, str):
+        raise TypeError("监听范围必须是 lan、local 或内网IPv4")
+    listen_mode = {"lan": "0.0.0.0", "local": "127.0.0.1"}.get(listen)
+    if listen_mode is None:
+        if listen == "0.0.0.0":
+            raise ValueError("监听所有网卡请使用 lan，不直接填写 0.0.0.0")
+        address = ipaddress.ip_address(listen)
+    else:
+        address = ipaddress.ip_address(listen_mode)
     demo = value.get("allow_lan_http_demo", False)
     if type(demo) is not bool:
         raise ValueError("演示模式必须是布尔值")
@@ -79,12 +88,21 @@ def settings(value):
         "127.0.0.1",
     }:
         raise ValueError("访问地址须为企业DNS域名")
-    if (
-        address.version != 4
-        or not (address.is_private or address.is_loopback)
-        or address.is_unspecified
-    ):
-        raise ValueError("必须明确指定服务器内网IPv4地址，不能监听所有地址")
+    try:
+        ipaddress.ip_address(url.hostname)
+    except ValueError:
+        public_is_ip = False
+    else:
+        public_is_ip = True
+    if public_is_ip and not demo:
+        raise ValueError("正式模式必须使用稳定DNS名称，不能把IP写死为登录地址")
+    if address.version != 4 or not (address.is_private or address.is_loopback):
+        raise ValueError("监听地址必须是内网IPv4、loopback或 lan/local 模式")
+    if listen_mode is None and address.is_unspecified:
+        raise ValueError("监听所有网卡请使用 lan 模式")
+    bind_mode = (
+        "lan" if listen_mode == "0.0.0.0" else "local" if listen_mode == "127.0.0.1" else "address"
+    )
     if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,64}", value.get("admin_username", "admin")):
         raise ValueError("管理员登录名格式无效")
     admin_name = value.get("admin_name", "企业管理员")
@@ -105,6 +123,8 @@ def settings(value):
         "port": url.port or (80 if demo else 443),
         "allow_lan_http_demo": demo,
         "hostname": url.hostname,
+        "listen_address": str(address),
+        "bind_mode": bind_mode,
         "admin_username": value.get("admin_username", "admin"),
         "admin_name": admin_name.strip(),
     }

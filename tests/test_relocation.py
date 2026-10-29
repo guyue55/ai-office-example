@@ -87,6 +87,17 @@ def test_plan_is_readonly_and_keeps_secret_references(tmp_path, monkeypatch):
     assert all(Path(p).read_bytes() == value for p, value in original.items())
 
 
+def test_relocation_can_move_to_all_current_lan_addresses(tmp_path, monkeypatch):
+    tool = module(monkeypatch, "relocate")
+    root = installed(tmp_path)
+    monkeypatch.setattr(tool, "command", lambda *a, **kw: b"sha256:candidate")
+    result = tool.plan(root, NEW, "lan", "candidate")
+    assert result["files"]["compose.json"]["services"]["gateway"]["ports"] == [
+        "0.0.0.0:19880:19880"
+    ]
+    assert result["files"]["installation.json"]["settings"]["bind_mode"] == "lan"
+
+
 @pytest.mark.parametrize(
     "url,listen",
     [
