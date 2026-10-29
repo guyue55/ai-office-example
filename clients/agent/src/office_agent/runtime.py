@@ -10,7 +10,6 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 from pydantic_ai import Agent, DeferredToolRequests, DeferredToolResults, ToolApproved, ToolDenied
-from pydantic_ai.capabilities import Hooks
 from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.tools import Tool
 from pydantic_ai.usage import RunUsage, UsageLimits
@@ -107,16 +106,11 @@ async def run_with_gateway(
                 operation = gateway.proposal(ticket).operation
                 return await progress.call(operation, lambda: gateway.execute(ticket))
 
-            async def guard_model(_ctx, request_context):
-                await gateway.ensure_identity()
-                return request_context
-
-            agent = Agent(
+            agent: Agent[None, str | DeferredToolRequests] = Agent(
                 model,
                 output_type=[str, DeferredToolRequests],
                 instructions=INSTRUCTIONS,
                 retries=0,
-                capabilities=[Hooks(before_model_request=guard_model)],
                 model_settings={
                     "max_tokens": min(limits.tokens, 4096),
                     "parallel_tool_calls": False,
@@ -135,9 +129,21 @@ async def run_with_gateway(
             )
             handler = stream_handler(model, progress, stream_output) if observe else None
             await progress.emit("model")
-            result = await agent.run(
-                sanitize(prompt), usage=usage, usage_limits=budget, event_stream_handler=handler
-            )
+
+            async def drive(**kwargs):
+                # 显式完整消费模型节点后再推进工具，避免快照早于参数流完成。
+                async with agent.iter(usage=usage, usage_limits=budget, **kwargs) as run:
+                    async for node in run:
+                        if Agent.is_model_request_node(node):
+                            await gateway.ensure_identity()
+                            if handler is not None:
+                                async with node.stream(run.ctx) as events:
+                                    await handler(run.ctx, events)
+                    if run.result is None:
+                        raise AgentError("模型运行未产生最终回执")
+                    return run.result
+
+            result = await drive(user_prompt=sanitize(prompt))
             while isinstance(result.output, DeferredToolRequests):
                 pending = result.output
                 if pending.calls or not pending.approvals:
@@ -155,12 +161,9 @@ async def run_with_gateway(
                         approvals[call.tool_call_id] = ToolDenied("用户未批准，请停止该写入意图")
                     else:
                         approvals[call.tool_call_id] = True
-                result = await agent.run(
+                result = await drive(
                     message_history=result.all_messages(),
                     deferred_tool_results=DeferredToolResults(approvals=approvals),
-                    usage=usage,
-                    usage_limits=budget,
-                    event_stream_handler=handler,
                 )
             explanation = sanitize(result.output)
             encoded(explanation, limits.output_bytes)

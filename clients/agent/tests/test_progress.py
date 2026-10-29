@@ -259,3 +259,43 @@ def test_observer_queue_is_coalesced_and_flush_cancellation_cleans_worker():
         assert progress.pending is None
 
     asyncio.run(scenario())
+
+
+def test_fragmented_tool_arguments_finish_before_read_with_slow_observer():
+    from pydantic_ai.models.function import DeltaToolCall
+    from test_runtime import last_tool
+
+    async def scenario():
+        finished = asyncio.Event()
+
+        class CheckedClient(Client):
+            def projects(self, **params):
+                assert finished.is_set(), "参数流完成前不得执行业务查询"
+                return super().projects(**params)
+
+        async def stream(messages, info):
+            if not last_tool(messages):
+                yield "开始查询。"
+                yield {
+                    0: DeltaToolCall(name="read_office", json_args="", tool_call_id="fragmented")
+                }
+                await asyncio.sleep(0.01)
+                yield {0: DeltaToolCall(json_args='{"operation":"projects",')}
+                await asyncio.sleep(0.01)
+                yield {0: DeltaToolCall(json_args='"arguments":{}}')}
+                finished.set()
+            else:
+                yield "已读取，存在下一页。"
+
+        async def observe(value):
+            await asyncio.sleep(0.05)
+
+        result = await run_task(
+            FunctionModel(stream_function=stream), CheckedClient, "查容器", observe=observe
+        )
+        assert result.status == "completed"
+        assert len(result.receipts) == 1
+        assert result.receipts[0]["operation"] == "projects"
+        assert result.usage["requests"] == 2
+
+    asyncio.run(scenario())
