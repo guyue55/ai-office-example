@@ -20,6 +20,8 @@ macOS使用`bash deploy/install.sh`。没有deploy/.env且有终端时进入交�
 
 也可先`bash deploy/configure.sh`或填写deploy/.env.example中的公开配置。已有外部PG18支持连接、账号与秘密文件引用，安装器会初始化必要数据库结构与权限，不额外启动PG容器。完整字段见deploy/.env.example；没有授权的数据库不能拿来测试。
 
+管理脚本的运行目录、锁、活动实例、备份目录和默认超时可在`deploy/manage.env`中设置，模板为`deploy/manage.env.example`；`./manage.sh config`可查看解析后的最终值。管理配置不包含任何秘密。
+
 重复运行同配置安装不删除卷、不重置密码。配置／镜像变化会阻断静默升级；生产升级、改址与身份标识迁移应另行规划备份和恢复，模板不提供无条件覆盖。
 
 日常安装、构建、升级、启动、停止、重启、状态、检查、IP变化恢复、数据库备份、容器重建和容器网络清理统一使用项目根目录`./manage.sh`。新环境使用`install`，显式构建使用`build`，已存在镜像升级使用`upgrade`；`start/restart`只管理已安装实例，不会静默构建。`start/restart`自动检测活动内网地址；HTTP验收实例地址变化时保留数据迁址，多个候选会要求选择登录主地址；`status/check/plan`只读；`stop`保留全部数据；`recreate/down/upgrade`需要预览和精确确认串，且拒绝删除卷、镜像或实例数据。完整命令、退出码与安全边界见[服务统一管理](docs/MANAGEMENT.md)。

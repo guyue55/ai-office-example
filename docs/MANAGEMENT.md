@@ -2,6 +2,8 @@
 
 入口：项目根目录`./manage.sh`。服务器日常启动、停止、重启、状态、检查、地址和日志均通过这一脚本，不再维护单独的重启入口。
 
+可选管理配置为`deploy/manage.env`，模板见[deploy/manage.env.example](../deploy/manage.env.example)。路径均以项目根目录或运行目录为基准，不写死部署机器路径；也可通过`OFFICE_MANAGE_CONFIG=/absolute/path/manage.env`指定其他配置。
+
 ## 命令
 
 | 命令 | 作用 | 会修改状态 |
@@ -22,6 +24,7 @@
 | `install` | 在新环境调用安装器；可先构建镜像 | 是 |
 | `build` | 从本地源码构建普通或Agent镜像 | 是，仅新增镜像 |
 | `upgrade` | 使用已存在的本地镜像备份、迁移并升级实例 | 是 |
+| `config` | 展示生效的管理配置和解析后的路径 | 否 |
 
 ```bash
 ./manage.sh status
@@ -38,6 +41,7 @@
 ./manage.sh install
 ./manage.sh build --agent 1 --tag office-data-service:local-agent
 ./manage.sh upgrade --image office-data-service:local-agent
+./manage.sh config
 ```
 
 ## 通用选项
@@ -81,6 +85,22 @@
 
 只有`start`、`stop`、`restart`、`recreate`、`down`会更新活动实例记录。`status`、`check`、`address`、`instances`、`logs`严格只读，不创建或修改该文件。`plan`只读；`backup`只写指定备份目录。
 
+## 管理配置
+
+`deploy/manage.env`只保存公开管理参数，不包含密码、密钥或证书内容：
+
+| 配置项 | 默认值 | 说明 |
+|---|---|---|
+| `OFFICE_MANAGE_TIMEOUT` | `120` | 默认等待秒数，命令行`--timeout`优先 |
+| `OFFICE_MANAGE_RUNTIME_DIR` | `runtime` | 实例扫描、状态和备份的运行目录 |
+| `OFFICE_MANAGE_BACKUP_DIR` | `backups` | 相对运行时目录的默认备份目录 |
+| `OFFICE_MANAGE_ACTIVE_INSTANCE` | `.active-server-instance` | 活动实例记录文件 |
+| `OFFICE_MANAGE_LOCK_DIR` | `.manage.lock` | 并发管理锁目录 |
+| `OFFICE_MANAGE_DOCKER_APP` | `Docker` | macOS Docker应用名称，不使用固定文件路径 |
+| `OFFICE_MANAGE_INSTANCE_DIR` | 空 | 可选默认实例 |
+
+相对路径自动基于项目根目录或运行目录解析。`./manage.sh config`展示最终生效路径；未知键、重复键、软链配置、父目录跳转和执行表达式都会被拒绝。活动实例文件与管理锁必须位于运行目录内；Docker应用名不接受路径。按需从`deploy/manage.env.example`复制为`deploy/manage.env`，后者被Git忽略。
+
 ## 启动、停止和重启
 
 `start`和`restart`只管理已经安装的实例，不会自动构建镜像，也不会执行新环境安装。新服务器应执行`./manage.sh install`；已有实例镜像缺失时，`start/restart`会在执行Compose前明确拒绝，并提示先恢复镜像或执行`build`后再`upgrade`。
@@ -107,9 +127,9 @@
 
 ```bash
 ./manage.sh plan down
-./manage.sh down --confirm office-93e42ff1ec92:down
+./manage.sh down --confirm office-example:down
 ./manage.sh plan recreate
-./manage.sh recreate --confirm office-93e42ff1ec92:recreate
+./manage.sh recreate --confirm office-example:recreate
 ```
 
 `backup`把业务库、身份库、实例配置、网关配置、必要秘密和数据库卷标识写入权限为700的目录，文件禁止组和其他用户访问；两个数据库dump通过`pg_restore --list`校验，并提供SHA-256清单。备份不会自动覆盖、轮换或删除旧目录。
@@ -139,7 +159,7 @@
 
 ```bash
 ./manage.sh upgrade --image office-data-service:local-agent \
-  --confirm office-93e42ff1ec92:upgrade:<镜像ID前12位>
+  --confirm office-example:upgrade:<镜像ID前12位>
 ```
 
 `check`同时比对安装记录、Compose service/setup镜像以及镜像是否真实存在。任何版本元数据不一致都会返回失败，不能把“容器暂时健康”误当成镜像版本正确。旧镜像不删除，便于审计；脚本不提供自动回滚数据库迁移的承诺。

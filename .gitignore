@@ -37,3 +37,4 @@ htmlcov/
 
 # 人工交付配置不得提交
 deploy/.env
+deploy/manage.env

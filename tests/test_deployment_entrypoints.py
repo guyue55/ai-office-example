@@ -81,6 +81,7 @@ def test_management_entrypoint_is_valid_and_documents_all_commands():
         "install",
         "build",
         "upgrade",
+        "config",
     ):
         assert command in result.stdout
     assert "--ip" in result.stdout
@@ -108,6 +109,84 @@ def test_build_and_upgrade_require_explicit_targets():
     )
     assert build.returncode == 2 and "--agent" in build.stderr
     assert upgrade.returncode == 2 and "--image" in upgrade.stderr
+
+
+def test_manage_config_resolves_relative_paths_without_embedded_root(tmp_path):
+    config = tmp_path / "manage.env"
+    config.write_text(
+        "OFFICE_MANAGE_TIMEOUT=7\n"
+        "OFFICE_MANAGE_RUNTIME_DIR=runtime-test\n"
+        "OFFICE_MANAGE_BACKUP_DIR=backups-test\n"
+        "OFFICE_MANAGE_ACTIVE_INSTANCE=.active-test\n"
+        "OFFICE_MANAGE_LOCK_DIR=.lock-test\n"
+        'OFFICE_MANAGE_DOCKER_APP="Docker Desktop"\n'
+    )
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "config"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_CONFIG": str(config)},
+    )
+    assert result.returncode == 0, result.stderr
+    assert str(ROOT / "runtime-test") in result.stdout
+    assert str(ROOT / "runtime-test/backups-test") in result.stdout
+    assert "默认等待：7秒" in result.stdout
+    assert "Docker应用名：Docker Desktop" in result.stdout
+
+
+def test_manage_config_rejects_unknown_keys(tmp_path):
+    config = tmp_path / "manage.env"
+    config.write_text("UNKNOWN=1\n")
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "config"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_CONFIG": str(config)},
+    )
+    assert result.returncode == 2
+    assert "未知键" in result.stderr
+
+
+def test_manage_config_rejects_parent_path_escape(tmp_path):
+    config = tmp_path / "manage.env"
+    config.write_text("OFFICE_MANAGE_RUNTIME_DIR=../outside\n")
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "config"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_CONFIG": str(config)},
+    )
+    assert result.returncode == 2
+    assert "父目录跳转" in result.stderr
+
+
+def test_manage_config_rejects_missing_explicit_file(tmp_path):
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "config"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_CONFIG": str(tmp_path / "absent.env")},
+    )
+    assert result.returncode == 2
+    assert "不存在" in result.stderr
+
+
+def test_manage_config_rejects_non_numeric_timeout(tmp_path):
+    config = tmp_path / "manage.env"
+    config.write_text("OFFICE_MANAGE_TIMEOUT=abc\n")
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "config"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_CONFIG": str(config)},
+    )
+    assert result.returncode == 2
+    assert "正整数" in result.stderr
 
 
 @pytest.mark.parametrize(

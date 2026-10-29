@@ -4,8 +4,16 @@ set -euo pipefail
 umask 077
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ACTIVE_POINTER="$ROOT/runtime/.active-server-instance"
-INSTANCE="${OFFICE_INSTANCE_DIR:-}"
+MANAGE_CONFIG_FILE="${OFFICE_MANAGE_CONFIG:-$ROOT/deploy/manage.env}"
+case "$MANAGE_CONFIG_FILE" in
+  /*) ;;
+  *) MANAGE_CONFIG_FILE="$ROOT/$MANAGE_CONFIG_FILE" ;;
+esac
+RUNTIME_DIR="$ROOT/runtime"
+ACTIVE_POINTER=""
+DEFAULT_BACKUP_ROOT=""
+DOCKER_APP_NAME="Docker"
+INSTANCE=""
 REQUESTED_IP=""
 CONFIRM_TOKEN=""
 BACKUP_OUTPUT=""
@@ -21,7 +29,7 @@ LOG_TAIL=100
 FOLLOW=0
 HELP=0
 WAIT_SECONDS=120
-LOCK_DIR="$ROOT/runtime/.manage.lock"
+LOCK_DIR=""
 
 section() {
   printf '\n%s\n' "$1"
@@ -36,6 +44,79 @@ ok() { printf '  [正常] %s\n' "$*" ; }
 note() { printf '  [信息] %s\n' "$*" ; }
 warn() { printf '  [注意] %s\n' "$*" >&2 ; }
 bad() { printf '  [失败] %s\n' "$*" >&2 ; }
+
+manage_path() {
+  local value="$1" base="$2" fallback="$3"
+  [[ -n "$value" ]] || value="$fallback"
+  [[ -n "$value" ]] || return 0
+  case "$value" in
+    /*) printf '%s' "$value" ;;
+    *) printf '%s/%s' "$base" "$value" ;;
+  esac
+}
+
+load_manage_config() {
+  local file="$MANAGE_CONFIG_FILE" line key value seen=" "
+  local cfg_timeout='' cfg_runtime='' cfg_backup='' cfg_active='' cfg_lock='' cfg_docker='' cfg_instance=''
+  if [[ -e "$file" ]]; then
+    [[ -f "$file" && ! -L "$file" ]] || { echo "管理配置必须是普通文件且不能是软链：$file" >&2; return 2; }
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line="${line%$'\r'}"
+      line="${line#"${line%%[![:space:]]*}"}"
+      line="${line%"${line##*[![:space:]]}"}"
+      [[ -z "$line" || "$line" == \#* ]] && continue
+      [[ "$line" == *=* ]] || { echo "管理配置行格式无效：$file" >&2; return 2; }
+      key="${line%%=*}"; value="${line#*=}"
+      [[ "$key" =~ ^[A-Z][A-Z0-9_]*$ ]] || { echo "管理配置键格式无效：$key" >&2; return 2; }
+      [[ "$seen" != *" $key "* ]] || { echo "管理配置键重复：$key" >&2; return 2; }
+      seen="${seen}${key} "
+      case "$value" in
+        \"*\") [[ "$value" == *\" ]] && value="${value#\"}" && value="${value%\"}" ;;
+        \'*\') [[ "$value" == *\' ]] && value="${value#\'}" && value="${value%\'}" ;;
+      esac
+      [[ "$value" != *'$'* && "$value" != *'`'* && "$value" != *$'\n'* && "$value" != *$'\r'* ]] \
+        || { echo "管理配置只接受普通字面量：$key" >&2; return 2; }
+      case "$key" in
+        OFFICE_MANAGE_RUNTIME_DIR|OFFICE_MANAGE_BACKUP_DIR|OFFICE_MANAGE_ACTIVE_INSTANCE|OFFICE_MANAGE_LOCK_DIR|OFFICE_MANAGE_INSTANCE_DIR)
+          [[ "$value" != *..* ]] || { echo "管理配置路径不得包含父目录跳转：$key" >&2; return 2; } ;;
+      esac
+      case "$key" in
+        OFFICE_MANAGE_TIMEOUT) cfg_timeout="$value" ;;
+        OFFICE_MANAGE_RUNTIME_DIR) cfg_runtime="$value" ;;
+        OFFICE_MANAGE_BACKUP_DIR) cfg_backup="$value" ;;
+        OFFICE_MANAGE_ACTIVE_INSTANCE) cfg_active="$value" ;;
+        OFFICE_MANAGE_LOCK_DIR) cfg_lock="$value" ;;
+        OFFICE_MANAGE_DOCKER_APP) cfg_docker="$value" ;;
+        OFFICE_MANAGE_INSTANCE_DIR) cfg_instance="$value" ;;
+        *) echo "管理配置包含未知键：$key" >&2; return 2 ;;
+      esac
+    done <"$file"
+  elif [[ -n "${OFFICE_MANAGE_CONFIG:-}" ]]; then
+    echo "指定的管理配置不存在：$file" >&2; return 2
+  fi
+  WAIT_SECONDS="${OFFICE_MANAGE_TIMEOUT:-${cfg_timeout:-120}}"
+  [[ "$WAIT_SECONDS" =~ ^[1-9][0-9]*$ ]] \
+    || { echo "管理等待秒数必须是正整数：$WAIT_SECONDS" >&2; return 2; }
+  RUNTIME_DIR="$(manage_path "${OFFICE_MANAGE_RUNTIME_DIR:-$cfg_runtime}" "$ROOT" runtime)"
+  DEFAULT_BACKUP_ROOT="$(manage_path "${OFFICE_MANAGE_BACKUP_DIR:-$cfg_backup}" "$RUNTIME_DIR" backups)"
+  ACTIVE_POINTER="$(manage_path "${OFFICE_MANAGE_ACTIVE_INSTANCE:-$cfg_active}" "$RUNTIME_DIR" .active-server-instance)"
+  LOCK_DIR="$(manage_path "${OFFICE_MANAGE_LOCK_DIR:-$cfg_lock}" "$RUNTIME_DIR" .manage.lock)"
+  DOCKER_APP_NAME="${OFFICE_MANAGE_DOCKER_APP:-${cfg_docker:-Docker}}"
+  INSTANCE="${OFFICE_INSTANCE_DIR:-$(manage_path "$cfg_instance" "$ROOT" "")}"
+  [[ "$RUNTIME_DIR" != "/" && "$RUNTIME_DIR" != "$ROOT" ]] \
+    || { echo "运行目录不能是根目录或项目根目录" >&2; return 2; }
+  case "$ACTIVE_POINTER" in
+    "$RUNTIME_DIR/"*) ;;
+    *) echo "活动实例文件必须位于运行目录内" >&2; return 2 ;;
+  esac
+  case "$LOCK_DIR" in
+    "$RUNTIME_DIR/"*) ;;
+    *) echo "管理锁必须位于运行目录内" >&2; return 2 ;;
+  esac
+  [[ "$DEFAULT_BACKUP_ROOT" != "/" ]] || { echo "备份目录不能是根目录" >&2; return 2; }
+  [[ "$DOCKER_APP_NAME" != */* && -n "$DOCKER_APP_NAME" ]] \
+    || { echo "Docker应用名不能为空或包含路径分隔符" >&2; return 2; }
+}
 
 main_help() {
   cat <<'EOF'
@@ -61,6 +142,7 @@ main_help() {
   install     在新环境执行现有安装器；未指定OFFICE_IMAGE时由安装器构建
   build       从本地源码构建普通或Agent镜像，不自动安装或升级
   upgrade     使用已存在且已验证的镜像执行备份、迁移和受控升级
+  config      展示生效的管理配置和路径，不输出秘密
 
 高级操作
   recreate、down与upgrade必须先用plan/预览确认影响，再输入精确确认串。
@@ -74,7 +156,7 @@ main_help() {
   --follow           logs持续跟随
   --timeout <秒>     启动、重启与健康等待上限，默认120
   --confirm <值>     down/recreate/upgrade确认串
-  --output <目录>    backup父目录，必须是绝对路径；默认runtime/backups
+  --output <目录>    backup父目录，必须是绝对路径；默认使用管理配置
   --config <文件>    install使用的公开配置文件
   --configure        install先进入配置向导
   --agent <0|1>      build镜像变体
@@ -83,7 +165,7 @@ main_help() {
   -h, --help         查看总帮助；命令后加--help查看该命令说明
 
 自动选择实例
-  首次运行会优先选择正在运行的服务器实例，并记录到 runtime/.active-server-instance。
+  首次运行会优先选择正在运行的服务器实例，并记录到受配置的活动实例文件。
   记录不存在且尚未运行时，只有一个已安装实例则自动选择；多个实例会要求选择。
 
 地址策略
@@ -106,15 +188,15 @@ main_help() {
   ./manage.sh down --confirm office-example:down
   ./manage.sh plan recreate
   ./manage.sh recreate --confirm office-example:recreate
-  ./manage.sh backup --output /secure/office-backups
+  ./manage.sh backup --output /secure/backups
   ./manage.sh install
   ./manage.sh build --agent 1 --tag office-data-service:local-agent
   ./manage.sh upgrade --image office-data-service:local-agent \
     --confirm office-example:upgrade:<镜像摘要前12位>
   ./manage.sh start
-  ./manage.sh restart --ip 172.16.170.83
+  ./manage.sh restart --ip 192.0.2.10
   ./manage.sh logs --service gateway --tail 200
-  ./manage.sh address --instance runtime/ui-live-20261026/instance
+  ./manage.sh address --instance runtime/instance
 EOF
 }
 
@@ -197,7 +279,7 @@ recreate：保留数据重建无状态容器
   默认仅重建gateway和service；postgres与identity容器保持运行。
   数据库卷、身份数据、配置、密钥和镜像全部保留。
   先执行plan recreate，再输入“项目名:recreate”或传--confirm。
-示例：./manage.sh recreate --confirm office-93e42ff1ec92:recreate
+示例：./manage.sh recreate --confirm office-example:recreate
 EOF
       ;;
     down)
@@ -206,16 +288,16 @@ down：删除容器和项目网络
   数据库卷、镜像、实例配置、秘密、审计和备份全部保留。
   命令固定不传-v/--volumes，也不删除镜像。
   先执行plan down，再输入“项目名:down”或传--confirm。
-示例：./manage.sh down --confirm office-93e42ff1ec92:down
+示例：./manage.sh down --confirm office-example:down
 EOF
       ;;
     backup)
       cat <<'EOF'
 backup：创建受限制的完整实例备份
   备份业务库、身份库、实例配置、网关配置和必要秘密。
-  默认写入runtime/backups；--output可指定其他绝对目录。
+  默认写入管理配置中的备份目录；--output可指定其他绝对目录。
   不删除旧备份，不执行保留策略。
-示例：./manage.sh backup --output /secure/office-backups
+示例：./manage.sh backup --output /secure/backups
 EOF
       ;;
     install)
@@ -246,6 +328,14 @@ upgrade：受控镜像升级
   --confirm office-example:upgrade:123456789abc
 EOF
       ;;
+    config)
+      cat <<'EOF'
+config：查看生效配置
+  显示管理配置文件、运行目录、锁、活动实例、备份目录、超时和Docker应用名。
+  只读，不启动容器，不输出数据库密码、模型密钥或证书内容。
+示例：./manage.sh config
+EOF
+      ;;
     *) main_help ;;
   esac
 }
@@ -254,6 +344,11 @@ if [[ "${1:-}" == help ]]; then
   command_help "${2:-}"
   exit 0
 fi
+
+case "${1:-}" in
+  -h|--help) ;;
+  *) load_manage_config || exit 2 ;;
+esac
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -296,7 +391,7 @@ if [[ "$HELP" == 1 ]]; then
 fi
 if [[ -z "$COMMAND" ]]; then main_help; exit 0; fi
 case "$COMMAND" in
-  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup|install|build|upgrade) ;;
+  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup|install|build|upgrade|config) ;;
   purge|delete|delete-data|uninstall|uninstall-data|remove|rm)
     echo '拒绝：本管理脚本不提供删除数据或卸载命令；数据库卷、身份、审计、密钥和备份不会被删除' >&2
     exit 2
@@ -367,7 +462,7 @@ release_lock() {
 }
 
 acquire_lock() {
-  mkdir -p "$ROOT/runtime"
+  mkdir -p "$(dirname "$LOCK_DIR")"
   if mkdir "$LOCK_DIR" 2>/dev/null; then
     printf '%s\n' "$$" >"$LOCK_DIR/pid"
     trap release_lock EXIT INT TERM
@@ -391,11 +486,19 @@ acquire_lock() {
   return 2
 }
 
+docker_desktop_pids() {
+  {
+    pgrep -f 'com\.docker\.backend' || true
+    pgrep -f 'com\.docker\.build' || true
+    pgrep -x 'Docker Desktop' || true
+  } | sort -u
+}
+
 ensure_docker() {
   probe_docker && return 0
   echo 'Docker引擎未响应，正在尝试启动…' >&2
   if [[ "$(uname -s)" == Darwin ]]; then
-    open -a Docker
+    open -a "$DOCKER_APP_NAME"
   elif command -v systemctl >/dev/null 2>&1 && [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     systemctl start docker
   fi
@@ -407,15 +510,15 @@ ensure_docker() {
   done
   if [[ "$(uname -s)" == Darwin ]]; then
     echo 'Docker Desktop未恢复，重启其桌面进程（保留镜像、容器和卷）…' >&2
-    ps ax -o pid=,command= | awk '/\/Applications\/Docker.app\/Contents\/MacOS\/(Docker Desktop|com.docker.backend|com.docker.build)/ {print $1}' | xargs kill -TERM 2>/dev/null || true
+    docker_desktop_pids | xargs kill -TERM 2>/dev/null || true
     remaining=20
     while (( remaining > 0 )); do
-      pgrep -f '/Applications/Docker.app/Contents/MacOS/com.docker.backend' >/dev/null || break
+      [[ -z "$(docker_desktop_pids)" ]] && break
       sleep 0.5
       remaining=$((remaining - 1))
     done
-    ps ax -o pid=,command= | awk '/\/Applications\/Docker.app\/Contents\/MacOS\/(Docker Desktop|com.docker.backend|com.docker.build)/ {print $1}' | xargs kill -KILL 2>/dev/null || true
-    open -a Docker
+    docker_desktop_pids | xargs kill -KILL 2>/dev/null || true
+    open -a "$DOCKER_APP_NAME"
     remaining=30
     while (( remaining > 0 )); do
       probe_docker && { ok 'Docker引擎已重新启动'; return 0; }
@@ -492,7 +595,7 @@ collect_candidates() {
 }
 
 instance_candidates() {
-  find "$ROOT/runtime" -type f -name installation.json \
+  find "$RUNTIME_DIR" -type f -name installation.json \
     ! -path '*/relocations/*' ! -path '*/.office/*' -print 2>/dev/null | while read -r file; do
       local folder
       folder="$(dirname "$file")"
@@ -507,7 +610,7 @@ valid_instance() {
 }
 
 record_instance() {
-  mkdir -p "$ROOT/runtime"
+  mkdir -p "$(dirname "$ACTIVE_POINTER")"
   printf '%s\n' "$INSTANCE" >"$ACTIVE_POINTER.$$"
   chmod 600 "$ACTIVE_POINTER.$$"
   mv "$ACTIVE_POINTER.$$" "$ACTIVE_POINTER"
@@ -774,7 +877,7 @@ backup_instance() {
   local root stamp manifest
   if ! has_local_postgres; then bad 'backup当前只支持内置PostgreSQL实例'; return 2; fi
   compose ps --status running --services | grep -qx postgres || { bad 'postgres未运行；无法创建一致性备份'; return 1; }
-  root="${BACKUP_OUTPUT:-$ROOT/runtime/backups}"
+  root="${BACKUP_OUTPUT:-$DEFAULT_BACKUP_ROOT}"
   [[ "$root" == /* ]] || { bad '--output必须为绝对目录'; return 2; }
   mkdir -p "$root"
   [[ ! -L "$root" ]] || { bad '备份目录不能是软链'; return 2; }
@@ -1237,6 +1340,23 @@ show_instances() {
   done <<<"$folders"
 }
 
+show_config() {
+  section '管理配置'
+  if [[ -f "$MANAGE_CONFIG_FILE" && ! -L "$MANAGE_CONFIG_FILE" ]]; then
+    ok "配置文件：$MANAGE_CONFIG_FILE"
+  else
+    note "配置文件：${MANAGE_CONFIG_FILE}（未使用，采用默认值）"
+  fi
+  note "项目根目录：$ROOT"
+  note "运行目录：$RUNTIME_DIR"
+  note "备份目录：$DEFAULT_BACKUP_ROOT"
+  note "活动实例文件：$ACTIVE_POINTER"
+  note "管理锁目录：$LOCK_DIR"
+  note "默认等待：${WAIT_SECONDS}秒"
+  note "Docker应用名：$DOCKER_APP_NAME"
+  if [[ -n "$INSTANCE" ]]; then note "默认实例：$INSTANCE"; else note '默认实例：自动发现'; fi
+}
+
 show_addresses() {
   current_candidates
   section '地址检测'
@@ -1279,6 +1399,9 @@ show_logs() {
 case "$COMMAND" in
   instances)
     show_instances
+    ;;
+  config)
+    show_config
     ;;
   install)
     acquire_lock || exit 2
