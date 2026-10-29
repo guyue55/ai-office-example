@@ -213,6 +213,75 @@ uv sync --frozen
 - 会话流式复用共享运行时observe、任务内progress及同源SSE；展示seq不改审批version。SSE重连仅回读已有任务，每次核验身份和权限；断线不取消任务，不重放写入。订阅代次必须隔离迟到事件，关闭和BackgroundTask释放幂等，失权清空旧内容。
 - 模型连接测试与正式任务必须使用相同stream_output配置；不支持流式时由管理员显式关闭，失败不自动降级重发。ThinkingPart／签名不是可直接公开的摘要，禁止透传。UI增量更新需保留选区、焦点及阅读位置；完整门禁增加test_agent_progress_postgres、test_assistant_progress_browser和流式／非流式test_assistant_browser_postgres。
 
-- 进度DOM标记在初始空正文和终态时保持稳定，只隐藏／清空内容，不删除后续querySelector依赖的标记；浏览器须覆盖空→有内容→终态→再次同步并捕获pageerror。模型目录调用成功不能当业务查询成功。模型事件消费不能等待进度落库，观察采用有界最新槽、单任务保存及终态／取消清理；参数为空须区分供应商原始结构与SDK解析时序。只读／预览操作使用`read_*`／`prepare_*`具名工具，参数不合规返回结构化提示而非终止整轮；执行工具、网络异常与未知回执不得自动重试。模型出口的域名解析失败须与模型协议错误分开报告。只读工具必须全部常驻（按页面隐藏会导致模型不搜索而循环超限）；变更预览可按明确意图预载，其余用内置`search_tools`发现，搜索只影响可见性，不替代服务端权限。
+- 进度DOM标记在初始空正文和终态时保持稳定，只隐藏／清空内容，不删除后续querySelector依赖的标记；浏览器须覆盖空→有内容→终态→再次同步并捕获pageerror。模型目录调用成功不能当业务查询成功。模型事件消费不能等待进度落库，观察采用有界最新槽、单任务保存及终态／取消清理；参数为空须区分供应商原始结构与SDK解析时序。只读／预览操作使用`read_*`／`prepare_*`具名工具，参数不合规返回结构化提示而非终止整轮；执行工具、网络异常与未知回执不得自动重试。模型出口的域名解析失败须与模型协议错误分开报告。只读工具必须全部常驻（按页面隐藏会导致模型不搜索而循环超限）；变更预览可按明确意图预载，其余用内置`search_tools`发现，搜索只影响可见性，不替代服务端权限。完整排障、工具装载与验收步骤见第 10 节。
 
 - Agent流式驱动使用公开的逐节点接口，完整消费ModelRequestNode后才进入工具节点；普通／流式及审批恢复共用累计预算与每次模型请求前的身份核验。真实供应商原始参数完整但SDK校验为空时，检查事件消费和节点推进顺序，不能通过猜参数、自动重试或默认关闭流式掩盖。临时诊断只存结构元信息，验收后移除，最终须在无诊断注入的实例复验。
+
+## 10. 智能助手对话失败排障与工具装载（2026-10-29）
+
+本节记录一次真实故障的根因、修复和验收方法；新环境遇到“处理记录 N 项后失败”“工具参数格式不正确”“页面报 null.hidden”时先照此排查。
+
+### 10.1 症状 → 根因 → 修复
+
+| 症状 | 根因 | 修复 |
+|---|---|---|
+| 前端 Cannot set properties of null (setting hidden) | 终态时删除 data-progress-text 标记，后续重绘仍查询该节点 | 保留标记，只隐藏并清空；回归覆盖“空正文→增量→终态→再次同步”并捕获 pageerror（tests/test_assistant_progress_browser.py） |
+| 进度显示“1 项已完成”后整轮失败、参数为空 | 进度写库同步 await 观察端，阻塞模型事件流消费 | Progress 改为单工作任务 + 单一最新待保存槽；终态 flush，取消时清理（clients/agent/src/office_agent/progress.py） |
+| 流式与非流式结果不一致、工具未执行 | agent.run(event_stream_handler=...) 与节点推进时序 | 使用公开 Agent.iter() + node.stream(run.ctx)，完整消费 ModelRequestNode 后再进入工具节点 |
+| 模型先查身份、再发“空参数”调用 | 通用工具 read_office(operation, arguments) 依赖模型拼参数；该模型收到一次纠错仍重复空参数 | 20 个只读操作拆成 read_ 前缀具名工具，9 个变更拆成 prepare_ 前缀；参数不合规返回结构化 invalid_arguments，不抛异常终止整轮 |
+| 预览时整轮崩溃 | 工具内部非业务异常（如把 change 传成纯文本触发 AttributeError）未被兜住 | 工具异常转结构化结果并记录类型；预览失败明确“未执行任何变更”；预览工具说明写明对象结构 |
+| 模型域名解析失败却显示“模型或工具执行失败” | 出口异常被当作未知异常 | 捕获 ModelEgressError，按 dns／policy 输出明确提示，请求未发出、未自动重试 |
+| 按页面隐藏只读工具后预算超限 | 模型不调用搜索，反复查核心工具 | 只读工具全部常驻；仅变更预览延迟加载；该激进方案已回退 |
+
+### 10.2 工具装载策略（clients/agent/src/office_agent/toolsets.py）
+
+- 只读组 core/data/access/account（20 个 read_ 工具）每次全部可见，不按页面裁剪，保证任意页面都能查询。
+- 变更组 data_write/access_write/account_write（9 个 prepare_ 工具）默认延迟加载；提示词出现“新建、创建、上报、提交、确认、更正、归档”等意图时预载对应组。
+- 未预载时使用 Pydantic AI 内置 ToolSearch 能力：不支持原生 tool search 的供应商会得到本地 search_tools；自定义策略支持中文同义词（“待认领身份”“客户端授权”等）。
+- execute_write 始终可见，仍须外部真人批准；工具可见性只影响上下文，权限、版本、幂等和审计全部由服务端逐次核验。
+- 参考：Anthropic Advanced tool use（常驻 3–5 个高频工具、其余按需发现）、OpenAI Tool search（defer_loading、命名空间≤10）。不要把“隐藏只读工具”当作省 token 手段。
+
+### 10.3 真实服务验收步骤
+
+1. 静态与单元门禁：
+
+        uv run --project clients/agent --frozen pytest clients/agent/tests -q
+        uv run --extra agent --frozen pytest -m 'not live' -q
+        uv run mypy office-data-service/app clients/python/src clients/agent/src --check-untyped-defs
+        uv run ruff check clients/agent/src clients/agent/tests
+
+2. 构建可选 Agent 镜像并更新实例：
+
+        docker build --build-arg OFFICE_AGENT=1 -f deploy/Dockerfile -t office-conversation:<tag> .
+        # 修改 runtime/<实例>/compose.json 中 service/setup 的 image，再：
+        docker compose -f runtime/<实例>/compose.json up -d --no-deps service
+        curl -s -o /dev/null -w '%{http_code}\n' <public_url>/health/ready
+
+   同步更新实例 installation.json 的 image／commit；核对容器内 office_agent/runtime.py、toolsets.py 与仓库源码 sha256 一致。
+
+3. 运行态证据（数据库只读）：
+
+        docker compose -f runtime/<实例>/compose.json exec -T postgres psql -U postgres -d office -Atc \
+          "SELECT created_at,status,result->'usage',progress->'steps' FROM office.agent_run ORDER BY created_at DESC LIMIT 3;"
+        docker compose -f runtime/<实例>/compose.json logs --since 10m service | rg 'OfficeAgent/(failed|validate|egress|cause)'
+
+   completed + steps 含预期操作 + 无 validate/egress 错误，才算真实链路通过；requests=0 的失败先查出口与容器重启。
+
+4. 建议提示词（覆盖查询、跨组、越界、预览）：
+   “我具备的权限”“查询可访问的数据容器并说明覆盖范围，不要修改”“查询待认领身份，最多 5 条”“列出服务路径和系统信息”“预览新建项目 X，只预览不执行”。预览后必须核对业务表未变化、未产生写入。
+
+5. 业务数据不变校验（只读）：
+
+        SELECT jsonb_build_object('count', count(*),
+               'digest', md5(coalesce(string_agg(md5(row_to_json(t)::text), '' ORDER BY md5(row_to_json(t)::text)), '')))
+        FROM office.<table> t;
+
+   对 project / project_creation / project_schema / record / record_confirmation 验收前后逐表比对。浏览器侧检查“完成后再同步会话状态”无页面错误、控制台无应用报错。
+
+### 10.4 常见误修
+
+- 不要用 prepare 返回 None 隐藏工具：该工具会变成“未知工具”，模型无法恢复，整轮直接失败。
+- 不要依赖“让模型补参数”的纠错：弱模型会重复空参数；应以具名工具 + 结构化参数提示解决。
+- 不要向用户直接展示未知异常类型或模型响应正文；日志只记类型、代码位置与白名单工具名。
+- 不要为了省 token 默认关闭流式；流式与非流式必须使用同一配置，失败不自动降级重发。
+- 实测收益：只读常驻方案约降 11%–17% token、耗时约 6.5–10 秒；若未来接入更多 MCP 工具，再做按角色/意图分组，并以“查询不失败”为前置门槛。
