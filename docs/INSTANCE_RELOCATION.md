@@ -64,6 +64,6 @@ bash deploy/relocate.sh /srv/office-instance --restore <失败运行ID> --apply
 
 真实核验：`172.16.170.83`根路由303到同源控制台，健康检查200；`127.0.0.1`与`localhost`经308转到唯一登录主地址，避免在Keycloak回调前产生不同Cookie来源。公开OIDC issuer与authorization endpoint均使用主地址。部署相关回归、`ruff`与Shell语法检查通过；临时nginx容器真实验证了`0.0.0.0`发布后lo和当前内网IP均可访问。
 
-随后停止Docker Desktop进行真实恢复测试：根目录`./restart.sh`检测引擎不可用，自动启动Docker、发现当前唯一实例与`en0/172.16.170.83`，密码和地址未变时恢复容器并重启gateway/service，健康检查200。脚本不依赖DNS；IP变化走迁址，多地址交互选择登录主地址。
+随后停止Docker Desktop进行真实恢复测试：统一管理入口`./manage.sh`检测引擎不可用，自动启动Docker、发现当前唯一实例与`en0/172.16.170.83`，密码和地址未变时恢复容器并重启gateway/service，健康检查200。`stop→status→start`和`check`也已真实验证；IP变化走迁址，多地址交互选择登录主地址。详见[服务统一管理](MANAGEMENT.md)。
 
 本实例仍是显式HTTP验收模式，登录身份仍含IP；本次只恢复当前可达性。正式IP无关性要求内部DNS名称和HTTPS，按[网络监听与稳定入口](NETWORK_ADDRESSING.md)迁移。

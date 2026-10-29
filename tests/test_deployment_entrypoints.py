@@ -51,21 +51,31 @@ def test_manual_server_wizard_defaults_and_explicit_http(tmp_path):
     assert denied.returncode != 0 and target.read_bytes() == before
 
 
-def test_restart_entrypoints_are_valid_and_explain_ip_detection():
-    for path in (ROOT / "restart.sh", ROOT / "deploy/restart.sh"):
-        checked = subprocess.run(
-            ["bash", "-n", str(path)], check=False, capture_output=True, text=True
-        )
-        assert checked.returncode == 0, checked.stderr
+def test_management_entrypoint_is_valid_and_documents_all_commands():
+    checked = subprocess.run(
+        ["bash", "-n", str(ROOT / "manage.sh")],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert checked.returncode == 0, checked.stderr
     result = subprocess.run(
-        ["bash", str(ROOT / "deploy/restart.sh"), "--help"],
+        ["bash", str(ROOT / "manage.sh"), "--help"],
         check=False,
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
-    assert "多个活动地址" in result.stdout or "多个活动内网地址" in result.stdout
+    for command in ("start", "stop", "restart", "status", "check", "address", "logs"):
+        assert command in result.stdout
     assert "--ip" in result.stdout
+    detail = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "help", "restart"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert detail.returncode == 0 and "完整重启" in detail.stdout
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Bash为服务器入口")
