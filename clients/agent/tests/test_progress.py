@@ -125,7 +125,9 @@ def test_stream_projection_excludes_raw_thinking_and_masks_split_bearer():
             yield PartDeltaEvent(index=1, delta=TextPartDelta(content_delta="er secret-"))
             yield PartDeltaEvent(index=1, delta=TextPartDelta(content_delta="sentinel 完成"))
 
-        await Progress(observe).stream(None, events())
+        progress = Progress(observe)
+        await progress.stream(None, events())
+        await progress.flush()
         serialized = str(seen)
         assert "private-reasoning" not in serialized and "private-signature" not in serialized
         assert "secret-" not in serialized
@@ -147,9 +149,11 @@ def test_unregistered_tool_name_is_not_echoed_into_progress():
             raise ValueError("invalid")
 
         try:
-            await Progress(observe).call("Bearer private-operation", reject)
+            progress = Progress(observe)
+            await progress.call("Bearer private-operation", reject)
         except ValueError:
             pass
+        await progress.flush()
         assert "private-operation" not in str(seen)
 
     asyncio.run(scenario())
@@ -171,6 +175,7 @@ def test_projection_has_byte_and_step_budgets_after_sanitization():
 
         progress = Progress(observe, text_limit=128)
         await progress.stream(None, events())
+        await progress.flush()
         assert len(seen[-1]["text"].encode()) <= 128
         assert seen[-1]["truncated"]
 
@@ -179,7 +184,78 @@ def test_projection_has_byte_and_step_budgets_after_sanitization():
 
         for _ in range(70):
             await progress.call("describe_operations", execute)
+        await progress.flush()
         assert len(seen[-1]["steps"]) == 64
         assert not seen[0]["steps"]  # 旧快照不会被后续可变列表污染。
+
+    asyncio.run(scenario())
+
+
+def test_slow_observer_cannot_block_stream_consumption_and_latest_is_flushed():
+    from pydantic_ai.messages import PartStartEvent, TextPart
+
+    from office_agent.progress import Progress
+
+    async def scenario():
+        consumed = asyncio.Event()
+        seen = []
+
+        async def observe(value):
+            # 观察端依赖流消费完毕；同步await观察端会形成时序阻塞。
+            await asyncio.wait_for(consumed.wait(), timeout=0.2)
+            seen.append(value)
+
+        async def events():
+            yield PartStartEvent(index=0, part=TextPart("开始"))
+            yield PartStartEvent(index=1, part=TextPart("完成"))
+            consumed.set()
+
+        progress = Progress(observe)
+        await progress.stream(None, events())
+        await progress.flush()
+        assert consumed.is_set()
+        assert seen[-1]["text"] == "开始完成"
+        assert progress.observer is not None
+        assert progress.pending is None
+        assert progress.worker is None or progress.worker.done()
+
+    asyncio.run(scenario())
+
+
+def test_observer_queue_is_coalesced_and_flush_cancellation_cleans_worker():
+    import pytest
+
+    from office_agent.progress import Progress
+
+    async def scenario():
+        started, release = asyncio.Event(), asyncio.Event()
+        seen = []
+
+        async def observe(value):
+            started.set()
+            await release.wait()
+            seen.append(value)
+
+        progress = Progress(observe)
+        await progress.emit("identity")
+        await started.wait()
+        for _ in range(100):
+            await progress.emit("model")
+        assert progress.pending["seq"] == 101
+        release.set()
+        await progress.flush()
+        assert [item["seq"] for item in seen] == [1, 101]
+
+        started.clear()
+        release.clear()
+        await progress.emit("model")
+        await started.wait()
+        flush = asyncio.create_task(progress.flush())
+        await asyncio.sleep(0)
+        flush.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await flush
+        assert progress.worker.done()
+        assert progress.pending is None
 
     asyncio.run(scenario())

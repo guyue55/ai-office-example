@@ -213,4 +213,4 @@ uv sync --frozen
 - 会话流式复用共享运行时observe、任务内progress及同源SSE；展示seq不改审批version。SSE重连仅回读已有任务，每次核验身份和权限；断线不取消任务，不重放写入。订阅代次必须隔离迟到事件，关闭和BackgroundTask释放幂等，失权清空旧内容。
 - 模型连接测试与正式任务必须使用相同stream_output配置；不支持流式时由管理员显式关闭，失败不自动降级重发。ThinkingPart／签名不是可直接公开的摘要，禁止透传。UI增量更新需保留选区、焦点及阅读位置；完整门禁增加test_agent_progress_postgres、test_assistant_progress_browser和流式／非流式test_assistant_browser_postgres。
 
-- 进度DOM标记在初始空正文和终态时保持稳定，只隐藏／清空内容，不删除后续querySelector依赖的标记；浏览器须覆盖空→有内容→终态→再次同步并捕获pageerror。模型目录调用成功不能当业务查询成功；参数校验纠错只允许有界、执行前的只读工具，不能扩展为网络／写入自动重放。
+- 进度DOM标记在初始空正文和终态时保持稳定，只隐藏／清空内容，不删除后续querySelector依赖的标记；浏览器须覆盖空→有内容→终态→再次同步并捕获pageerror。模型目录调用成功不能当业务查询成功。模型事件消费不能等待进度落库，观察采用有界最新槽、单任务保存及终态／取消清理；参数为空须区分供应商原始结构与SDK解析时序，不因表面校验错误开启自动重试。

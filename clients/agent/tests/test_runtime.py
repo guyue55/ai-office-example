@@ -197,37 +197,12 @@ def test_timeout_and_cancellation_close_client():
     asyncio.run(cancelled())
 
 
-def test_read_argument_correction_is_bounded_and_does_not_replay_execution():
-    client = Client()
-    attempts = 0
-
-    def model(messages, info):
-        nonlocal attempts
-        attempts += 1
-        if attempts == 1:
-            return ModelResponse(parts=[ToolCallPart("read_office", {}, tool_call_id="invalid")])
-        if attempts == 2:
-            return ModelResponse(
-                parts=[
-                    ToolCallPart(
-                        "read_office",
-                        {"operation": "projects", "arguments": {}},
-                        tool_call_id="valid",
-                    )
-                ]
-            )
-        return ModelResponse(parts=[TextPart("已查询，覆盖范围以回执为准。")])
-
-    result = asyncio.run(run_task(FunctionModel(model), lambda: client, "查询容器"))
-    assert result.status == "completed"
-    assert len(result.receipts) == 1
-    assert result.receipts[0]["operation"] == "projects"
-    assert result.usage["requests"] == 3
-
+def test_invalid_tool_arguments_stop_before_execution_without_retry():
     def invalid(messages, info):
         return ModelResponse(parts=[ToolCallPart("read_office", {}, tool_call_id="invalid")])
 
     result = asyncio.run(run_task(FunctionModel(invalid), Client, "查询容器"))
     assert result.status == "failed"
-    assert result.usage["requests"] == 2
+    assert result.usage["requests"] == 1
     assert not result.receipts
+    assert "本次调用未执行" in result.explanation

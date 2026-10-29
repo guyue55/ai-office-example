@@ -123,8 +123,7 @@ async def run_with_gateway(
                 },
                 tools=[
                     Tool(describe_operations, sequential=True),
-                    # 只读参数在执行前最多纠正一次；网络／执行错误不转ModelRetry，写工具仍为零。
-                    Tool(read_office, sequential=True, max_retries=1),
+                    Tool(read_office, sequential=True),
                     Tool(prepare_write, sequential=True),
                     Tool(execute_write, sequential=True, requires_approval=True),
                 ],
@@ -202,7 +201,8 @@ async def run_with_gateway(
     except AgentError as error:
         explanation = str(error)
     except asyncio.CancelledError:
-        # 取消仍向宿主传播；SDK通道退出时先等在途调用和close收尾。
+        # 取消仍向宿主传播；先结束观察任务，不能遗留数据库写入。
+        await progress.cancel()
         raise
     except Exception as error:  # noqa: BLE001 -- 仅记录类型和代码位置，不输出异常正文。
         frames = traceback.extract_tb(error.__traceback__)
@@ -231,6 +231,7 @@ async def run_with_gateway(
         )
         explanation = "模型或工具执行失败；请检查配置与状态，未自动重试写入"
     await progress.emit(status)
+    await progress.flush()
     return RunResult(
         run_id,
         status,

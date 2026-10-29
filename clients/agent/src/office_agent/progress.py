@@ -23,6 +23,8 @@ class Progress:
         self.text = ""
         self.steps: list[dict] = []
         self.truncated = False
+        self.pending: dict | None = None
+        self.worker: asyncio.Task | None = None
 
     async def emit(self, stage):
         if self.observer is None:
@@ -41,11 +43,37 @@ class Progress:
             "steps": copy.deepcopy(self.steps),
             "truncated": self.truncated,
         }
-        try:
-            async with asyncio.timeout(1):
-                await self.observer(payload)
-        except Exception:  # noqa: BLE001 -- 展示失败不能重放或阻断实际业务操作。
-            self.observer = None
+        # 模型事件必须及时消费；最新快照替换待保存槽，绝不排无限队列。
+        self.pending = payload
+        if self.worker is None or self.worker.done():
+            self.worker = asyncio.create_task(self._drain(), name="office-agent-progress")
+
+    async def _drain(self):
+        while self.pending is not None and self.observer is not None:
+            payload, self.pending = self.pending, None
+            try:
+                async with asyncio.timeout(1):
+                    await self.observer(payload)
+            except (Exception, asyncio.CancelledError):  # noqa: BLE001 -- 观察失败与业务隔离。
+                # 仅结束观察任务；不取消模型、不重放业务、不输出异常正文。
+                self.observer = None
+                self.pending = None
+                return
+
+    async def flush(self):
+        """业务终态前收尾最新快照；单观察者串行，不共享并发数据库会话。"""
+        if self.worker is not None:
+            try:
+                await asyncio.shield(self.worker)
+            except asyncio.CancelledError:
+                await self.cancel()
+                raise
+
+    async def cancel(self):
+        self.pending = None
+        if self.worker is not None:
+            self.worker.cancel()
+            await asyncio.gather(self.worker, return_exceptions=True)
 
     async def stream(self, _context, events):
         await self.emit("model")
