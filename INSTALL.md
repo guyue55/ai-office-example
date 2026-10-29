@@ -10,6 +10,8 @@
 
 Linux服务器准备Docker Engine、Compose插件、Bash与flock（util-linux）。macOS验收使用Docker Desktop。缺少环境时安装入口提供提示；不自动改系统权限、组或证书信任。
 
+Linux使用非root账号管理实例时，该账号需加入`docker`组（或改用`sudo`执行管理脚本）；Docker服务未启动时，管理脚本只在root下尝试`systemctl start docker`，其他情况会提示检查服务与权限。安装后用`./manage.sh preflight`与`./manage.sh check`验收。
+
 安装前建议先跑只读预检，确认Docker、Compose、目录可写、端口、磁盘、时钟与镜像摘要都能满足：
 
 ```sh

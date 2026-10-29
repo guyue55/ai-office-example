@@ -96,6 +96,8 @@ jobs:
           python-version: ${{ matrix.python }}
           enable-cache: true
       - run: uv sync --locked --python ${{ matrix.python }}
+      - name: 管理脚本Linux预检
+        run: OFFICE_PREFLIGHT_OFFLINE=1 ./manage.sh preflight
       - run: uv run --frozen python scripts/configure_template.py --check
       - run: uv run --frozen ruff check office-data-service clients/python scripts tests packages/api-contracts deploy/installer installers
       - run: uv run --frozen ruff format --check office-data-service clients/python scripts tests packages/api-contracts deploy/installer installers

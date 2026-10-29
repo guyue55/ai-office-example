@@ -580,6 +580,8 @@ ensure_docker() {
     open -a "$DOCKER_APP_NAME"
   elif command -v systemctl >/dev/null 2>&1 && [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     systemctl start docker
+  elif [[ "$(uname -s)" == Linux ]]; then
+    echo 'Linux非root用户无法启动系统Docker；请确认已加入docker组，或用root/sudo执行' >&2
   fi
   local remaining=12
   while (( remaining > 0 )); do
@@ -605,7 +607,11 @@ ensure_docker() {
       remaining=$((remaining - 1))
     done
   fi
-  bad 'Docker引擎仍未就绪；请查看Docker Desktop故障处理页面'
+  if [[ "$(uname -s)" == Darwin ]]; then
+    bad 'Docker引擎仍未就绪；请查看Docker Desktop故障处理页面'
+  else
+    bad 'Docker引擎仍未就绪；请检查 systemctl status docker 与当前用户的docker权限'
+  fi
   return 2
 }
 
