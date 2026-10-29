@@ -2,6 +2,7 @@
 
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -187,6 +188,64 @@ def test_manage_config_rejects_non_numeric_timeout(tmp_path):
     )
     assert result.returncode == 2
     assert "正整数" in result.stderr
+
+
+def test_manage_config_supports_inline_comments_and_normalizes_trailing_slash(tmp_path):
+    config = tmp_path / "manage.env"
+    config.write_text(
+        "OFFICE_MANAGE_TIMEOUT=45 # 行尾注释\n"
+        'OFFICE_MANAGE_DOCKER_APP="Docker Desktop" # 注释\n'
+        "OFFICE_MANAGE_RUNTIME_DIR=runtime-x/\n"
+        "OFFICE_MANAGE_BACKUP_DIR=backups-x/\n"
+    )
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "config"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_CONFIG": str(config)},
+    )
+    assert result.returncode == 0, result.stderr
+    assert "默认等待：45秒" in result.stdout
+    assert "Docker应用名：Docker Desktop" in result.stdout
+    assert str(ROOT / "runtime-x/backups-x") in result.stdout
+    assert "runtime-x//" not in result.stdout
+
+
+def test_manage_config_rejects_unbalanced_quote(tmp_path):
+    config = tmp_path / "manage.env"
+    config.write_text('OFFICE_MANAGE_DOCKER_APP="Docker\n')
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), "config"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "OFFICE_MANAGE_CONFIG": str(config)},
+    )
+    assert result.returncode == 2
+    assert "引号未闭合" in result.stderr
+
+
+def test_manage_install_passes_instance_directory_after_config(tmp_path):
+    if not shutil.which("docker"):
+        pytest.skip("安装参数回归需要可用的Docker环境")
+    probe = subprocess.run(["docker", "info"], check=False, capture_output=True)
+    if probe.returncode != 0:
+        pytest.skip("Docker引擎未运行，跳过安装参数回归")
+    (tmp_path / "deploy").mkdir()
+    shutil.copy2(ROOT / "manage.sh", tmp_path / "manage.sh")
+    stub = tmp_path / "deploy/install.sh"
+    stub.write_text('#!/usr/bin/env bash\nfor a in "$@"; do printf "ARG:%s\\n" "$a"; done\n')
+    result = subprocess.run(
+        ["bash", str(tmp_path / "manage.sh"), "install", "--instance", "runtime/t1"],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+    )
+    assert result.returncode == 0, result.stderr
+    assert f"ARG:{tmp_path}/deploy/.env" in result.stdout
+    assert "ARG:runtime/t1" in result.stdout
 
 
 @pytest.mark.parametrize(

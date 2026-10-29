@@ -55,6 +55,12 @@ manage_path() {
   esac
 }
 
+normalize_path() {
+  local p="$1"
+  while [[ "$p" == */ && "$p" != / ]]; do p="${p%/}"; done
+  printf '%s' "$p"
+}
+
 load_manage_config() {
   local file="$MANAGE_CONFIG_FILE" line key value seen=" "
   local cfg_timeout='' cfg_runtime='' cfg_backup='' cfg_active='' cfg_lock='' cfg_docker='' cfg_instance=''
@@ -70,9 +76,26 @@ load_manage_config() {
       [[ "$key" =~ ^[A-Z][A-Z0-9_]*$ ]] || { echo "管理配置键格式无效：$key" >&2; return 2; }
       [[ "$seen" != *" $key "* ]] || { echo "管理配置键重复：$key" >&2; return 2; }
       seen="${seen}${key} "
-      case "$value" in
-        \"*\") [[ "$value" == *\" ]] && value="${value#\"}" && value="${value%\"}" ;;
-        \'*\') [[ "$value" == *\' ]] && value="${value#\'}" && value="${value%\'}" ;;
+      local quote="${value:0:1}" body rest
+      case "$quote" in
+        \'|\")
+          body="${value:1}"
+          case "$quote" in
+            \') body="${body%%\'*}" ;;
+            \") body="${body%%\"*}" ;;
+          esac
+          rest="${value:$((1 + ${#body}))}"
+          [[ "$rest" == "$quote"* ]] || { echo "管理配置引号未闭合：$key" >&2; return 2; }
+          rest="${rest:1}"
+          rest="${rest#"${rest%%[![:space:]]*}"}"
+          [[ -z "$rest" || "$rest" == \#* ]] \
+            || { echo "管理配置引号后存在多余内容：$key" >&2; return 2; }
+          value="$body"
+          ;;
+        *)
+          [[ "$value" == *' #'* ]] && value="${value%% #*}"
+          value="${value%"${value##*[![:space:]]}"}"
+          ;;
       esac
       [[ "$value" != *'$'* && "$value" != *'`'* && "$value" != *$'\n'* && "$value" != *$'\r'* ]] \
         || { echo "管理配置只接受普通字面量：$key" >&2; return 2; }
@@ -97,10 +120,10 @@ load_manage_config() {
   WAIT_SECONDS="${OFFICE_MANAGE_TIMEOUT:-${cfg_timeout:-120}}"
   [[ "$WAIT_SECONDS" =~ ^[1-9][0-9]*$ ]] \
     || { echo "管理等待秒数必须是正整数：$WAIT_SECONDS" >&2; return 2; }
-  RUNTIME_DIR="$(manage_path "${OFFICE_MANAGE_RUNTIME_DIR:-$cfg_runtime}" "$ROOT" runtime)"
-  DEFAULT_BACKUP_ROOT="$(manage_path "${OFFICE_MANAGE_BACKUP_DIR:-$cfg_backup}" "$RUNTIME_DIR" backups)"
-  ACTIVE_POINTER="$(manage_path "${OFFICE_MANAGE_ACTIVE_INSTANCE:-$cfg_active}" "$RUNTIME_DIR" .active-server-instance)"
-  LOCK_DIR="$(manage_path "${OFFICE_MANAGE_LOCK_DIR:-$cfg_lock}" "$RUNTIME_DIR" .manage.lock)"
+  RUNTIME_DIR="$(normalize_path "$(manage_path "${OFFICE_MANAGE_RUNTIME_DIR:-$cfg_runtime}" "$ROOT" runtime)")"
+  DEFAULT_BACKUP_ROOT="$(normalize_path "$(manage_path "${OFFICE_MANAGE_BACKUP_DIR:-$cfg_backup}" "$RUNTIME_DIR" backups)")"
+  ACTIVE_POINTER="$(normalize_path "$(manage_path "${OFFICE_MANAGE_ACTIVE_INSTANCE:-$cfg_active}" "$RUNTIME_DIR" .active-server-instance)")"
+  LOCK_DIR="$(normalize_path "$(manage_path "${OFFICE_MANAGE_LOCK_DIR:-$cfg_lock}" "$RUNTIME_DIR" .manage.lock)")"
   DOCKER_APP_NAME="${OFFICE_MANAGE_DOCKER_APP:-${cfg_docker:-Docker}}"
   INSTANCE="${OFFICE_INSTANCE_DIR:-$(manage_path "$cfg_instance" "$ROOT" "")}"
   [[ "$RUNTIME_DIR" != "/" && "$RUNTIME_DIR" != "$ROOT" ]] \
@@ -305,7 +328,9 @@ EOF
 install：新环境安装
   调用现有deploy/install.sh。未配置OFFICE_IMAGE时，安装器从当前源码构建镜像。
   使用--configure可先进入配置向导；--config指定公开.env。
+  --instance可指定首装目标实例目录，缺省用deploy/.env中的OFFICE_INSTANCE_DIR。
 示例：./manage.sh install --configure
+ 示例：./manage.sh install --instance runtime/instance
 EOF
       ;;
     build)
@@ -488,8 +513,7 @@ acquire_lock() {
 
 docker_desktop_pids() {
   {
-    pgrep -f 'com\.docker\.backend' || true
-    pgrep -f 'com\.docker\.build' || true
+    pgrep -f 'Docker\.app/Contents/MacOS/com\.docker\.(backend|build)' || true
     pgrep -x 'Docker Desktop' || true
   } | sort -u
 }
@@ -815,7 +839,7 @@ recreate_stack() {
     return 1
   fi
   step '3/3' '核验就绪状态'
-  wait_health || return 1
+  wait_ready || return 1
   ok '容器已重建；数据库卷、镜像、配置和密钥未删除'
 }
 
@@ -927,10 +951,18 @@ backup_instance() {
 install_environment() {
   local args=()
   [[ "$INSTALL_CONFIGURE" == 1 ]] && args+=(--configure)
-  [[ -n "$INSTALL_CONFIG" ]] && args+=("$INSTALL_CONFIG")
+  if [[ -n "$INSTANCE" ]]; then
+    args+=("${INSTALL_CONFIG:-$ROOT/deploy/.env}" "$INSTANCE")
+  elif [[ -n "$INSTALL_CONFIG" ]]; then
+    args+=("$INSTALL_CONFIG")
+  fi
   section '新环境安装'
-  note "将调用deploy/install.sh${INSTALL_CONFIG:+：$INSTALL_CONFIG}"
-  bash "$ROOT/deploy/install.sh" "${args[@]}"
+  note "将调用deploy/install.sh${INSTALL_CONFIG:+：$INSTALL_CONFIG}${INSTANCE:+；实例目录：$INSTANCE}"
+  if [[ ${#args[@]} -gt 0 ]]; then
+    bash "$ROOT/deploy/install.sh" "${args[@]}"
+  else
+    bash "$ROOT/deploy/install.sh"
+  fi
 }
 
 image_agent_variant() {
@@ -1064,7 +1096,7 @@ upgrade_instance() {
     return 1
   fi
   step '6/6' '核验健康与身份入口'
-  if ! wait_health || ! run_check; then
+  if ! wait_ready || ! run_check; then
     compose stop --timeout 20 service gateway >/dev/null 2>&1 || true
     set_instance_image "$target_id" failed "$migration" || true
     bad '新镜像健康检查未通过；service/gateway保持停止'
@@ -1131,6 +1163,7 @@ sync_address() {
     warn "HTTP实例地址由 $CURRENT_HOST 变为 ${SELECTED}，执行保留数据迁址"
     bash "$ROOT/deploy/relocate.sh" "$INSTANCE" \
       --url "http://$SELECTED:$PORT" --listen lan --image "$IMAGE" --apply
+    IFS=$'\t' read -r PROJECT IMAGE PUBLIC_URL PORT DEMO CURRENT_HOST <<<"$(json_marker "$INSTANCE/installation.json")"
   fi
 }
 
@@ -1163,6 +1196,39 @@ wait_health() {
   return 1
 }
 
+issuer_url() {
+  if [[ "$DEMO" == 1 ]]; then
+    printf 'http://%s:%s/identity/realms/office' "$CURRENT_HOST" "$PORT"
+  else
+    printf '%s/identity/realms/office' "$PUBLIC_URL"
+  fi
+}
+
+read_issuer() {
+  local url
+  url="$(issuer_url)/.well-known/openid-configuration"
+  if [[ -f "$INSTANCE/service/ca.pem" ]]; then
+    curl -fsS --noproxy '*' --max-time 3 --cacert "$INSTANCE/service/ca.pem" "$url" 2>/dev/null
+  else
+    curl -fsS --noproxy '*' --max-time 3 "$url" 2>/dev/null
+  fi | sed -n 's/.*"issuer"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
+}
+
+issuer_once() {
+  [[ "$(read_issuer)" == "$(issuer_url)" ]]
+}
+
+wait_ready() {
+  local remaining="$WAIT_SECONDS"
+  while (( remaining > 0 )); do
+    if health_once && issuer_once; then ok '健康与登录入口就绪'; return 0; fi
+    sleep 1
+    remaining=$((remaining - 1))
+  done
+  bad "健康或登录入口在${WAIT_SECONDS}秒内未就绪；请查看identity与gateway日志"
+  return 1
+}
+
 all_services_running() {
   local services name
   services="$(compose ps --status running --services 2>/dev/null || true)"
@@ -1186,7 +1252,7 @@ start_stack() {
       ok '无需重启，当前实例已就绪'
     fi
     step '4/4' '核验就绪状态'
-    wait_health || return 1
+    wait_ready || return 1
     if [[ "$DEMO" == 1 ]]; then
       printf '\n服务已就绪：http://%s:%s/\n' "$SELECTED" "$PORT"
     else
@@ -1198,7 +1264,7 @@ start_stack() {
   compose up -d --wait --wait-timeout "$WAIT_SECONDS" || return 2
   if [[ "$gateway_change" == updated ]]; then compose restart gateway >/dev/null; fi
   step '4/4' '核验就绪状态'
-  wait_health || return 1
+  wait_ready || return 1
   if [[ "$DEMO" == 1 ]]; then
     printf '\n服务已启动\n'
     echo "  本机入口：http://localhost:$PORT/（自动转到登录主地址）"
@@ -1227,7 +1293,7 @@ restart_stack() {
   compose restart --timeout 20 || return 2
   compose up -d --wait --wait-timeout "$WAIT_SECONDS" || return 2
   step '4/4' '核验就绪状态'
-  wait_health || return 1
+  wait_ready || return 1
   if [[ "$DEMO" == 1 ]]; then
     printf '\n服务已重启：http://%s:%s/\n' "$SELECTED" "$PORT"
   else
@@ -1262,7 +1328,7 @@ show_status() {
   else
     ok 'Docker引擎运行中'
     compose ps -a --format 'table {{.Name}}\t{{.Service}}\t{{.Status}}\t{{.Ports}}' || warn '无法读取容器状态'
-    if [[ "$DEMO" == 1 ]]; then SELECTED="$CURRENT_HOST"; else SELECTED="$CURRENT_HOST"; fi
+    SELECTED="$CURRENT_HOST"
     if health_once; then health=ok; ok '健康端点可用'; else printf '  [注意] 健康端点不可用\n'; fi
     local binding
     binding="$(docker port "$PROJECT-gateway-1" "$PORT/tcp" 2>/dev/null || true)"
@@ -1273,7 +1339,7 @@ show_status() {
 }
 
 run_check() {
-  local failures=0 binding issuer expected_issuer issuer_url
+  local failures=0 binding issuer expected_issuer
   section '检查结果'
   if [[ -f "$INSTANCE/installation.json" && -f "$INSTANCE/compose.json" ]]; then
     ok '实例配置文件存在'
@@ -1304,18 +1370,8 @@ run_check() {
   if [[ "$binding" == "0.0.0.0:$PORT" ]]; then ok "端口监听：$binding"; else bad "端口监听异常：${binding:-无}"; failures=$((failures+1)); fi
   SELECTED="$CURRENT_HOST"
   if health_once; then ok '健康端点返回200'; else bad '健康端点不可用'; failures=$((failures+1)); fi
-  if [[ "$DEMO" == 1 ]]; then
-    issuer_url="http://$CURRENT_HOST:$PORT/identity/realms/office/.well-known/openid-configuration"
-    expected_issuer="http://$CURRENT_HOST:$PORT/identity/realms/office"
-  else
-    issuer_url="$PUBLIC_URL/identity/realms/office/.well-known/openid-configuration"
-    expected_issuer="$PUBLIC_URL/identity/realms/office"
-  fi
-  if [[ "$DEMO" == 1 || ! -f "$INSTANCE/service/ca.pem" ]]; then
-    issuer="$(curl -fsS --noproxy '*' --max-time 5 "$issuer_url" 2>/dev/null | sed -n 's/.*"issuer"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1 || true)"
-  else
-    issuer="$(curl -fsS --noproxy '*' --max-time 5 --cacert "$INSTANCE/service/ca.pem" "$issuer_url" 2>/dev/null | sed -n 's/.*"issuer"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1 || true)"
-  fi
+  expected_issuer="$(issuer_url)"
+  issuer="$(read_issuer)"
   if [[ "$issuer" == "$expected_issuer" ]]; then ok "OIDC issuer：$issuer"; else bad "OIDC issuer不一致：${issuer:-未读取}"; failures=$((failures+1)); fi
   if [[ "$failures" -eq 0 ]]; then printf '\n检查通过。\n'; return 0; fi
   printf '\n检查失败：%s 项。\n' "$failures" >&2
