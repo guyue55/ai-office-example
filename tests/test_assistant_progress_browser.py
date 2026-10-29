@@ -29,7 +29,7 @@ def test_progress_updates_in_place_and_does_not_resubmit(web):  # noqa: F811
             "seq": 1,
             "elapsed_ms": 200,
             "stage": "reply",
-            "text": "正在整理",
+            "text": "",
             "steps": [{"id": "1", "operation": "whoami", "status": "completed", "elapsed_ms": 30}],
             "truncated": False,
         },
@@ -56,12 +56,16 @@ def test_progress_updates_in_place_and_does_not_resubmit(web):  # noqa: F811
                 ]
             )
             page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(f"http://127.0.0.1:{port}/console/assistant/workspace")
             page.get_by_role("button", name="历史会话", exact=True).click()
             page.locator(f'[data-conversation="{conversation["id"]}"]').click()
+            expect(page.locator("[data-progress-text]")).to_be_hidden()
+            turn["progress"] = {**turn["progress"], "seq": 2, "text": "正在整理"}
             expect(page.locator("[data-progress-text]")).to_have_text("正在整理")
             page.locator('[data-run="task-one"]').evaluate("el=>el.dataset.marker='stable'")
-            turn["progress"] = {**turn["progress"], "seq": 2, "text": "已读取权限，正在整理结果"}
+            turn["progress"] = {**turn["progress"], "seq": 3, "text": "已读取权限，正在整理结果"}
             expect(page.locator("[data-progress-text]")).to_have_text("已读取权限，正在整理结果")
             expect(page.locator('[data-run="task-one"]')).to_have_attribute("data-marker", "stable")
             page.locator("[data-progress] summary").click()
@@ -100,7 +104,12 @@ def test_progress_updates_in_place_and_does_not_resubmit(web):  # noqa: F811
                 },
             )
             expect(page.locator("#assistant-messages")).to_contain_text("你可查询获准数据。")
-            expect(page.locator("[data-progress-text]")).to_have_count(0)
+            expect(page.locator("[data-progress-text]")).to_be_hidden()
+            # 终态后重绘及重新连接必须仍能定位复用节点。
+            page.get_by_role("button", name="更多会话操作", exact=True).click()
+            page.get_by_role("button", name="同步会话状态", exact=True).click()
+            expect(page.locator("[data-progress-text]")).to_be_hidden()
+            assert not errors
             page.get_by_text("工具回执（1条）", exact=True).click()
             expect(page.locator(".assistant-receipt")).to_contain_text("隔离测试员工")
             folder = Path("runtime/conversation-events/browser")

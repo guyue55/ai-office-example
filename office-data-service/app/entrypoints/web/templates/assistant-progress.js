@@ -23,7 +23,7 @@
     }
     const text=box.querySelector('[data-progress-text]');
     if(active&&value.text){text.hidden=false;if(text.textContent!==value.text)text.textContent=value.text;}
-    else{text.hidden=true;text.removeAttribute('data-progress-text');}
+    else{text.hidden=true;text.textContent='';}
     box.querySelector('[data-progress-truncated]').hidden=!value.truncated;
   }
   function render(turn){
