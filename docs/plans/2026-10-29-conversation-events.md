@@ -68,3 +68,7 @@
 3. 即使驱动与观察修正，该供应商模型仍会间歇生成缺`operation`／`arguments`的调用。最终仅对尚未执行的`read_office`与`prepare_write`提供一次参数更正提示（可选`arguments`默认空对象，缺`operation`返回`ModelRetry`），最多纠正一次；执行工具、网络失败与未知回执仍不自动重试或重放，字段、权限与预算边界不变。临时实例诊断已移除，最终以无诊断注入实例复验。
 
 新增慢观察者不阻塞消费、100次更新合并为最新快照、取消flush保留取消语义且清理后台任务的回归。运行时未知异常只记录类型及代码位置，不记录异常正文、参数、密钥和原始响应；参数校验耗尽有明确说明，保留实际已完成回执。依据：[Pydantic AI逐节点驱动与流式输出](https://pydantic.dev/docs/ai/core-concepts/agent/)、[Pydantic AI工具参数验证](https://pydantic.dev/docs/ai/tools-toolsets/tools-advanced/)、[事件流消费边界讨论](https://github.com/pydantic/pydantic-ai/issues/5769)。
+
+### 最终复验（2026-10-29，commit 233a22a）
+
+在用实例升级到无临时诊断注入的`retry-final`镜像。用户原始提示词“查询可访问的数据容器并说明覆盖范围”连续真实执行两次，均完成：一次 6 个模型请求／3 次工具（含一次参数更正提示后重复只读查询），一次 3 个模型请求／2 次工具；进度步骤为“了解可用操作 → 查询数据容器”，无失败状态。“列出服务所在路径以及系统信息”按边界直接说明不在能力范围，1 个请求、无工具调用，未失败。页面完成后再次“同步会话状态”与终态重绘无空节点异常。只读验收前后业务表（project、project_creation、project_schema、record、record_confirmation）行数与内容摘要完全一致。Agent 74 项、服务端非活体 719 项、mypy 136 个源文件及 Ruff 均通过。
