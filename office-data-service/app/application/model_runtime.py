@@ -11,7 +11,9 @@ from app.infrastructure import model_secrets
 from app.infrastructure.model_egress import check_endpoint, model_transport
 
 
-async def prepare_runtime(application, revision, *, model_context=None, synthetic=False):
+async def prepare_runtime(
+    application, revision, *, model_context=None, synthetic=False, response_bytes=None
+):
     settings = application.settings
     require(
         synthetic or revision.config.get("approved_model_data") is True,
@@ -64,7 +66,7 @@ async def prepare_runtime(application, revision, *, model_context=None, syntheti
                 transport=model_transport(
                     settings,
                     bound_config.model_url,
-                    max_response_bytes=65536 if synthetic else None,
+                    max_response_bytes=response_bytes or (65536 if synthetic else None),
                 ),
             ) as model:
                 yield model

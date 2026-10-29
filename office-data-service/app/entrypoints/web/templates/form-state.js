@@ -2,7 +2,7 @@
   'use strict';
   const snapshots = new WeakMap();
   const formValue = form => Array.from(form.elements)
-    .filter(el => el.name && !['hidden', 'submit', 'password'].includes(el.type))
+    .filter(el => el.name && !el.hasAttribute('data-sensitive') && !['hidden', 'submit', 'password'].includes(el.type))
     .map(el => [el.name, ['checkbox', 'radio'].includes(el.type) ? el.checked : el.value]);
   const remember = form => snapshots.set(form, JSON.stringify(formValue(form)));
   const dirtyForm = form => snapshots.has(form) &&

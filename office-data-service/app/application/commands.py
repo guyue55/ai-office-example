@@ -16,7 +16,14 @@ from app.modules.access.account_schemas import (
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import ACCESS_INPUTS, normalize_access_command
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
-from app.modules.agent.model_configuration import ModelApply, ModelSave, ModelTest, ModelVersion
+from app.modules.agent.model_configuration import (
+    ModelApply,
+    ModelDiscover,
+    ModelProbe,
+    ModelSave,
+    ModelTest,
+    ModelVersion,
+)
 from app.modules.agent.schemas import (
     ConversationArchive,
     ConversationCreate,
@@ -65,6 +72,8 @@ OPERATION_INPUTS: dict[str, type[BaseModel]] = {
     "agent.config.apply": ModelApply,
     "agent.config.disable": ModelVersion,
     "agent.config.test": ModelTest,
+    "agent.config.models": ModelDiscover,
+    "agent.config.probe": ModelProbe,
     "agent.capabilities": EmptyInput,
     "agent.start": RunStart,
     "agent.list": RunList,

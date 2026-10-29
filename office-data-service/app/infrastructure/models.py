@@ -320,8 +320,14 @@ class ModelConfigurationRevision(Base):
 
 class ModelConnectionTest(Entity):
     __tablename__ = "model_connection_test"
-    __table_args__ = (Index("ix_model_connection_test_created", "created_at", "id"),)
-    revision: Mapped[int] = mapped_column(ForeignKey("model_configuration_revision.revision"))
+    __table_args__ = (
+        Index("ix_model_connection_test_created", "created_at", "id"),
+        Index("uq_model_test_actor_request", "actor_id", "request_key", unique=True),
+    )
+    revision: Mapped[int | None] = mapped_column(
+        ForeignKey("model_configuration_revision.revision"), nullable=True
+    )
+    request_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
     actor_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
     api: Mapped[str] = mapped_column(String(40))
     model: Mapped[str] = mapped_column(String(200))

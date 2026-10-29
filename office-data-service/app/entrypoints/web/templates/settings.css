@@ -55,3 +55,25 @@
 
 .settings-test-result {margin-top:12px;}
 .settings-test-result .badge {justify-self:start;}
+
+/* 模型连接主流程：常用操作就近，明细折叠；沿用全站输入和提示变量。 */
+.model-settings-layout {max-width:880px;margin-inline:auto;display:grid;gap:20px;}
+.model-settings-layout .card {margin:0;}
+.model-input-actions {display:flex;align-items:center;gap:8px;min-width:0;}
+.model-input-actions > input,.model-combobox {flex:1;min-width:0;}
+.model-input-actions > button {flex:0 0 auto;white-space:nowrap;min-height:40px;}
+.model-combobox {position:relative;}
+.model-options {position:absolute;inset:calc(100% + 6px) 0 auto;z-index:30;max-height:280px;overflow-y:auto;background:var(--surface,var(--bg));border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgb(0 0 0 / 10%);padding:4px;}
+.model-options[hidden] {display:none;}
+.model-options [role=option] {padding:10px 12px;border-radius:6px;cursor:pointer;overflow-wrap:anywhere;font-size:13px;}
+.model-options [role=option]:hover,.model-options [aria-selected=true] {background:var(--soft);}
+.model-inline-result {min-height:24px;font-size:13px;line-height:1.7;overflow-wrap:anywhere;}
+.model-inline-result[data-state=error] {color:var(--danger,#b42318);}
+.model-inline-result[data-state=success] {color:var(--success,#18794e);}
+.model-details > .settings-side {margin-top:16px;}
+.js .model-secret-operations {display:none;}
+.js .model-js-action:not([hidden]) {display:inline-flex;}
+.js .model-settings-layout #model-secret-field[data-model-secret] {display:grid;}
+@media (max-width:600px) {.model-input-actions {flex-wrap:wrap;}.model-combobox {flex-basis:100%;}.model-settings-layout {max-width:100%;}}
+.model-combobox > input {padding-right:36px;}
+.model-combobox-toggle {position:absolute;right:4px;top:4px;bottom:4px;padding:4px 6px;min-height:0!important;border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;}

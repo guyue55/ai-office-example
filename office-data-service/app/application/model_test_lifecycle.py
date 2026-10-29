@@ -21,7 +21,12 @@ class ModelTestLifecycle:
         self.tasks: dict[str, asyncio.Task[bool]] = {}
 
     async def finish(
-        self, identifier: str, actor_id: str, revision: int, trace_id: str, result: dict | None
+        self,
+        identifier: str,
+        actor_id: str,
+        revision: int | None,
+        trace_id: str,
+        result: dict | None,
     ) -> bool:
         async def persist() -> bool:
             try:
@@ -39,7 +44,7 @@ class ModelTestLifecycle:
                             Audit(
                                 actor_id=actor_id,
                                 action="agent.config.tested",
-                                resource_id=str(revision),
+                                resource_id=str(revision) if revision is not None else identifier,
                                 detail=detail,
                                 trace_id=trace_id,
                             )
@@ -78,7 +83,7 @@ class ModelTestLifecycle:
                     Audit(
                         actor_id=row.actor_id,
                         action="agent.config.tested",
-                        resource_id=str(row.revision),
+                        resource_id=str(row.revision) if row.revision is not None else row.id,
                         detail={"phase": "interrupted", "reason": "recovered_without_retry"},
                         trace_id=str(uuid4()),
                     )

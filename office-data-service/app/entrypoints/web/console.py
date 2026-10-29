@@ -85,7 +85,10 @@ def web_router(application):
                 if error.status == 401:
                     store.destroy(request.cookies.get(COOKIE))
                 log_rejection(request.state.trace_id, error.code, error.status, "web")
-                if request.url.path.startswith("/console/assistant-ui/"):
+                if (
+                    request.url.path.startswith("/console/assistant-ui/")
+                    or request.url.path == "/console/model-settings/inspect"
+                ):
                     response = error_response(error, request.state.trace_id)
                     response.headers["Cache-Control"] = "no-store"
                     return response

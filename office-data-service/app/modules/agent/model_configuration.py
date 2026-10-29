@@ -10,6 +10,24 @@ from pydantic import Field, SecretStr, model_validator
 from app.common.inputs import Input
 from app.common.outputs import Output
 
+ModelCheckCategory = Literal[
+    "ok",
+    "authentication",
+    "permission",
+    "endpoint_or_model",
+    "rate_limit",
+    "provider",
+    "dns",
+    "dns_fake_ip",
+    "dns_address",
+    "tls",
+    "connect",
+    "timeout",
+    "policy",
+    "invalid_response",
+    "response_limit",
+]
+
 
 class ModelLimits(Input):
     requests: int = Field(default=8, ge=1, le=50)
@@ -23,20 +41,17 @@ class ModelLimits(Input):
     pending_writes: int = Field(default=8, ge=1, le=20)
 
 
-class ModelDraft(Input):
+class ModelConnection(Input):
     api: Literal["openai-completions", "openai-responses", "anthropic-messages"] = (
         "openai-completions"
     )
     model_url: str = Field(min_length=1, max_length=512)
-    model: str = Field(min_length=1, max_length=200)
     anthropic_auth: Literal["bearer", "x-api-key"] = "bearer"
     auth_mode: Literal["api-key", "none", "custom-header"] = "api-key"
     auth_header: str = Field(default="x-api-key", min_length=1, max_length=100)
     extra_headers: dict[str, str] = Field(default_factory=dict, max_length=16)
     extra_query: dict[str, str] = Field(default_factory=dict, max_length=16)
     request_timeout: float = Field(default=30, gt=0, le=300)
-    approved_model_data: bool = False
-    limits: ModelLimits = Field(default_factory=ModelLimits)
 
     @model_validator(mode="after")
     def gateway_options(self):
@@ -110,12 +125,18 @@ class ModelDraft(Input):
         return self
 
 
+class ModelDraft(ModelConnection):
+    model: str = Field(min_length=1, max_length=200)
+    approved_model_data: bool = False
+    limits: ModelLimits = Field(default_factory=ModelLimits)
+
+
 class ModelVersion(Input):
     version: int = Field(ge=0, le=2147483647)
 
 
-class ModelSave(ModelVersion):
-    draft: ModelDraft
+class ModelCredentials(ModelVersion):
+    reuse_secret_at_new_url: bool = False
     secret_action: Literal["keep", "replace", "clear"] = "keep"
     secret: SecretStr | None = Field(default=None, min_length=1, max_length=8192, repr=False)
 
@@ -130,6 +151,34 @@ class ModelSave(ModelVersion):
         return self
 
 
+class ModelSave(ModelCredentials):
+    draft: ModelDraft
+
+
+class ModelDiscover(ModelCredentials):
+    connection: ModelConnection
+
+
+class ModelProbe(ModelSave):
+    acknowledge_cost: Literal[True]
+    request_key: str = Field(min_length=1, max_length=100)
+
+
+class ModelChoice(Output):
+    id: str = Field(min_length=1, max_length=200)
+    name: str = Field(max_length=200)
+
+
+class ModelDiscoveryResult(Output):
+    passed: bool
+    category: ModelCheckCategory
+    message: str
+    suggestion: str
+    elapsed_ms: int = Field(ge=0)
+    items: list[ModelChoice] = Field(max_length=1000)
+    truncated: bool
+
+
 class ModelApply(ModelVersion):
     revision: int = Field(ge=1)
 
@@ -139,33 +188,17 @@ class ModelTest(ModelApply):
 
 
 class ModelTestResult(Output):
-    revision: int
+    revision: int | None
     passed: bool
     message: str
-    category: Literal[
-        "ok",
-        "authentication",
-        "permission",
-        "endpoint_or_model",
-        "rate_limit",
-        "provider",
-        "dns",
-        "dns_fake_ip",
-        "dns_address",
-        "tls",
-        "connect",
-        "timeout",
-        "policy",
-        "invalid_response",
-        "response_limit",
-    ]
+    category: ModelCheckCategory
     suggestion: str
     elapsed_ms: int = Field(ge=0)
 
 
 class ModelTestView(Output):
     id: str
-    revision: int
+    revision: int | None
     api: str
     model: str
     state: Literal["started", "completed", "interrupted"]

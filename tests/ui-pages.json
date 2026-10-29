@@ -231,6 +231,7 @@
     "shell.css",
     "shell.js",
     "styles.css",
-    "workspace.js"
+    "workspace.js",
+    "editable-combobox.js"
   ]
 }

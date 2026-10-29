@@ -21,7 +21,14 @@ from app.modules.access.authentication import Principal
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import EmployeeUpdate, GrantUpdate, Links, Named, NewEmployee
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
-from app.modules.agent.model_configuration import ModelApply, ModelSave, ModelTest, ModelVersion
+from app.modules.agent.model_configuration import (
+    ModelApply,
+    ModelDiscover,
+    ModelProbe,
+    ModelSave,
+    ModelTest,
+    ModelVersion,
+)
 from app.modules.agent.schemas import (
     ConversationArchive,
     ConversationCreate,
@@ -171,6 +178,18 @@ def router(application, *, registry, prefix="/api/v2"):
     )
     async def disable_model_configuration(request: Request, principal: Actor, args: ModelVersion):
         return await invoke(request, principal, "agent.config.disable", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/models", response_model=OPERATION_OUTPUTS["agent.config.models"]
+    )
+    async def discover_models(request: Request, principal: Actor, args: ModelDiscover):
+        return await invoke(request, principal, "agent.config.models", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/probe", response_model=OPERATION_OUTPUTS["agent.config.probe"]
+    )
+    async def probe_model(request: Request, principal: Actor, args: ModelProbe):
+        return await invoke(request, principal, "agent.config.probe", args.model_dump())
 
     @agent.post("/agent/configuration/test", response_model=OPERATION_OUTPUTS["agent.config.test"])
     async def test_model_configuration(request: Request, principal: Actor, args: ModelTest):

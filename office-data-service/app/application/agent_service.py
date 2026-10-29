@@ -11,6 +11,8 @@ from sqlalchemy import select
 
 from app.application.agent_runner import AgentRunner, recover_runs
 from app.application.contracts import validate_output
+from app.application.model_connections import prepare_unsaved
+from app.application.model_discovery import discover_models
 from app.application.model_runtime import prepare_runtime, test_runtime
 from app.application.model_test_lifecycle import ModelTestLifecycle
 from app.common.errors import DomainError, require
@@ -70,7 +72,7 @@ class AgentCoordinator:
                         "execution_unavailable",
                         "Agent配置的企业地址与当前实例不一致",
                     )
-                    if self.model_context is None:
+                    if self.model_context is None and config.auth_mode != "none":
                         await asyncio.to_thread(
                             import_module("office_agent.providers").model_key, config
                         )
@@ -87,7 +89,7 @@ class AgentCoordinator:
         await self.start()
         if operation.startswith("agent.config."):
             await self.tests.recover()
-        if operation == "agent.config.test":
+        if operation in {"agent.config.test", "agent.config.probe", "agent.config.models"}:
             require(not self.closed, 503, "execution_unavailable", "服务正在停止，不能发起模型测试")
             require(
                 not self.tests.active, 409, "version_conflict", "上次连接测试仍在收尾，请等待回执"
@@ -99,7 +101,17 @@ class AgentCoordinator:
                 "已有连接测试正在进行，请等待回执",
             )
             async with self.test_lock:
-                return await self._test_configuration(principal, payload, trace_id, presenter)
+                if operation == "agent.config.models":
+                    return await self._discover_configuration(
+                        principal, payload, trace_id, presenter
+                    )
+                return await self._test_configuration(
+                    principal,
+                    payload,
+                    trace_id,
+                    presenter,
+                    transient=operation == "agent.config.probe",
+                )
         if operation in {"agent.start", "agent.config.apply", "agent.config.disable"}:
             # 只串行配置切换与任务受理；查询／取消不被模型连接测试阻塞。
             async with self.lock:
@@ -308,8 +320,29 @@ class AgentCoordinator:
         )
         return result, update
 
-    async def _test_configuration(self, principal, payload, trace_id, presenter):
-        attempt_id = actor_id = None
+    async def _discover_configuration(self, principal, payload, trace_id, presenter):
+        async with self.sessions.begin() as db:
+            access = await Access.create(db, principal, trace_id)
+            for permission in ("agent.config.read", "agent.config.manage", "agent.config.test"):
+                access.need(permission)
+            config, runner = await prepare_unsaved(self.application, access, payload, catalog=True)
+        outcome = await discover_models(config, runner)
+        checked = validate_output("agent.config.models", payload, outcome)
+        async with self.sessions.begin() as db:
+            access = await Access.create(db, principal, trace_id)
+            for permission in ("agent.config.read", "agent.config.manage", "agent.config.test"):
+                access.need(permission)
+            access.audit(
+                "agent.config.tested",
+                "model-catalog",
+                {"phase": "catalog", "passed": outcome["passed"], "category": outcome["category"]},
+            )
+        return presenter(checked, replayed=False) if presenter else checked
+
+    async def _test_configuration(
+        self, principal, payload, trace_id, presenter, *, transient=False
+    ):
+        attempt_id = actor_id = revision = None
         result = None
         persisted = False
         try:
@@ -317,24 +350,44 @@ class AgentCoordinator:
                 access = await Access.create(db, principal, trace_id)
                 access.need("agent.config.read")
                 access.need("agent.config.test")
-                store = ModelStore(access, self.settings)
-                state = await store.state()
-                store.expect(state, payload["version"])
-                require(
-                    payload["revision"] == state.draft_revision,
-                    409,
-                    "version_conflict",
-                    "请先核对最新草稿",
-                )
-                row = await store.revision(payload["revision"])
-                config, runner = await prepare_runtime(
-                    self.application, row, model_context=self.model_context, synthetic=True
-                )
+                if transient:
+                    access.need("agent.config.manage")
+                    prior = await db.scalar(
+                        select(ModelConnectionTest.id).where(
+                            ModelConnectionTest.actor_id == access.actor.id,
+                            ModelConnectionTest.request_key == payload["request_key"],
+                        )
+                    )
+                    require(
+                        prior is None,
+                        409,
+                        "version_conflict",
+                        "本次测试已提交，请核对回执，不要重复发送；重试需重新明确发起",
+                    )
+                    config, runner = await prepare_unsaved(
+                        self.application, access, payload, model_context=self.model_context
+                    )
+                else:
+                    store = ModelStore(access, self.settings)
+                    state = await store.state()
+                    store.expect(state, payload["version"])
+                    require(
+                        payload["revision"] == state.draft_revision,
+                        409,
+                        "version_conflict",
+                        "请先核对最新草稿",
+                    )
+                    row = await store.revision(payload["revision"])
+                    revision = row.revision
+                    config, runner = await prepare_runtime(
+                        self.application, row, model_context=self.model_context, synthetic=True
+                    )
                 attempt = ModelConnectionTest(
-                    revision=row.revision,
+                    revision=revision,
+                    request_key=payload["request_key"] if transient else None,
                     actor_id=access.actor.id,
-                    api=row.config["api"],
-                    model=row.config["model"],
+                    api=config.api,
+                    model=config.model,
                     state="started",
                 )
                 attempt.id = str(uuid4())
@@ -344,19 +397,21 @@ class AgentCoordinator:
                 await db.flush()
                 access.audit(
                     "agent.config.tested",
-                    str(row.revision),
-                    {"phase": "started", "revision": row.revision},
+                    str(revision) if revision is not None else attempt.id,
+                    {"phase": "started", "revision": revision},
                 )
             # 供应商网络等待不占用数据库连接或事务；收尾覆盖提交、网络和结果验证。
             outcome = await test_runtime(config, runner)
             result = validate_output(
-                "agent.config.test", payload, {"revision": payload["revision"], **outcome}
+                "agent.config.probe" if transient else "agent.config.test",
+                payload,
+                {"revision": revision, **outcome},
             )
         finally:
             if attempt_id is not None:
                 assert actor_id is not None  # 两个标识在登记测试时同时赋值。
                 persisted = await self.tests.finish(
-                    attempt_id, actor_id, payload["revision"], trace_id, result
+                    attempt_id, actor_id, revision, trace_id, result
                 )
         require(
             persisted,

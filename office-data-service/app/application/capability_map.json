@@ -336,5 +336,13 @@
   "agent.config.test": {
     "mode": "server-admin",
     "reason": "仅HTTP和Web人工管理；密钥不进入模型工具、MCP或员工SDK"
+  },
+  "agent.config.models": {
+    "mode": "server-admin",
+    "reason": "人工管理员模型目录探测；不开放给Agent/MCP"
+  },
+  "agent.config.probe": {
+    "mode": "server-admin",
+    "reason": "人工当前输入测试；涉及凭证及费用，不开放给Agent/MCP"
   }
 }

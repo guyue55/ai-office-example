@@ -51,11 +51,11 @@ Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGE
 
 Agent前端下一阶段研究见[前端路线、产品范围与验证计划](docs/COPILOTKIT_FRONTEND_RESEARCH.md)：包含CopilotKit示例核查、替代UI候选、模型配置前置、状态／审批边界和阶段验收。目前为研究草案，不表示已引入React、AG-UI或第三方Runtime。
 
-管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／显式内网HTTP、默认或自定义密钥头／无密钥模式、非秘密网关参数、秘密加密、保存并测试、修订绑定结果、显式启停、响应字节预算、独立连接测试时限与取消／遗留回执恢复；当前分支新增，已有实例需迁移至0015并配置独立秘密后才能使用。
+管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／显式内网HTTP、默认或自定义密钥头／无密钥模式、非秘密网关参数、秘密加密、当前输入获取模型／测试、保存并启用、修订与临时回执区分、显式启停、响应字节预算、独立连接测试时限与取消／遗留回执恢复；当前分支新增，已有实例需迁移至0016并配置独立秘密后才能使用。
 
 
 服务器安装可在 `deploy/.env` 选择 `OFFICE_AGENT=0/1` 与可选 `OFFICE_IMAGE`；两变体共用安装链路，建库前验证能力。Agent 依赖安装后还需管理员配置模型。双变体构建、恢复及未验收边界见[交付计划](docs/plans/2026-10-28-agent-delivery-implementation.md)，安装步骤见[INSTALL.md](INSTALL.md)。
 
 登录与模型接入的通用性整改见[方案与验收](docs/plans/2026-10-28-usability-boundaries.md)：实例Cookie隔离、失效登录恢复、内网模型和三协议网关适配。新代码不会自动更新已运行实例。
 
-模型配置下一轮体验调整见[交互调研与推荐方案](docs/MODEL_SETTINGS_UX_RESEARCH.md)：当前输入直接获取模型、手动ID与就近测试；该文为待实施设计，不代表现有页面已具备。
+模型配置交互依据见[交互调研与推荐方案](docs/MODEL_SETTINGS_UX_RESEARCH.md)：当前输入直接获取模型、手动ID与就近测试；实现与隔离验收见[主流程计划](docs/plans/2026-10-28-model-settings-workflow.md)，已运行实例不会自动升级。

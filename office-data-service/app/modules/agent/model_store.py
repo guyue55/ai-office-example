@@ -33,16 +33,19 @@ class ModelStore:
     def expect(state, version):
         require(state.version == version, 409, "version_conflict", "配置已被修改，请刷新后重新核对")
 
-    async def save(self, state, payload):
-        self.access.need("agent.config.manage")
-        self.access.need("agent.config.read")
-        command = ModelSave.model_validate(payload)
-        self.expect(state, command.version)
-        check_endpoint(self.settings, command.draft.model_url)
-        # 即使保留／清除，也验证根密钥，避免产生无法继续管理的托管配置。
-        await asyncio.to_thread(model_secrets.cipher, self.settings.agent_secret_key_file)
+    async def resolve_secret(self, state, command, connection):
+        """沿用密钥不回传客户端；目标改变时由人工明确确认，临时新密文不落库。"""
         previous = await self.revision(state.draft_revision) if state.draft_revision else None
         secret = previous.secret_ciphertext if previous else None
+        if command.secret_action == "keep" and secret and connection.auth_mode != "none":
+            assert previous is not None
+            require(
+                previous.config["model_url"] == connection.model_url
+                or command.reuse_secret_at_new_url,
+                422,
+                "invalid_input",
+                "服务地址已变化，请明确确认沿用原密钥，或填写新密钥",
+            )
         if command.secret_action == "replace":
             assert command.secret is not None
             secret = await asyncio.to_thread(
@@ -52,6 +55,17 @@ class ModelStore:
             )
         elif command.secret_action == "clear":
             secret = None
+        return secret
+
+    async def save(self, state, payload):
+        self.access.need("agent.config.manage")
+        self.access.need("agent.config.read")
+        command = ModelSave.model_validate(payload)
+        self.expect(state, command.version)
+        check_endpoint(self.settings, command.draft.model_url)
+        # 即使保留／清除，也验证根密钥，避免产生无法继续管理的托管配置。
+        await asyncio.to_thread(model_secrets.cipher, self.settings.agent_secret_key_file)
+        secret = await self.resolve_secret(state, command, command.draft)
         # 元数据永远不含secret、api_key_file或宿主环境引用。
         state.version += 1
         state.draft_revision = state.version

@@ -17,7 +17,10 @@ from app.infrastructure.models import ModelConnectionTest
 pytestmark = pytest.mark.live
 
 
-def test_cancellation_and_finalize_failure_without_restarting(request, tmp_path, monkeypatch):
+@pytest.mark.parametrize("operation", ["agent.config.test", "agent.config.probe"])
+def test_cancellation_and_finalize_failure_without_restarting(
+    request, tmp_path, monkeypatch, operation
+):
     settings = request.getfixturevalue("isolated_query_db")
     key = tmp_path / "synthetic-root"
     key.write_bytes(Fernet.generate_key())
@@ -44,7 +47,7 @@ def test_cancellation_and_finalize_failure_without_restarting(request, tmp_path,
             state = await call(
                 "agent.config.save",
                 {
-                    "version": 0,
+                    "version": (await call("agent.config.get", {}))["version"],
                     "draft": {"model": "fixture", "model_url": "https://model.invalid/v1"},
                     "secret_action": "replace",
                     "secret": "synthetic",
@@ -63,6 +66,16 @@ def test_cancellation_and_finalize_failure_without_restarting(request, tmp_path,
                 "elapsed_ms": 1,
             }
             for mode in ("after_network_cancel", "network_double_cancel", "finalize_timeout"):
+                current_command = (
+                    command
+                    if operation == "agent.config.test"
+                    else {
+                        "version": state["version"],
+                        "draft": state["draft"],
+                        "acknowledge_cost": True,
+                        "request_key": uuid4().hex,
+                    }
+                )
                 entered = asyncio.Event()
                 identifiers = []
 
@@ -86,7 +99,7 @@ def test_cancellation_and_finalize_failure_without_restarting(request, tmp_path,
 
                 monkeypatch.setattr("app.application.agent_service.test_runtime", network)
                 coordinator.tests.timeout = 1 if mode == "finalize_timeout" else 5
-                task = asyncio.create_task(call("agent.config.test", command))
+                task = asyncio.create_task(call(operation, current_command))
                 await asyncio.wait_for(entered.wait(), 5)
                 if mode == "network_double_cancel":
                     task.cancel()
@@ -101,7 +114,7 @@ def test_cancellation_and_finalize_failure_without_restarting(request, tmp_path,
                     assert coordinator.tests.active
                     before = calls
                     with pytest.raises(DomainError) as error:
-                        await call("agent.config.test", command)
+                        await call(operation, current_command)
                     assert error.value.status == 409 and calls == before
                     # 查询不会将仍在收尾的记录误恢复。
                     assert (await call("agent.config.get", {}))["last_test"]["state"] == "started"

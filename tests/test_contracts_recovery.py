@@ -195,7 +195,7 @@ def test_all_business_http_routes_publish_output_models():
         for method, operation in path.items()
         if method in {"get", "post", "patch", "put", "delete"}
     ]
-    assert len(operations) == 57  # 五个模型管理端点同样声明统一契约。
+    assert len(operations) == 59  # 模型管理及目录／临时测试端点同样声明统一契约。
     assert "post" in schema["paths"]["/api/v2/data/aggregate"]
     assert all(
         operation["responses"][
