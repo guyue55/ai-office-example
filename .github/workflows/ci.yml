@@ -132,6 +132,30 @@ jobs:
             dist/*.whl
             dist/build-manifest.json
           retention-days: 7
+  macos-ops:
+    # 管理脚本与安装脚本跑在macOS自带的Bash 3.2下，Linux通过不能替代。
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.9.18'
+          python-version: '3.13'
+      - run: uv sync --locked
+      - name: ShellCheck与Bash语法
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v shellcheck >/dev/null 2>&1 || brew install shellcheck
+          shellcheck -f gcc manage.sh deploy/*.sh installers/client/*.sh
+          for f in manage.sh deploy/*.sh installers/client/*.sh; do /bin/bash -n "$f"; done
+      - name: 管理脚本在Bash 3.2下的回归
+        shell: bash
+        run: |
+          set -euo pipefail
+          /bin/bash --version | head -n 1
+          uv run --frozen pytest tests/test_deployment_entrypoints.py tests/test_deployment_contract.py -q
   container:
     strategy:
       fail-fast: false

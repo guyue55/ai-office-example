@@ -47,7 +47,9 @@ case "$ANSWER" in
     ask '员工访问用的稳定内网IPv4（HTTP演示无法跨IP保持登录身份）' "$IP"; PUBLIC_HOST="$ANSWER"
     [[ "$PUBLIC_HOST" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] || { echo 'HTTP演示的访问地址须为IPv4。' >&2; exit 2; }
     ask '服务端口' 8800; PORT="$ANSWER"
-    [[ "$PORT" =~ ^[0-9]{1,5}$ ]] && ((10#$PORT >= 1 && 10#$PORT <= 65535)) || { echo '端口须为1至65535。' >&2; exit 2; }
+    if ! [[ "$PORT" =~ ^[0-9]{1,5}$ ]] || ! ((10#$PORT >= 1 && 10#$PORT <= 65535)); then
+      echo '端口须为1至65535。' >&2; exit 2
+    fi
     ask_listen
     URL="http://$PUBLIC_HOST:$PORT"
     ;;
