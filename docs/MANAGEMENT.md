@@ -101,6 +101,8 @@
 
 相对路径自动基于项目根目录或运行目录解析。`./manage.sh config`展示最终生效路径；未知键、重复键、软链配置、父目录跳转和执行表达式都会被拒绝。活动实例文件与管理锁必须位于运行目录内；Docker应用名不接受路径。按需从`deploy/manage.env.example`复制为`deploy/manage.env`，后者被Git忽略。
 
+`OFFICE_MANAGE_RUNTIME_DIR`只决定管理脚本扫描和记录的位置。安装器实际写入的实例目录来自`deploy/.env`的`OFFICE_INSTANCE_DIR`（缺省`runtime/instance`）；若改动了运行目录，应让两者指向同一位置，或用`OFFICE_MANAGE_INSTANCE_DIR`把默认实例固定到安装器实际写入的目录，否则`status`和`check`会找不到实例。
+
 ## 启动、停止和重启
 
 `start`和`restart`只管理已经安装的实例，不会自动构建镜像，也不会执行新环境安装。新服务器应执行`./manage.sh install`；已有实例镜像缺失时，`start/restart`会在执行Compose前明确拒绝，并提示先恢复镜像或执行`build`后再`upgrade`。

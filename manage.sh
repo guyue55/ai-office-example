@@ -1355,6 +1355,9 @@ show_config() {
   note "默认等待：${WAIT_SECONDS}秒"
   note "Docker应用名：$DOCKER_APP_NAME"
   if [[ -n "$INSTANCE" ]]; then note "默认实例：$INSTANCE"; else note '默认实例：自动发现'; fi
+  if [[ "$RUNTIME_DIR" != "$ROOT/runtime" ]]; then
+    warn '运行目录已改动；安装器目标由deploy/.env的OFFICE_INSTANCE_DIR决定，两者须指向同一位置'
+  fi
 }
 
 show_addresses() {
