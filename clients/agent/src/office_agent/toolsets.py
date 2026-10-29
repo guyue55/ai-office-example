@@ -130,12 +130,6 @@ KEYWORDS: dict[str, tuple[str, ...]] = {
     "account_write": ("开通账号", "重置", "恢复", "邀请", "停用账号", "resume", "reset", "invite"),
 }
 
-PAGE_KEYWORDS: tuple[tuple[tuple[str, ...], str], ...] = (
-    (("权限", "人员", "角色", "审计", "授权"), "access"),
-    (("账号", "登录"), "account"),
-    (("项目", "数据", "记录", "仪表"), "data"),
-)
-
 PROMPT_WRITE_HINTS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("新建", "创建", "上报", "提交", "确认", "更正", "归档"), "data_write"),
     (("授权变更", "撤销授权", "停用授权", "设备", "备注", "权限调整", "角色变更"), "access_write"),
