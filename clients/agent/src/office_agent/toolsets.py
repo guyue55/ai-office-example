@@ -181,15 +181,11 @@ def tool_group(tool_name: str) -> str | None:
 
 
 def preloaded_tools(context_page: str | None, prompt: str | None = None) -> set[str]:
-    """页面决定默认读取组；明确的变更意图预载对应预览组，避免多一次搜索。"""
-    names: set[str] = set(GROUPS["core"]["tools"])
-    page = (context_page or "").strip()
-    for words, group in PAGE_KEYWORDS:
-        if any(word in page for word in words):
-            names.update(GROUPS[group]["tools"])
-            break
-    else:
-        names.update(GROUPS["data"]["tools"])
+    """只读能力全部常驻，保证任意页面都能查询；变更预览按明确意图预载。"""
+    names: set[str] = set()
+    for group, spec in GROUPS.items():
+        if not group.endswith("_write"):
+            names.update(spec["tools"])
     text = (prompt or "").strip()
     for words, group in PROMPT_WRITE_HINTS:
         if any(word in text for word in words):

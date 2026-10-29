@@ -21,20 +21,16 @@ def test_every_tool_belongs_to_exactly_one_group():
 
 
 def test_page_and_prompt_decide_preload_and_defer():
-    data = preloaded_tools("仪表盘", "查询记录")
-    assert {"read_whoami", "read_records"} <= data
-    assert "read_access_list" in deferred_tools("仪表盘", "查询记录")
-
-    access = preloaded_tools("权限目录", "我具备的权限")
-    assert {"read_access_list", "read_access_detail"} <= access
-    assert "read_records" in deferred_tools("权限目录", "我具备的权限")
-
-    account = preloaded_tools("账号操作记录", "查账号")
-    assert "read_account_history" in account
+    reads = preloaded_tools("仪表盘", "查询记录")
+    assert {"read_whoami", "read_records", "read_access_list", "read_account_history"} <= reads
+    assert "prepare_data" in deferred_tools("仪表盘", "查询记录")
 
     write = preloaded_tools("仪表盘", "新建一个项目")
     assert "prepare_data" in write
     assert "prepare_access" in deferred_tools("仪表盘", "新建一个项目")
+
+    account_write = preloaded_tools(None, "恢复账号")
+    assert "prepare_account_resume" in account_write
 
 
 def test_search_matches_chinese_and_english_keywords_with_bound():

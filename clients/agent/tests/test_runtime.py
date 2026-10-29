@@ -210,34 +210,42 @@ def test_missing_required_arguments_never_abort_the_run():
     assert "缺少项目参数" in result.explanation
 
 
-def test_hidden_group_is_discoverable_by_search():
+def test_hidden_write_tool_is_discoverable_by_search():
     calls = []
 
     def model(messages, info):
         calls.append(len(calls))
         if len(calls) == 1:
-            # 权限页预载 core+access，data 组工具此时不可见，先得到可纠正提示。
+            # 查询意图不预载变更工具，先得到可纠正提示。
             return ModelResponse(
-                parts=[ToolCallPart("read_records", {"project_id": "p"}, tool_call_id="hidden")]
+                parts=[ToolCallPart("prepare_data", {"change": {}}, tool_call_id="hidden")]
             )
         if len(calls) == 2:
             return ModelResponse(
-                parts=[ToolCallPart("search_tools", {"queries": ["记录"]}, tool_call_id="search")]
+                parts=[
+                    ToolCallPart("search_tools", {"queries": ["新建项目"]}, tool_call_id="search")
+                ]
             )
         if len(calls) == 3:
             return ModelResponse(
-                parts=[ToolCallPart("read_records", {"project_id": "p"}, tool_call_id="ok")]
+                parts=[
+                    ToolCallPart(
+                        "prepare_data",
+                        {"change": {"operation": "project.create", "payload": {"name": "项目"}}},
+                        tool_call_id="ok",
+                    )
+                ]
             )
-        return ModelResponse(parts=[TextPart("已查询，覆盖以回执为准。")])
+        return ModelResponse(parts=[TextPart("已生成预览，等待确认。")])
 
     result = asyncio.run(
         run_task(
             FunctionModel(model),
             Client,
-            "查询记录",
-            context_page="权限目录",
+            "记录一下",
+            approve=lambda proposal: False,
         )
     )
     assert result.status == "completed"
-    assert [item["operation"] for item in result.receipts] == ["records"]
+    assert not result.receipts
     assert result.usage["requests"] == 4
