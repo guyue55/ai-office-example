@@ -34,6 +34,7 @@
 --service <名称>   logs目标：service、gateway、identity、postgres
 --tail <行数>      logs显示行数，默认100
 --follow           logs持续输出
+--timeout <秒>     启动、重启与健康等待上限，默认120
 -h, --help         查看总帮助
 ```
 
@@ -57,13 +58,19 @@
 
 选择结果写入`runtime/.active-server-instance`，该文件只保存本机实例路径，不是凭证。
 
+只有`start`、`stop`、`restart`会更新活动实例记录。`status`、`check`、`address`、`instances`、`logs`严格只读，不创建或修改该文件。
+
 ## 启动、停止和重启
 
-`start`先检查Docker引擎，再检测活动IPv4，刷新gateway配置，启动或补齐容器，并等待健康检查。
+`start`先检查Docker引擎，再检测活动IPv4和刷新gateway配置。实例已经完整运行且健康时保持原状，不无故重启容器；只有配置更新、健康异常或容器缺失时才启动或重载。
+
+容器启动使用Docker Compose原生`up -d --wait --wait-timeout`等待运行和健康条件，之后继续执行外部`/health/ready`、端口和OIDC核验。自定义等待只用于最终业务入口检查。
 
 `stop`只停止容器，不关闭Docker Desktop，不删除卷、数据库、镜像或配置。停止后`status`显示停止状态，并以非零退出码提示当前不健康。
 
 `restart`执行相同的地址同步，然后重启postgres、identity、gateway和service。若HTTP验收实例IP发生变化，会在普通重启前先走[实例迁址维护](INSTANCE_RELOCATION.md)。
+
+`start`、`stop`、`restart`使用`runtime/.manage.lock`目录锁。第二个管理进程会明确失败，不能并发停止或重启同一套服务；命令正常退出或收到INT/TERM时释放锁。锁内PID已不存在时自动清理失效锁，避免异常退出永久阻断后续操作。
 
 ## 地址检测与多地址
 
@@ -101,6 +108,8 @@ Linux下仅当当前用户是root且存在systemctl时尝试启动系统Docker�
 7. HTTP验收实例的OIDC issuer是否与配置一致。
 
 全部通过返回0；任一项失败返回1。参数、实例或环境错误返回2。
+
+`--timeout`只接受正整数秒，默认120。超过上限时启动或健康检查失败并保留容器现场，便于查看日志。
 
 ## 输出与日志
 

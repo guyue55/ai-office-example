@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 企业办公服务统一管理入口：启动、停止、重启、状态、检查、地址与日志。
 set -euo pipefail
+umask 077
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ACTIVE_POINTER="$ROOT/runtime/.active-server-instance"
@@ -11,6 +12,8 @@ LOG_SERVICE="service"
 LOG_TAIL=100
 FOLLOW=0
 HELP=0
+WAIT_SECONDS=120
+LOCK_DIR="$ROOT/runtime/.manage.lock"
 
 section() {
   printf '\n%s\n' "$1"
@@ -50,6 +53,7 @@ main_help() {
   --service <名称>   logs服务：service|gateway|identity|postgres，默认service
   --tail <行数>      logs显示行数，默认100
   --follow           logs持续跟随
+  --timeout <秒>     启动、重启与健康等待上限，默认120
   -h, --help         查看总帮助；命令后加--help查看该命令说明
 
 自动选择实例
@@ -64,6 +68,10 @@ main_help() {
 
 退出码
   0 成功；1 健康或检查失败；2 参数、实例或Docker环境错误
+
+只读边界
+  status、check、address、instances、logs不写活动实例文件，不会启动或重启服务。
+  start、stop、restart使用本机目录锁，拒绝并发修改；正常退出或中断时释放锁。
 
 示例
   ./manage.sh status
@@ -156,6 +164,7 @@ while [[ $# -gt 0 ]]; do
     --service) LOG_SERVICE="${2:?--service需要名称}"; shift 2 ;;
     --tail) LOG_TAIL="${2:?--tail需要行数}"; shift 2 ;;
     --follow) FOLLOW=1; shift ;;
+    --timeout) WAIT_SECONDS="${2:?--timeout需要秒数}"; shift 2 ;;
     -h|--help) HELP=1; shift ;;
     --*) echo "未知选项：$1" >&2; main_help >&2; exit 2 ;;
     *)
@@ -174,6 +183,7 @@ case "$COMMAND" in
   start|stop|restart|status|check|address|logs|instances) ;;
   *) echo "未知命令：$COMMAND" >&2; main_help >&2; exit 2 ;;
 esac
+[[ "$WAIT_SECONDS" =~ ^[1-9][0-9]*$ ]] || { echo '--timeout须为正整数秒' >&2; exit 2; }
 
 probe_docker() {
   if command -v timeout >/dev/null 2>&1; then
@@ -182,17 +192,51 @@ probe_docker() {
   fi
   docker info >/dev/null 2>&1 &
   local pid=$!
-  local i
-  for i in $(seq 1 12); do
+  local remaining=12
+  while (( remaining > 0 )); do
     if ! kill -0 "$pid" 2>/dev/null; then
       wait "$pid"
       return
     fi
     sleep 0.25
+    remaining=$((remaining - 1))
   done
   kill "$pid" 2>/dev/null || true
   wait "$pid" 2>/dev/null || true
   return 1
+}
+
+release_lock() {
+  [[ -d "$LOCK_DIR" ]] || return 0
+  if [[ -f "$LOCK_DIR/pid" && "$(cat "$LOCK_DIR/pid" 2>/dev/null || true)" == "$$" ]]; then
+    rm -f "$LOCK_DIR/pid"
+    rmdir "$LOCK_DIR" 2>/dev/null || true
+  fi
+}
+
+acquire_lock() {
+  mkdir -p "$ROOT/runtime"
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    printf '%s\n' "$$" >"$LOCK_DIR/pid"
+    trap release_lock EXIT INT TERM
+    return 0
+  fi
+  local holder
+  holder="$(cat "$LOCK_DIR/pid" 2>/dev/null || true)"
+  if [[ "$holder" =~ ^[0-9]+$ ]] && ! kill -0 "$holder" 2>/dev/null; then
+    warn "发现失效管理锁（PID ${holder}），正在清理"
+    if mv "$LOCK_DIR" "$LOCK_DIR.stale.$$"; then
+      rm -f "$LOCK_DIR.stale.$$/pid"
+      rmdir "$LOCK_DIR.stale.$$" 2>/dev/null || true
+      if mkdir "$LOCK_DIR" 2>/dev/null; then
+        printf '%s\n' "$$" >"$LOCK_DIR/pid"
+        trap release_lock EXIT INT TERM
+        return 0
+      fi
+    fi
+  fi
+  bad "已有管理操作正在执行${holder:+（PID ${holder}）}；请等待结束"
+  return 2
 }
 
 ensure_docker() {
@@ -203,23 +247,28 @@ ensure_docker() {
   elif command -v systemctl >/dev/null 2>&1 && [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     systemctl start docker
   fi
-  local i
-  for i in $(seq 1 12); do
+  local remaining=12
+  while (( remaining > 0 )); do
     probe_docker && { ok 'Docker引擎已就绪'; return 0; }
     sleep 1
+    remaining=$((remaining - 1))
   done
   if [[ "$(uname -s)" == Darwin ]]; then
     echo 'Docker Desktop未恢复，重启其桌面进程（保留镜像、容器和卷）…' >&2
     ps ax -o pid=,command= | awk '/\/Applications\/Docker.app\/Contents\/MacOS\/(Docker Desktop|com.docker.backend|com.docker.build)/ {print $1}' | xargs kill -TERM 2>/dev/null || true
-    for i in $(seq 1 20); do
-      ps ax -o command= | grep -q '/Applications/Docker.app/Contents/MacOS/com.docker.backend' || break
+    remaining=20
+    while (( remaining > 0 )); do
+      pgrep -f '/Applications/Docker.app/Contents/MacOS/com.docker.backend' >/dev/null || break
       sleep 0.5
+      remaining=$((remaining - 1))
     done
     ps ax -o pid=,command= | awk '/\/Applications\/Docker.app\/Contents\/MacOS\/(Docker Desktop|com.docker.backend|com.docker.build)/ {print $1}' | xargs kill -KILL 2>/dev/null || true
     open -a Docker
-    for i in $(seq 1 30); do
+    remaining=30
+    while (( remaining > 0 )); do
       probe_docker && { ok 'Docker引擎已重新启动'; return 0; }
       sleep 1
+      remaining=$((remaining - 1))
     done
   fi
   bad 'Docker引擎仍未就绪；请查看Docker Desktop故障处理页面'
@@ -282,31 +331,33 @@ instance_candidates() {
 
 valid_instance() {
   local folder="$1"
-  [[ -d "$folder" && -f "$folder/installation.json" && -f "$folder/compose.json" && -f "$folder/service/service.json" ]]
+  [[ ! -L "$folder" && -d "$folder" && -f "$folder/installation.json" && -f "$folder/compose.json" && -f "$folder/service/service.json" ]]
 }
 
 record_instance() {
   mkdir -p "$ROOT/runtime"
   printf '%s\n' "$INSTANCE" >"$ACTIVE_POINTER.$$"
+  chmod 600 "$ACTIVE_POINTER.$$"
   mv "$ACTIVE_POINTER.$$" "$ACTIVE_POINTER"
 }
 
 resolve_instance() {
+  local record="${1:-0}"
   local docker_ready=0
   probe_docker && docker_ready=1
   if valid_instance "$INSTANCE"; then
     INSTANCE="$(cd "$INSTANCE" && pwd)"
-    record_instance
-    return
+    [[ "$record" == 1 ]] && record_instance
+    return 0
   fi
   if [[ -f "$ACTIVE_POINTER" ]]; then
     INSTANCE="$(sed -n '1p' "$ACTIVE_POINTER")"
     if valid_instance "$INSTANCE"; then
       INSTANCE="$(cd "$INSTANCE" && pwd)"
-      return
+      return 0
     fi
   fi
-  local instances running running_folder folder project
+  local instances running_folder folder project
   instances="$(instance_candidates)"
   if [[ "$docker_ready" == 1 ]]; then
     while read -r folder; do
@@ -319,16 +370,16 @@ resolve_instance() {
     done <<<"$instances"
     if [[ -n "$running_folder" ]]; then
       INSTANCE="$(cd "$running_folder" && pwd)"
-      record_instance
-      return
+      [[ "$record" == 1 ]] && record_instance
+      return 0
     fi
   fi
   local count
   count="$(printf '%s\n' "$instances" | awk 'NF{n++} END{print n+0}')"
   if [[ "$count" -eq 1 ]]; then
     INSTANCE="$(cd "$instances" && pwd)"
-    record_instance
-    return
+    [[ "$record" == 1 ]] && record_instance
+    return 0
   elif [[ "$count" -eq 0 ]]; then
     bad '未找到已安装的服务器实例；请用--instance指定'
     return 2
@@ -349,11 +400,12 @@ resolve_instance() {
   INSTANCE="$(printf '%s\n' "$instances" | sed -n "${choice}p")"
   valid_instance "$INSTANCE" || return 2
   INSTANCE="$(cd "$INSTANCE" && pwd)"
-  record_instance
+  [[ "$record" == 1 ]] && record_instance
+  return 0
 }
 
 load_instance() {
-  resolve_instance || return 2
+  resolve_instance "${1:-0}" || return 2
   IFS=$'\t' read -r PROJECT IMAGE PUBLIC_URL PORT DEMO CURRENT_HOST <<<"$(json_marker "$INSTANCE/installation.json")"
   if [[ -z "$PROJECT" || -z "$IMAGE" || -z "$PORT" ]]; then
     bad '实例配置缺少项目、镜像或端口'
@@ -451,23 +503,51 @@ health_once() {
 }
 
 wait_health() {
-  local i
-  for i in $(seq 1 60); do
+  local remaining="$WAIT_SECONDS"
+  while (( remaining > 0 )); do
     if health_once; then ok '健康检查通过'; return 0; fi
     sleep 1
+    remaining=$((remaining - 1))
   done
   bad '健康检查未通过；请查看容器状态和服务日志'
   return 1
 }
 
+all_services_running() {
+  local services name
+  services="$(compose ps --status running --services 2>/dev/null || true)"
+  for name in postgres identity gateway service; do
+    printf '%s\n' "$services" | grep -qx "$name" || return 1
+  done
+}
+
 start_stack() {
-  step '1/3' '同步服务器地址'
+  step '1/4' '同步服务器地址'
   sync_address || return 2
-  refresh_gateway
-  step '2/3' '启动或补齐容器'
-  compose up -d || return 2
-  compose restart gateway >/dev/null
-  step '3/3' '等待就绪'
+  step '2/4' '刷新网关配置'
+  local gateway_change
+  gateway_change="$(refresh_gateway)"
+  if all_services_running; then
+    if [[ "$gateway_change" == updated ]] || ! health_once; then
+      step '3/4' '重载网关与服务'
+      compose restart gateway service >/dev/null
+    else
+      step '3/4' '服务已运行'
+      ok '无需重启，当前实例已就绪'
+    fi
+    step '4/4' '核验就绪状态'
+    wait_health || return 1
+    if [[ "$DEMO" == 1 ]]; then
+      printf '\n服务已就绪：http://%s:%s/\n' "$SELECTED" "$PORT"
+    else
+      printf '\n服务已就绪：%s\n' "$PUBLIC_URL"
+    fi
+    return 0
+  fi
+  step '3/4' '启动或补齐容器'
+  compose up -d --wait --wait-timeout "$WAIT_SECONDS" || return 2
+  if [[ "$gateway_change" == updated ]]; then compose restart gateway >/dev/null; fi
+  step '4/4' '核验就绪状态'
   wait_health || return 1
   if [[ "$DEMO" == 1 ]]; then
     printf '\n服务已启动\n'
@@ -484,18 +564,19 @@ stop_stack() {
     return 0
   fi
   step '1/1' '停止全部容器'
-  compose stop || return 2
+  compose stop --timeout 20 || return 2
   printf '\n已停止；数据、配置、镜像和卷均已保留。\n'
 }
 
 restart_stack() {
-  step '1/3' '同步服务器地址'
+  step '1/4' '同步服务器地址'
   sync_address || return 2
-  refresh_gateway
-  step '2/3' '重启全部容器'
-  compose up -d || return 2
-  compose restart || return 2
-  step '3/3' '等待就绪'
+  step '2/4' '刷新网关配置'
+  refresh_gateway >/dev/null
+  step '3/4' '重启全部容器'
+  compose restart --timeout 20 || return 2
+  compose up -d --wait --wait-timeout "$WAIT_SECONDS" || return 2
+  step '4/4' '核验就绪状态'
   wait_health || return 1
   if [[ "$DEMO" == 1 ]]; then
     printf '\n服务已重启：http://%s:%s/\n' "$SELECTED" "$PORT"
@@ -540,11 +621,16 @@ show_status() {
 run_check() {
   local failures=0 binding issuer expected_issuer issuer_url
   section '检查结果'
-  [[ -f "$INSTANCE/installation.json" && -f "$INSTANCE/compose.json" ]] && ok '实例配置文件存在' || { bad '实例配置文件缺失'; failures=$((failures+1)); }
+  if [[ -f "$INSTANCE/installation.json" && -f "$INSTANCE/compose.json" ]]; then
+    ok '实例配置文件存在'
+  else
+    bad '实例配置文件缺失'
+    failures=$((failures+1))
+  fi
   if ! probe_docker; then bad 'Docker引擎不可用'; return 1; fi
   ok 'Docker引擎可用'
   if compose config --quiet >/dev/null 2>&1; then ok 'Compose配置有效'; else bad 'Compose配置无效'; failures=$((failures+1)); fi
-  local required name
+  local name
   for name in postgres identity gateway service; do
     if compose ps --status running --services | grep -qx "$name"; then ok "容器运行：$name"; else bad "容器未运行：$name"; failures=$((failures+1)); fi
   done
@@ -599,7 +685,12 @@ show_addresses() {
     warn '未检测到RFC1918内网IPv4'
   fi
   if [[ -n "$REQUESTED_IP" ]]; then
-    is_private_ipv4 "$REQUESTED_IP" && address_is_active "$REQUESTED_IP" && ok "指定地址可用：$REQUESTED_IP" || { bad "指定地址不可用：$REQUESTED_IP"; return 2; }
+    if is_private_ipv4 "$REQUESTED_IP" && address_is_active "$REQUESTED_IP"; then
+      ok "指定地址可用：$REQUESTED_IP"
+    else
+      bad "指定地址不可用：$REQUESTED_IP"
+      return 2
+    fi
   elif [[ "$DEMO" != 1 ]]; then
     note '正式实例不按IP改写公开地址'
   elif address_is_active "$CURRENT_HOST"; then
@@ -608,7 +699,7 @@ show_addresses() {
     ok "start/restart将自动选择唯一地址"
   elif [[ -t 0 ]]; then
     choose_address || return 2
-    ok "选择的主地址：$SELECTED（仅本次展示，不写配置）"
+    ok "选择的主地址：${SELECTED}（仅本次展示，不写配置）"
   else
     warn '多个地址且旧地址已消失；非交互环境请用--ip指定'
   fi
@@ -627,8 +718,9 @@ case "$COMMAND" in
     show_instances
     ;;
   start|restart)
+    acquire_lock || exit 2
     ensure_docker || exit 2
-    load_instance || exit 2
+    load_instance 1 || exit 2
     if [[ "$COMMAND" == start ]]; then
       start_stack
     else
@@ -636,23 +728,24 @@ case "$COMMAND" in
     fi
     ;;
   stop)
-    load_instance || exit 2
+    acquire_lock || exit 2
+    load_instance 1 || exit 2
     stop_stack
     ;;
   status)
-    load_instance || exit 2
+    load_instance 0 || exit 2
     show_status
     ;;
   check)
-    load_instance || exit 2
+    load_instance 0 || exit 2
     run_check
     ;;
   address)
-    load_instance || exit 2
+    load_instance 0 || exit 2
     show_addresses
     ;;
   logs)
-    load_instance || exit 2
+    load_instance 0 || exit 2
     show_logs
     ;;
 esac
