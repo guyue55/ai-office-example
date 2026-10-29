@@ -12,7 +12,7 @@
 | `stop` | 停止全部容器，保留数据库、卷、镜像和配置 | 是 |
 | `restart` | 同步地址后完整重启全部容器 | 是 |
 | `status` | 展示实例、Docker、地址、容器、端口、健康 | 否 |
-| `check` | 核验配置、容器、监听、健康和OIDC issuer | 否 |
+| `check` | 核验配置、容器、迁移版本、监听、健康和OIDC issuer | 否（只读查询数据库版本） |
 | `address` | 展示活动内网地址和登录主地址 | 否 |
 | `logs` | 查看指定容器日志 | 否 |
 | `instances` | 列出发现的服务器实例及活动标记 | 否 |
@@ -20,7 +20,9 @@
 | `plan recreate` | 只读预览无状态容器重建影响 | 否 |
 | `recreate` | 保留所有卷，只强制重建gateway和service | 是 |
 | `down` | 删除容器和项目网络，保留卷、镜像、配置和秘密 | 是 |
-| `backup` | 备份两个数据库、配置和必要秘密 | 是，仅写备份目录 |
+| `plan prune` | 只读预览将删除哪些旧备份 | 否 |
+| `backup` | 备份两个数据库、配置和必要秘密；可复制到异地目录并复核摘要 | 是，仅写备份目录与异地副本 |
+| `prune` | 删除本项目最旧备份，保留最新N份 | 是，仅删除本项目备份目录 |
 | `install` | 在新环境调用安装器；可先构建镜像，`--instance`可指定首装目录 | 是 |
 | `build` | 从本地源码构建普通或Agent镜像 | 是，仅新增镜像 |
 | `upgrade` | 使用已存在的本地镜像备份、迁移并升级实例 | 是 |
@@ -38,6 +40,9 @@
 ./manage.sh plan down
 ./manage.sh plan recreate
 ./manage.sh backup
+./manage.sh backup --copy-to /mnt/offsite/backups
+./manage.sh plan prune --keep 10
+./manage.sh prune --keep 10 --confirm office-example:prune:10
 ./manage.sh install
 ./manage.sh build --agent 1 --tag office-data-service:local-agent
 ./manage.sh upgrade --image office-data-service:local-agent
@@ -53,8 +58,10 @@
 --tail <行数>      logs显示行数，默认100
 --follow           logs持续输出
 --timeout <秒>     启动、重启与健康等待上限，默认120
---confirm <值>     down/recreate/upgrade确认串
---output <目录>    backup父目录，必须是绝对路径
+--confirm <值>     down/recreate/upgrade/prune确认串
+--output <目录>    backup与prune的备份根目录，必须是绝对路径
+--copy-to <目录>   backup完成后复制到该绝对目录并复核SHA-256
+--keep <数量>      prune保留的最新备份份数，必须≥1
 --config <文件>    install使用的公开.env
 --configure        install先进入配置向导
 --agent <0|1>      build目标镜像变体
@@ -135,6 +142,21 @@
 ```
 
 `backup`把业务库、身份库、实例配置、网关配置、必要秘密和数据库卷标识写入权限为700的目录，文件禁止组和其他用户访问；两个数据库dump通过`pg_restore --list`校验，并提供SHA-256清单。备份不会自动覆盖、轮换或删除旧目录。
+
+异地副本用`--copy-to`指定第二个绝对目录（如挂载的网络盘或备份机目录）。脚本复制完成后在目标目录重新校验SHA-256，校验失败会报错并保留原备份；目标目录不能位于备份或实例目录内，也不覆盖同名副本。
+
+```bash
+./manage.sh backup --copy-to /mnt/offsite/backups
+```
+
+清理由独立的`prune`执行，不会在备份或升级时自动触发。它只处理备份根目录下名称严格匹配“项目-UTC时间-PID”、且`MANIFEST.txt`中`project`一致的非软链目录，永远保留最新N份：
+
+```bash
+./manage.sh plan prune --keep 10
+./manage.sh prune --keep 10 --confirm office-example:prune:10
+```
+
+`prune`删除后重新统计剩余份数，数量不足会报错；其他项目备份、数据库卷、镜像、实例目录、审计和秘密都不在其处理范围内。`plan prune`同样只读。
 
 ### 从备份恢复
 
@@ -235,10 +257,14 @@ Linux下仅当当前用户是root且存在systemctl时尝试启动系统Docker�
 1. 实例配置文件；
 2. Docker引擎；
 3. Compose配置；
-4. postgres、identity、gateway、service是否运行；
-5. gateway是否发布在`0.0.0.0:端口`；
-6. `/health/ready`；
-7. HTTP验收实例的OIDC issuer是否与配置一致。
+4. 安装记录与Compose的service/setup镜像是否一致、镜像是否存在于本机；
+5. postgres、identity、gateway、service是否运行；
+6. 数据库当前Alembic版本与运行镜像的heads是否一致；
+7. gateway是否发布在`0.0.0.0:端口`；
+8. `/health/ready`；
+9. HTTP验收实例的OIDC issuer是否与配置一致。
+
+迁移版本检查通过一次性setup容器只读查询数据库当前版本，并与镜像内`alembic heads`比对；不一致说明镜像与库结构错配，需要先恢复镜像或执行受控升级，不能继续当作健康实例使用。该检查会多花几秒并创建一个短命容器，不写数据库。
 
 全部通过返回0；任一项失败返回1。参数、实例或环境错误返回2。
 
