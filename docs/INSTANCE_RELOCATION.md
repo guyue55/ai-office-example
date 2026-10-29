@@ -46,7 +46,7 @@ bash deploy/relocate.sh /srv/office-instance --restore <失败运行ID> --apply
 
 迁址结果只含公开地址，不含凭证。更新原交付公开配置中的OFFICE_PUBLIC_URL／监听地址及已安装客户端connection.json的service；配置来源必须由管理员确认。使用匿名connection-check验证新入口，再由本人完成浏览器PKCE授权和whoami检查。AI不得读取或复制旧钥匙串令牌。
 
-本入口不会扫描员工电脑并自动修改其他企业配置或全局CLI。正式HTTPS部署应使用经IT确认的稳定内部域名并默认`lan`监听，服务器IP变化只更新DNS；显式IP迁址仅用于没有稳定名称的HTTP验收兜底。不要把员工电脑经常变化的地址作为正式入口，详见[网络监听与稳定入口](NETWORK_ADDRESSING.md)。
+本入口不会扫描员工电脑并自动修改其他企业配置或全局CLI。所有IP变化均通过保留数据的显式迁址处理；日常入口为[服务统一管理](MANAGEMENT.md)。不要把员工电脑经常变化的地址作为服务器入口。
 
 ## 本机实际记录（2026-10-27）
 
@@ -66,4 +66,4 @@ bash deploy/relocate.sh /srv/office-instance --restore <失败运行ID> --apply
 
 随后停止Docker Desktop进行真实恢复测试：统一管理入口`./manage.sh`检测引擎不可用，自动启动Docker、发现当前唯一实例与`en0/172.16.170.83`，密码和地址未变时恢复容器并重启gateway/service，健康检查200。`stop→status→start`和`check`也已真实验证；IP变化走迁址，多地址交互选择登录主地址。详见[服务统一管理](MANAGEMENT.md)。
 
-本实例仍是显式HTTP验收模式，登录身份仍含IP；本次只恢复当前可达性。正式IP无关性要求内部DNS名称和HTTPS，按[网络监听与稳定入口](NETWORK_ADDRESSING.md)迁移。
+本实例仍是显式HTTP验收模式，登录身份仍含IP。以后IP变化时执行`./manage.sh restart`，脚本检测活动地址并在需要时更新Keycloak；员工随后重新登录。

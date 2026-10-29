@@ -88,14 +88,6 @@ def settings(value):
         "127.0.0.1",
     }:
         raise ValueError("访问地址须为企业DNS域名")
-    try:
-        ipaddress.ip_address(url.hostname)
-    except ValueError:
-        public_is_ip = False
-    else:
-        public_is_ip = True
-    if public_is_ip and not demo:
-        raise ValueError("正式模式必须使用稳定DNS名称，不能把IP写死为登录地址")
     if address.version != 4 or not (address.is_private or address.is_loopback):
         raise ValueError("监听地址必须是内网IPv4、loopback或 lan/local 模式")
     if listen_mode is None and address.is_unspecified:

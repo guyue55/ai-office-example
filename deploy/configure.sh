@@ -22,7 +22,7 @@ fi
 IP=''
 if command -v ipconfig >/dev/null 2>&1; then IP="$(ipconfig getifaddr en0 2>/dev/null || true)"
 elif command -v hostname >/dev/null 2>&1; then IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"; fi
-printf '请在公司服务器上执行。员工电脑不能用自己的IP替代服务器地址。\n正式入口应使用稳定内部域名；监听默认覆盖服务器当前所有内网地址，IP变化不必重新发布端口。\n' >&2
+printf '请在公司服务器上执行。员工电脑不能用自己的IP替代服务器地址。\n正式入口须与HTTPS证书覆盖的地址一致；监听默认覆盖服务器当前所有内网地址。\n' >&2
 ask_listen() {
   ask '监听范围：lan=局域网可访问，local=仅服务器本机，也可直接填写内网IPv4' lan; LISTEN="$ANSWER"
   if [[ "$LISTEN" != lan && "$LISTEN" != local ]]; then
@@ -33,7 +33,7 @@ ask '部署模式：1=HTTPS，2=局域网HTTP验收（明文，禁止正式业�
 case "$ANSWER" in
   1)
     MODE=https
-    ask '稳定内部域名根地址，例如https://office.company.internal' ''; URL="$ANSWER"
+    ask 'HTTPS访问根地址（须与证书覆盖地址一致），例如https://192.168.1.10' ''; URL="$ANSWER"
     [[ "$URL" == https://* && "$URL" != *'@'* ]] || { echo 'HTTPS模式必须填写https://根地址。' >&2; exit 2; }
     ask_listen
     ask '现有证书fullchain的绝对路径' ''; CERT="$ANSWER"

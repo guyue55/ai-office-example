@@ -66,10 +66,10 @@ def test_server_bind_modes_are_explicit(listen, expected_mode, expected_address)
     assert config["listen_address"] == expected_address
 
 
-def test_https_public_address_cannot_be_literal_ip():
+def test_https_public_address_can_use_certificate_ip():
     layout = module("deploy/installer/layout.py")
-    with pytest.raises(ValueError, match="稳定DNS"):
-        layout.settings({"public_url": "https://192.168.1.10", "listen_address": "lan"})
+    config = layout.settings({"public_url": "https://192.168.1.10", "listen_address": "lan"})
+    assert config["hostname"] == "192.168.1.10"
 
 
 def test_compose_only_exposes_gateway_and_separates_maintenance():
@@ -256,9 +256,7 @@ def test_server_still_requires_explicit_demo(tmp_path):
         )
 
 
-def test_delivery_defaults_to_lan_binding_and_stable_https_name():
-    import tempfile
-
+def test_delivery_defaults_to_lan_binding_and_accepts_certificate_ip(tmp_path):
     from delivery_config import read_env, server_settings
 
     values = server_settings(
@@ -268,14 +266,9 @@ def test_delivery_defaults_to_lan_binding_and_stable_https_name():
         }
     )
     assert values["listen_address"] == "lan"
-    with tempfile.NamedTemporaryFile("w", delete=False) as handle:
-        handle.write("OFFICE_DEPLOYMENT_MODE=https\nOFFICE_PUBLIC_URL=https://192.168.1.10\n")
-        path = handle.name
-    try:
-        with pytest.raises(ValueError, match="稳定DNS"):
-            read_env(path)
-    finally:
-        Path(path).unlink()
+    path = tmp_path / "delivery.env"
+    path.write_text("OFFICE_DEPLOYMENT_MODE=https\nOFFICE_PUBLIC_URL=https://192.168.1.10\n")
+    assert read_env(path)["OFFICE_PUBLIC_URL"] == "https://192.168.1.10"
 
 
 def test_editable_connection_preserves_package_integrity(tmp_path):

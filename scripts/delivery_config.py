@@ -81,13 +81,6 @@ def read_env(path):
             raise ValueError("HTTP演示仅支持显式RFC1918私有IPv4地址")
     elif parsed.scheme != "https":
         raise ValueError("正式模式需要HTTPS")
-    else:
-        try:
-            ipaddress.ip_address(parsed.hostname)
-        except ValueError:
-            pass
-        else:
-            raise ValueError("正式模式必须使用稳定DNS名称，不能把IP写死为登录地址")
     return {**values, "OFFICE_PUBLIC_URL": url, "OFFICE_DEPLOYMENT_MODE": mode}
 
 

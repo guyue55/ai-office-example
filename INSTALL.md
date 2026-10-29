@@ -14,7 +14,7 @@ Linux服务器准备Docker Engine、Compose插件、Bash与flock（util-linux）
 sudo bash deploy/install.sh
 ```
 
-macOS使用`bash deploy/install.sh`。没有deploy/.env且有终端时进入交互：确认稳定内部域名、监听范围、端口、实例目录和管理员信息；按回车接受默认值。正式HTTPS必须使用稳定DNS名称，监听默认`lan`（`0.0.0.0`）。服务器IP变化时只更新DNS，不重建容器或更改登录身份；仅当多网卡或网络隔离需要时才选择固定内网IPv4，`local`只允许本机访问。默认HTTPS需要已有证书。只有显式选择并确认后才允许RFC1918局域网HTTP验收。
+macOS使用`bash deploy/install.sh`。没有deploy/.env且有终端时进入交互：确认HTTPS访问地址、监听范围、端口、实例目录和管理员信息；按回车接受默认值。监听默认`lan`，即`0.0.0.0`，当前服务器所有内网接口均可访问；`local`只允许本机访问；只有多网卡隔离时才选择固定内网IPv4。HTTP验收实例IP变化时由`./manage.sh start`或`restart`自动检测并保留数据迁址。默认HTTPS需要已有证书。只有显式选择并确认后才允许RFC1918局域网HTTP验收。
 
 默认创建独立PostgreSQL18业务库与身份库、分离数据库账号、Keycloak、网关及服务端，运行迁移、内置权限与首管理员初始化。密码随机生成，首次登录资料在结果指示的受限credentials目录，由本人查看并首次改密。服务就绪不等于已登录。
 
@@ -48,7 +48,7 @@ uv run python scripts/package_client_setup.py --config deploy/.env --output dist
 
 显式HTTP演示实例迁址维护入口及备份／恢复边界见[实例迁址维护](docs/INSTANCE_RELOCATION.md)。普通安装重跑仍拒绝静默换址或升级；迁址不替代本人重新登录验收。
 
-网络监听、稳定域名、Docker防火墙边界及IP变化后的处理见[网络监听与稳定入口](docs/NETWORK_ADDRESSING.md)。不要在公网网卡存在时仅凭`lan`模式宣称端口已隔离。
+监听范围、Docker防火墙边界及IP变化后的处理见[服务统一管理](docs/MANAGEMENT.md)。不要在公网网卡存在时仅凭`lan`模式宣称端口已隔离。
 
 
 ## 5. 选择普通服务或含 Agent 的服务
