@@ -7,7 +7,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ACTIVE_POINTER="$ROOT/runtime/.active-server-instance"
 INSTANCE="${OFFICE_INSTANCE_DIR:-}"
 REQUESTED_IP=""
+CONFIRM_TOKEN=""
+BACKUP_OUTPUT=""
 COMMAND=""
+PLAN_TARGET=""
 LOG_SERVICE="service"
 LOG_TAIL=100
 FOLLOW=0
@@ -46,6 +49,14 @@ main_help() {
   address     查看活动内网IPv4和当前登录主地址；多个地址时交互选择
   logs        查看日志，默认service最近100行
   instances   列出发现的服务器实例及活动标记
+  plan        只读预览down或recreate的影响，不执行修改
+  recreate    强制重建无状态gateway/service，数据库卷和身份数据保留
+  down        删除容器与项目网络，数据库卷、镜像、配置和密钥保留
+  backup      备份业务库、身份库、配置和秘密到受限制目录
+
+高级操作
+  recreate与down必须先预览并输入实例：动作确认串，或对非交互调用显式传--confirm。
+  不提供purge、delete、delete-data或uninstall；任何删除卷、镜像、实例密钥的请求都会被拒绝。
 
 选项
   --instance <目录>  指定实例；也可用环境变量 OFFICE_INSTANCE_DIR
@@ -54,6 +65,8 @@ main_help() {
   --tail <行数>      logs显示行数，默认100
   --follow           logs持续跟随
   --timeout <秒>     启动、重启与健康等待上限，默认120
+  --confirm <值>     down/recreate确认串，必须精确等于“项目名:动作”
+  --output <目录>    backup父目录，必须是绝对路径；默认runtime/backups
   -h, --help         查看总帮助；命令后加--help查看该命令说明
 
 自动选择实例
@@ -76,6 +89,11 @@ main_help() {
 示例
   ./manage.sh status
   ./manage.sh check
+  ./manage.sh plan down
+  ./manage.sh down --confirm office-example:down
+  ./manage.sh plan recreate
+  ./manage.sh recreate --confirm office-example:recreate
+  ./manage.sh backup --output /secure/office-backups
   ./manage.sh start
   ./manage.sh restart --ip 172.16.170.83
   ./manage.sh logs --service gateway --tail 200
@@ -148,6 +166,41 @@ instances：列出实例
 示例：./manage.sh instances
 EOF
       ;;
+    plan)
+      cat <<'EOF'
+plan：只读预览危险维护动作
+  用法：./manage.sh plan down|recreate [--instance 目录]
+  显示将删除的容器与网络、必须保留的数据库卷、确认串和恢复方式。
+  不删除容器、卷、镜像或文件，不写活动实例记录。
+EOF
+      ;;
+    recreate)
+      cat <<'EOF'
+recreate：保留数据重建无状态容器
+  默认仅重建gateway和service；postgres与identity容器保持运行。
+  数据库卷、身份数据、配置、密钥和镜像全部保留。
+  先执行plan recreate，再输入“项目名:recreate”或传--confirm。
+示例：./manage.sh recreate --confirm office-93e42ff1ec92:recreate
+EOF
+      ;;
+    down)
+      cat <<'EOF'
+down：删除容器和项目网络
+  数据库卷、镜像、实例配置、秘密、审计和备份全部保留。
+  命令固定不传-v/--volumes，也不删除镜像。
+  先执行plan down，再输入“项目名:down”或传--confirm。
+示例：./manage.sh down --confirm office-93e42ff1ec92:down
+EOF
+      ;;
+    backup)
+      cat <<'EOF'
+backup：创建受限制的完整实例备份
+  备份业务库、身份库、实例配置、网关配置和必要秘密。
+  默认写入runtime/backups；--output可指定其他绝对目录。
+  不删除旧备份，不执行保留策略。
+示例：./manage.sh backup --output /secure/office-backups
+EOF
+      ;;
     *) main_help ;;
   esac
 }
@@ -165,10 +218,23 @@ while [[ $# -gt 0 ]]; do
     --tail) LOG_TAIL="${2:?--tail需要行数}"; shift 2 ;;
     --follow) FOLLOW=1; shift ;;
     --timeout) WAIT_SECONDS="${2:?--timeout需要秒数}"; shift 2 ;;
+    --confirm) CONFIRM_TOKEN="${2:?--confirm需要确认串}"; shift 2 ;;
+    --output) BACKUP_OUTPUT="${2:?--output需要目录}"; shift 2 ;;
+    -v|--volumes|--rmi|--remove-images|--delete-data|--purge)
+      echo "拒绝危险选项：$1。本管理脚本不删除持久数据或镜像" >&2
+      exit 2
+      ;;
     -h|--help) HELP=1; shift ;;
     --*) echo "未知选项：$1" >&2; main_help >&2; exit 2 ;;
     *)
-      if [[ -z "$COMMAND" ]]; then COMMAND="$1"; else echo "多余参数：$1" >&2; exit 2; fi
+      if [[ -z "$COMMAND" ]]; then
+        COMMAND="$1"
+      elif [[ "$COMMAND" == plan && -z "$PLAN_TARGET" ]]; then
+        PLAN_TARGET="$1"
+      else
+        echo "多余参数：$1" >&2
+        exit 2
+      fi
       shift
       ;;
   esac
@@ -180,10 +246,26 @@ if [[ "$HELP" == 1 ]]; then
 fi
 if [[ -z "$COMMAND" ]]; then main_help; exit 0; fi
 case "$COMMAND" in
-  start|stop|restart|status|check|address|logs|instances) ;;
+  start|stop|restart|status|check|address|logs|instances|plan|recreate|down|backup) ;;
+  purge|delete|delete-data|uninstall|uninstall-data|remove|rm)
+    echo '拒绝：本管理脚本不提供删除数据或卸载命令；数据库卷、身份、审计、密钥和备份不会被删除' >&2
+    exit 2
+    ;;
   *) echo "未知命令：$COMMAND" >&2; main_help >&2; exit 2 ;;
 esac
 [[ "$WAIT_SECONDS" =~ ^[1-9][0-9]*$ ]] || { echo '--timeout须为正整数秒' >&2; exit 2; }
+if [[ -n "$CONFIRM_TOKEN" && "$COMMAND" != recreate && "$COMMAND" != down ]]; then
+  echo '--confirm只用于recreate和down' >&2
+  exit 2
+fi
+if [[ -n "$BACKUP_OUTPUT" && "$COMMAND" != backup ]]; then
+  echo '--output只用于backup' >&2
+  exit 2
+fi
+if [[ "$COMMAND" == plan && "$PLAN_TARGET" != down && "$PLAN_TARGET" != recreate ]]; then
+  echo 'plan目标必须是down或recreate' >&2
+  exit 2
+fi
 
 probe_docker() {
   if command -v timeout >/dev/null 2>&1; then
@@ -425,6 +507,215 @@ refresh_gateway() {
       -v "$ROOT:$ROOT:ro" -v "$INSTANCE:$INSTANCE" "$IMAGE" \
       python "$ROOT/deploy/installer/refresh_gateway.py" "$INSTANCE"
   fi
+}
+
+has_local_postgres() {
+  compose config --services 2>/dev/null | grep -qx postgres
+}
+
+protected_volume_state() {
+  if ! has_local_postgres; then return 0; fi
+  docker volume inspect --format '{{.Name}}|{{.Driver}}|{{.CreatedAt}}' \
+    "${PROJECT}_database" 2>/dev/null || true
+}
+
+confirmation_required() {
+  local action="$1" expected="$PROJECT:$1" entered
+  if [[ -n "$CONFIRM_TOKEN" ]]; then
+    [[ "$CONFIRM_TOKEN" == "$expected" ]] && return 0
+    bad "确认串不匹配；应精确输入 ${expected}"
+    return 2
+  fi
+  if [[ -t 0 ]]; then
+    echo >&2
+    read -r -p "确认执行 ${action}，请输入 ${expected}：" entered
+    [[ "$entered" == "$expected" ]] && return 0
+    bad '确认失败，未执行任何修改'
+    return 2
+  fi
+  bad "非交互环境必须传 --confirm ${expected}"
+  return 2
+}
+
+show_plan() {
+  local action="$1" folder
+  section "维护计划：${action}"
+  note "实例：$INSTANCE"
+  note "项目：$PROJECT"
+  if ! probe_docker; then
+    printf '  [注意] Docker不可用，以下基于持久配置；执行前会重新检查现场\n'
+  fi
+  case "$action" in
+    down)
+      note '将删除项目容器和项目网络'
+      note '不会删除数据库卷、镜像、实例配置、秘密、审计或备份'
+      if probe_docker; then
+        echo '  容器：'
+        compose ps -a --format '    {{.Name}}  {{.Status}}' || true
+        echo '  项目网络：'
+        docker network ls --filter "label=com.docker.compose.project=$PROJECT" --format '    {{.Name}}' || true
+        echo '  必须保留的数据卷：'
+        if has_local_postgres; then
+          folder="$(protected_volume_state)"
+          if [[ -n "$folder" ]]; then echo "    ${PROJECT}_database  ${folder}"; else echo "    ${PROJECT}_database  当前不存在"; fi
+        else
+          echo '    无内置数据库卷；外部数据库不受本操作影响'
+        fi
+      fi
+      ;;
+    recreate)
+      note '将强制重建gateway和service容器'
+      note 'postgres与identity保持运行；所有卷、镜像、配置和密钥保留'
+      if probe_docker; then
+        echo '  重建目标：'
+        compose ps -a --format '    {{.Name}}  {{.Status}}' gateway service || true
+        folder="$(protected_volume_state)"
+        [[ -n "$folder" ]] && echo "  数据卷保持不变：${folder}"
+      fi
+      ;;
+  esac
+  printf '\n  确认串：%s:%s\n' "$PROJECT" "$action"
+  printf '  预览：./manage.sh plan %s\n' "$action"
+  printf '  执行：./manage.sh %s --confirm %s:%s\n' "$action" "$PROJECT" "$action"
+}
+
+recreate_stack() {
+  local before after running
+  if [[ "$DEMO" == 1 ]]; then
+    current_candidates
+    if ! address_is_active "$CURRENT_HOST"; then
+      bad '当前登录地址已不在活动网卡上；请先执行start或restart完成地址迁移'
+      return 2
+    fi
+    SELECTED="$CURRENT_HOST"
+  fi
+  show_plan recreate
+  confirmation_required recreate || return 2
+  running="$(compose ps --status running --services 2>/dev/null || true)"
+  printf '%s\n' "$running" | grep -qx postgres || { bad 'postgres未运行；请先执行start'; return 1; }
+  printf '%s\n' "$running" | grep -qx identity || { bad 'identity未运行；请先执行start'; return 1; }
+  before="$(protected_volume_state)"
+  if has_local_postgres && [[ -z "$before" ]]; then
+    bad '未找到内置数据库卷；拒绝重建，先核对实例数据状态'
+    return 1
+  fi
+  step '1/3' '刷新网关配置'
+  refresh_gateway
+  step '2/3' '保留数据并重建gateway/service'
+  compose up -d --force-recreate --no-deps --wait --wait-timeout "$WAIT_SECONDS" gateway service || return 2
+  after="$(protected_volume_state)"
+  if [[ -n "$before" && "$before" != "$after" ]]; then
+    bad '数据库卷状态发生变化；停止后续操作并立即核对'
+    return 1
+  fi
+  step '3/3' '核验就绪状态'
+  wait_health || return 1
+  ok '容器已重建；数据库卷、镜像、配置和密钥未删除'
+}
+
+down_stack() {
+  local before after image_ids="" image cid
+  show_plan down
+  confirmation_required down || return 2
+  if has_local_postgres; then
+    before="$(protected_volume_state)"
+    [[ -n "$before" ]] || { bad '未找到内置数据库卷；拒绝执行down'; return 1; }
+  fi
+  if probe_docker; then
+    for name in postgres identity gateway service; do
+      cid="$(compose ps -q "$name" 2>/dev/null || true)"
+      [[ -n "$cid" ]] || continue
+      image="$(docker inspect --format '{{.Image}}' "$cid" 2>/dev/null || true)"
+      [[ -n "$image" ]] && image_ids="${image_ids}${image}"$'\n'
+    done
+  fi
+  step '1/2' '删除容器和项目网络（不删除卷和镜像）'
+  compose down --timeout 20 || return 2
+  after="$(protected_volume_state)"
+  if [[ -n "$before" && "$before" != "$after" ]]; then
+    bad '数据库卷在down后状态不一致；立即停止并核对，禁止继续清理'
+    return 1
+  fi
+  if [[ -n "$image_ids" ]]; then
+    while IFS= read -r image; do
+      [[ -n "$image" ]] || continue
+      docker image inspect "$image" >/dev/null 2>&1 || { bad "镜像意外缺失：$image"; return 1; }
+    done <<<"$image_ids"
+  fi
+  step '2/2' '核验保留项'
+  ok '容器和项目网络已删除'
+  ok '数据库卷、镜像、实例配置、秘密、审计和备份均保留'
+  echo '  恢复容器：./manage.sh start'
+}
+
+copy_backup_item() {
+  local relative="$1" source="$INSTANCE/$1" target="$1"
+  [[ -e "$source" ]] || return 0
+  [[ -L "$source" ]] && { bad "拒绝备份软链：$relative"; return 2; }
+  mkdir -p "$(dirname "$BACKUP_DIR/$target")"
+  cp -Rp "$source" "$BACKUP_DIR/$target"
+}
+
+dump_database() {
+  local database="$1" target="$BACKUP_DIR/$1.dump" pg
+  pg="$(compose ps -q postgres 2>/dev/null || true)"
+  [[ -n "$pg" ]] || { bad 'postgres容器未运行，无法备份'; return 1; }
+  docker exec "$pg" sh -c \
+    'export PGPASSWORD="$(cat /run/secrets/postgres_password)"; exec pg_dump -h 127.0.0.1 -U postgres -d "$1" -Fc' \
+    office-backup "$database" >"$target"
+  chmod 600 "$target"
+  docker exec -i "$pg" pg_restore --list <"$target" >/dev/null || { bad "备份校验失败：$database"; return 1; }
+}
+
+backup_instance() {
+  local root stamp manifest
+  if ! has_local_postgres; then bad 'backup当前只支持内置PostgreSQL实例'; return 2; fi
+  compose ps --status running --services | grep -qx postgres || { bad 'postgres未运行；无法创建一致性备份'; return 1; }
+  root="${BACKUP_OUTPUT:-$ROOT/runtime/backups}"
+  [[ "$root" == /* ]] || { bad '--output必须为绝对目录'; return 2; }
+  mkdir -p "$root"
+  [[ ! -L "$root" ]] || { bad '备份目录不能是软链'; return 2; }
+  root="$(cd "$root" && pwd -P)"
+  case "$root/" in
+    "$INSTANCE/"*) bad '备份目录不能位于实例目录内'; return 2 ;;
+  esac
+  chmod 700 "$root"
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  BACKUP_DIR="$root/${PROJECT}-${stamp}-$$"
+  mkdir "$BACKUP_DIR" || { bad '备份目录已存在或无法创建'; return 2; }
+  chmod 700 "$BACKUP_DIR"
+  step '1/4' '备份业务库和身份库'
+  dump_database office || return 1
+  dump_database office_identity || return 1
+  step '2/4' '复制实例配置与秘密'
+  for item in installation.json compose.json result.json gateway service maintenance identity credentials postgres; do
+    copy_backup_item "$item" || return 1
+  done
+  chmod -R go-rwx "$BACKUP_DIR"
+  step '3/4' '生成备份清单'
+  manifest="$BACKUP_DIR/MANIFEST.txt"
+  {
+    printf 'project=%s\n' "$PROJECT"
+    printf 'created_at=%s\n' "$stamp"
+    printf 'instance=%s\n' "$INSTANCE"
+    printf 'office_dump=office.dump\n'
+    printf 'identity_dump=office_identity.dump\n'
+    printf 'volume=%s\n' "$(protected_volume_state)"
+    printf 'no_deletion_by_manage= true\n'
+  } >"$manifest"
+  chmod 600 "$manifest"
+  if command -v shasum >/dev/null 2>&1; then
+    (cd "$BACKUP_DIR" && find . -type f ! -name SHA256SUMS -print | sort | xargs shasum -a 256) >"$BACKUP_DIR/SHA256SUMS"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    (cd "$BACKUP_DIR" && find . -type f ! -name SHA256SUMS -print | sort | xargs sha256sum) >"$BACKUP_DIR/SHA256SUMS"
+  else
+    warn '未找到SHA-256工具；数据库归档已通过pg_restore清单校验'
+  fi
+  [[ -f "$BACKUP_DIR/SHA256SUMS" ]] && chmod 600 "$BACKUP_DIR/SHA256SUMS"
+  step '4/4' '完成'
+  ok "备份目录：$BACKUP_DIR"
+  ok '业务库与身份库已通过pg_restore清单校验'
+  ok '本命令未删除任何旧备份或运行数据'
 }
 
 current_candidates() {
@@ -731,6 +1022,28 @@ case "$COMMAND" in
     acquire_lock || exit 2
     load_instance 1 || exit 2
     stop_stack
+    ;;
+  plan)
+    load_instance 0 || exit 2
+    show_plan "$PLAN_TARGET"
+    ;;
+  recreate)
+    acquire_lock || exit 2
+    ensure_docker || exit 2
+    load_instance 1 || exit 2
+    recreate_stack
+    ;;
+  down)
+    acquire_lock || exit 2
+    ensure_docker || exit 2
+    load_instance 1 || exit 2
+    down_stack
+    ;;
+  backup)
+    acquire_lock || exit 2
+    ensure_docker || exit 2
+    load_instance 0 || exit 2
+    backup_instance
     ;;
   status)
     load_instance 0 || exit 2

@@ -14,6 +14,11 @@
 | `address` | 展示活动内网地址和登录主地址 | 否 |
 | `logs` | 查看指定容器日志 | 否 |
 | `instances` | 列出发现的服务器实例及活动标记 | 否 |
+| `plan down` | 只读预览删除容器和网络的影响 | 否 |
+| `plan recreate` | 只读预览无状态容器重建影响 | 否 |
+| `recreate` | 保留所有卷，只强制重建gateway和service | 是 |
+| `down` | 删除容器和项目网络，保留卷、镜像、配置和秘密 | 是 |
+| `backup` | 备份两个数据库、配置和必要秘密 | 是，仅写备份目录 |
 
 ```bash
 ./manage.sh status
@@ -24,6 +29,9 @@
 ./manage.sh address
 ./manage.sh logs --service gateway --tail 200
 ./manage.sh instances
+./manage.sh plan down
+./manage.sh plan recreate
+./manage.sh backup
 ```
 
 ## 通用选项
@@ -35,6 +43,8 @@
 --tail <行数>      logs显示行数，默认100
 --follow           logs持续输出
 --timeout <秒>     启动、重启与健康等待上限，默认120
+--confirm <值>     down/recreate确认串，必须为“项目名:动作”
+--output <目录>    backup父目录，必须是绝对路径
 -h, --help         查看总帮助
 ```
 
@@ -58,7 +68,7 @@
 
 选择结果写入`runtime/.active-server-instance`，该文件只保存本机实例路径，不是凭证。
 
-只有`start`、`stop`、`restart`会更新活动实例记录。`status`、`check`、`address`、`instances`、`logs`严格只读，不创建或修改该文件。
+只有`start`、`stop`、`restart`、`recreate`、`down`会更新活动实例记录。`status`、`check`、`address`、`instances`、`logs`严格只读，不创建或修改该文件。`plan`只读；`backup`只写指定备份目录。
 
 ## 启动、停止和重启
 
@@ -71,6 +81,25 @@
 `restart`执行相同的地址同步，然后重启postgres、identity、gateway和service。若HTTP验收实例IP发生变化，会在普通重启前先走[实例迁址维护](INSTANCE_RELOCATION.md)。
 
 `start`、`stop`、`restart`使用`runtime/.manage.lock`目录锁。第二个管理进程会明确失败，不能并发停止或重启同一套服务；命令正常退出或收到INT/TERM时释放锁。锁内PID已不存在时自动清理失效锁，避免异常退出永久阻断后续操作。
+
+## 维护、重建与数据保护
+
+管理脚本不提供`purge`、`delete`、`delete-data`或`uninstall`。请求这些命令、`down --volumes`、`-v`、`--rmi`、`--delete-data`时直接拒绝并返回2，持久数据、用户、权限、审计、密钥和备份不会被删除。
+
+`down`固定执行不带`-v`和`--rmi`的Compose删除：删除容器和项目网络，保留命名卷、镜像、实例目录、秘密和备份。执行前显示容器、网络和数据库卷，执行后再次核对数据库卷仍存在；所有运行镜像也必须仍可检查。
+
+`recreate`只强制重建`gateway`和`service`。它要求postgres和identity正在运行，不重启数据库；执行前后核对数据库卷标识，任何变化都会立即报错。配置或环境变量变化优先使用本命令。
+
+`down`和`recreate`都必须经过二次确认：先执行`plan`查看影响，再输入精确的项目名加动作，或非交互显式传入确认串：
+
+```bash
+./manage.sh plan down
+./manage.sh down --confirm office-93e42ff1ec92:down
+./manage.sh plan recreate
+./manage.sh recreate --confirm office-93e42ff1ec92:recreate
+```
+
+`backup`把业务库、身份库、实例配置、网关配置、必要秘密和数据库卷标识写入权限为700的目录，文件禁止组和其他用户访问；两个数据库dump通过`pg_restore --list`校验，并提供SHA-256清单。备份不会自动覆盖、轮换或删除旧目录。
 
 ## 地址检测与多地址
 

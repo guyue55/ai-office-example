@@ -66,7 +66,19 @@ def test_management_entrypoint_is_valid_and_documents_all_commands():
         text=True,
     )
     assert result.returncode == 0
-    for command in ("start", "stop", "restart", "status", "check", "address", "logs"):
+    for command in (
+        "start",
+        "stop",
+        "restart",
+        "status",
+        "check",
+        "address",
+        "logs",
+        "plan",
+        "recreate",
+        "down",
+        "backup",
+    ):
         assert command in result.stdout
     assert "--ip" in result.stdout
     detail = subprocess.run(
@@ -76,6 +88,27 @@ def test_management_entrypoint_is_valid_and_documents_all_commands():
         text=True,
     )
     assert detail.returncode == 0 and "完整重启" in detail.stdout
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["purge"],
+        ["delete-data"],
+        ["uninstall"],
+        ["down", "--volumes"],
+        ["down", "--rmi", "all"],
+    ],
+)
+def test_management_refuses_data_and_image_deletion(arguments):
+    result = subprocess.run(
+        ["bash", str(ROOT / "manage.sh"), *arguments],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2
+    assert "拒绝" in result.stderr
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Bash为服务器入口")
