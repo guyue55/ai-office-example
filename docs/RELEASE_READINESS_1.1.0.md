@@ -1,6 +1,6 @@
 # v1.1.0 发版准备与验收
 
-日期：2026-10-27。目标分支为codex/agent，候选版本为1.1.0；本文件不表示main已合并或已正式发布。
+日期：2026-10-27；发布：2026-11-02。目标版本 1.1.0，原 `codex/agent` 分支已合并 main 并发布。
 
 ## 范围及修正
 
@@ -39,3 +39,10 @@
 ## 2026-10-28 双变体交付补强
 
 本轮实现与分层证据见[交付计划](plans/2026-10-28-agent-delivery-implementation.md)。升级迁移 head 为0017。安装支持 `.env` 服务类型与镜像选择、缺失镜像拉取和建库前预检；CI及镜像发布拆为双变体。已有历史测试数量和来源仅代表相应历史提交；本轮最终源码与候选 SHA 在交付报告核对。远端 CI、双架构发布、匿名拉取与实例升级尚不在本地通过结论中。
+
+## 2026-11-02 发布记录
+
+- 附注 Tag `v1.1.0` 指向 `3bfd86adc52225dc3aded7a5267330e7365c5138`；GitHub Release 已发布 17 份资产，下载后通过 verify_release（全 SHA）、SHA256SUMS 与 check_client_install 复核。
+- 镜像 `ghcr.io/guyue55/ai-office-example/data-service:1.1.0` 与 `:1.1.0-agent`（含对应 SHA 标签）公开、双架构；OCI revision／version 正确，base 无 `office_agent`、agent 含 `office-agent 1.1.0`。
+- 发布后修正发布说明与运维文档的迁移 head（0015 → 0017，PR #7）；main 为 `b8acf1b`，Tag 仍指向发布源码 `3bfd86a`。
+- 已知边界：Tag 内 `RELEASE_NOTES.md` 资产保留原始 0015 文本；Release 描述、main 源码与 `docs/MODEL_CONFIGURATION_OPERATIONS.md` 已为 0017。实例升级与全局客户端更新未执行。

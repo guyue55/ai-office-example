@@ -42,8 +42,9 @@ macOS使用`bash deploy/install.sh`。没有deploy/.env且有终端时进入交�
 
 ```sh
 uv sync --frozen
-uv run python scripts/prepare_release.py --tag v1.0.0 --output dist/candidate
-uv run python scripts/package_client_setup.py --config deploy/.env --output dist/employee --artifact-dir dist/candidate
+task_candidate="dist/candidate-$(date +%Y%m%d-%H%M%S)"
+uv run python scripts/prepare_release.py --tag "v$(cat VERSION)" --output "$task_candidate"
+uv run python scripts/package_client_setup.py --config deploy/.env --output dist/employee --artifact-dir "$task_candidate"
 ```
 
 若使用已发布完整候选中的PC zip，解压后直接填写企业地址即可。包名office-client是稳定内部包名；实际员工命令由template.toml的client.command生成，安装器返回真实路径。
