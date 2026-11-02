@@ -1,6 +1,6 @@
 # 企业 AI 办公基座模板
 
-将企业AI工具与内部数据／管理服务连接起来的独立部署基座。员工可通过AI工具、技能及CLI／SDK访问受控服务。`codex/agent`分支正升级为员工端与服务端均支持AI的智能体基座：已实现员工端独立运行、服务端持久任务与Web确认入口，以及外部CLI／SDK／MCP接入。客户端和模型不直连数据库。
+将企业AI工具与内部数据／管理服务连接起来的独立部署基座。员工可通过AI工具、技能及CLI／SDK访问受控服务。v1.1.0 已将基座升级为员工端与服务端均支持AI的智能体基座：员工端可独立运行，服务端提供持久任务与Web确认入口，并支持外部CLI／SDK／MCP接入。客户端和模型不直连数据库。
 
 ## 具备的能力
 
@@ -43,7 +43,7 @@ GitHub 仓库与 CI／候选制品／镜像发布边界见 [自动化说明](doc
 
 常用开发、发版准备、安装升级与恢复操作见 [操作手册](docs/OPERATIONS.md)。
 
-Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGENT_RESEARCH.md) · [员工端运行设计](docs/AGENT_DESIGN.md) · [执行计划](docs/AGENT_PLAN.md) · [可选运行时安装](clients/agent/README.md) · [自定义模型配置](docs/AGENT_MODEL_CONFIGURATION.md)。部署及操作见[运行指南](docs/AGENT_OPERATIONS.md)，全局侧栏／会话方案与验收见[助手工作区计划](docs/AGENT_WORKSPACE_PLAN.md)。Agent分支支持控制台全局入口、共享侧栏／全页会话、服务端有界续问和原审批闭环；[聊天交互计划与验收](docs/AGENT_CHAT_UX_PLAN.md)补充会话草稿隔离、受限Markdown、复制降级、搜索改名和可调侧栏。[视觉实施与验收](docs/AGENT_CHAT_VISUAL_IMPLEMENTATION.md)记录紧凑头部、可搜索历史浮层、共享图标／焦点、输入与回执分级，以及独立浏览器到临时PG的真实审批写入测试。这不会自动升级既有交付；框架隔离验收不等于真实供应商已经验收，原v1.0.0交付不因分支开发而自动升级。
+v1.1.0 智能体能力：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGENT_RESEARCH.md) · [员工端运行设计](docs/AGENT_DESIGN.md) · [执行计划](docs/AGENT_PLAN.md) · [可选运行时安装](clients/agent/README.md) · [自定义模型配置](docs/AGENT_MODEL_CONFIGURATION.md)。部署及操作见[运行指南](docs/AGENT_OPERATIONS.md)，全局侧栏／会话方案与验收见[助手工作区计划](docs/AGENT_WORKSPACE_PLAN.md)。v1.1.0 支持控制台全局入口、共享侧栏／全页会话、服务端有界续问和原审批闭环；[聊天交互计划与验收](docs/AGENT_CHAT_UX_PLAN.md)补充会话草稿隔离、受限Markdown、复制降级、搜索改名和可调侧栏。[视觉实施与验收](docs/AGENT_CHAT_VISUAL_IMPLEMENTATION.md)记录紧凑头部、可搜索历史浮层、共享图标／焦点、输入与回执分级，以及独立浏览器到临时PG的真实审批写入测试。升级不会自动更新既有交付；框架隔离验收不等于真实供应商已经验收，v1.0.0 部署不因版本发布而自动升级。
 
 控制台与助手的方案、范围和阶段验收见 [UI整体升级计划](docs/UI_UPGRADE_PLAN.md)，后续独立审阅整改见 [UI审阅整改计划](docs/UI_REVIEW_REMEDIATION.md)。页面及共享组件清单维护在 `tests/ui-pages.json`；局部检查通过不代表整体升级完成。
 
@@ -51,7 +51,7 @@ Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGE
 
 Agent前端下一阶段研究见[前端路线、产品范围与验证计划](docs/COPILOTKIT_FRONTEND_RESEARCH.md)：包含CopilotKit示例核查、替代UI候选、模型配置前置、状态／审批边界和阶段验收。目前为研究草案，不表示已引入React、AG-UI或第三方Runtime。
 
-管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／显式内网HTTP、默认或自定义密钥头／无密钥模式、非秘密网关参数、秘密加密、当前输入获取模型／测试、保存并启用、修订与临时回执区分、显式启停、响应字节预算、独立连接测试时限与取消／遗留回执恢复；当前分支新增，已有实例需迁移至0017并配置独立秘密后才能使用。
+管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／显式内网HTTP、默认或自定义密钥头／无密钥模式、非秘密网关参数、秘密加密、当前输入获取模型／测试、保存并启用、修订与临时回执区分、显式启停、响应字节预算、独立连接测试时限与取消／遗留回执恢复；v1.1.0 新增，已有实例需迁移至0017并配置独立秘密后才能使用。
 
 会话体验新增真实阶段／有界工具过程、同源SSE进度快照、增量文本、原位更新及中文结果卡片；侧栏和全页复用。流式／非流式在模型高级设置显式选择，连接测试使用相同设置，不在错误后自动重试。公开推理摘要未默认启用，不展示原始思维。方案、边界与验收见[会话事件实施计划](docs/plans/2026-10-29-conversation-events.md)。本轮功能已完成本机既有实例升级；升级范围与供应商验收边界见上述计划的实例升级记录。
 
