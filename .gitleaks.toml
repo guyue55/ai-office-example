@@ -1,0 +1,12 @@
+# gitleaks 配置：保留默认规则，仅放行测试夹具中的合成探针标识。
+# 该标识（synthetic-probe-1）不是真实密钥，仅用于契约测试。
+title = "office-source-safety"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "测试夹具中的合成探针标识（非真实密钥）"
+regexes = [
+  '''synthetic-probe-1''',
+]
