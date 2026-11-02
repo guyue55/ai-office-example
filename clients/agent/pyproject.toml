@@ -1,6 +1,6 @@
 [project]
 name = "office-agent"
-version = "1.1.0"
+version = "1.1.1"
 description = "复用企业办公受控服务的独立员工端 Agent"
 readme = "README.md"
 license = "Apache-2.0"
