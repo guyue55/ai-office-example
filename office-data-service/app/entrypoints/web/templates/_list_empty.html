@@ -1,0 +1,10 @@
+{# 列表空态统一入口；区别“尚无数据”和“条件无匹配”，不建议越权扩展查询。 #}
+{% set filtering = namespace(active=false) %}
+{% for key in ['q','state','status','action','actor','since','until','client_id','kind'] %}
+{% if request.query_params.get(key) %}{% set filtering.active = true %}{% endif %}
+{% endfor %}
+<div class="list-empty">
+<strong>{{ '没有匹配结果' if filtering.active else empty_title }}</strong>
+<p>{{ '请调整关键词或筛选条件，再试一次。' if filtering.active else empty_description }}</p>
+{% if filtering.active %}<a href="{{ request.url.path }}?limit={{ request.query_params.get('limit','10')|urlencode }}{% for key in ['identifier','employee_id','scope'] if request.query_params.get(key) %}&{{ key }}={{ request.query_params.get(key)|urlencode }}{% endfor %}">清除筛选</a>{% endif %}
+</div>

@@ -1,0 +1,138 @@
+"""模型配置持久化与权限；不在此模块调用供应商或控制运行器。"""
+
+import asyncio
+
+from sqlalchemy import select
+
+from app.common.errors import require
+from app.infrastructure import model_secrets
+from app.infrastructure.model_egress import check_endpoint
+from app.infrastructure.models import (
+    ModelConfiguration,
+    ModelConfigurationRevision,
+    ModelConnectionTest,
+)
+from app.modules.agent.model_configuration import ModelSave
+
+
+class ModelStore:
+    def __init__(self, access, settings):
+        self.access, self.db, self.settings = access, access.db, settings
+
+    async def state(self):
+        state = await self.db.get(ModelConfiguration, 1, with_for_update=True)
+        require(state is not None, 503, "not_initialized", "请先执行模型配置数据库迁移")
+        return state
+
+    async def revision(self, revision):
+        row = await self.db.get(ModelConfigurationRevision, revision)
+        require(row is not None, 404, "not_found", "模型配置修订不存在")
+        return row
+
+    @staticmethod
+    def expect(state, version):
+        require(state.version == version, 409, "version_conflict", "配置已被修改，请刷新后重新核对")
+
+    async def resolve_secret(self, state, command, connection):
+        """沿用密钥不回传客户端；目标改变时由人工明确确认，临时新密文不落库。"""
+        previous = await self.revision(state.draft_revision) if state.draft_revision else None
+        secret = previous.secret_ciphertext if previous else None
+        if command.secret_action == "keep" and secret and connection.auth_mode != "none":
+            assert previous is not None
+            require(
+                previous.config["model_url"] == connection.model_url
+                or command.reuse_secret_at_new_url,
+                422,
+                "invalid_input",
+                "服务地址已变化，请明确确认沿用原密钥，或填写新密钥",
+            )
+        if command.secret_action == "replace":
+            assert command.secret is not None
+            secret = await asyncio.to_thread(
+                model_secrets.encrypt,
+                self.settings.agent_secret_key_file,
+                command.secret.get_secret_value(),
+            )
+        elif command.secret_action == "clear":
+            secret = None
+        return secret
+
+    async def save(self, state, payload):
+        self.access.need("agent.config.manage")
+        self.access.need("agent.config.read")
+        command = ModelSave.model_validate(payload)
+        self.expect(state, command.version)
+        check_endpoint(self.settings, command.draft.model_url)
+        # 即使保留／清除，也验证根密钥，避免产生无法继续管理的托管配置。
+        await asyncio.to_thread(model_secrets.cipher, self.settings.agent_secret_key_file)
+        secret = await self.resolve_secret(state, command, command.draft)
+        # 元数据永远不含secret、api_key_file或宿主环境引用。
+        state.version += 1
+        state.draft_revision = state.version
+        self.db.add(
+            ModelConfigurationRevision(
+                revision=state.version,
+                config=command.draft.model_dump(),
+                secret_ciphertext=secret,
+                actor_id=self.access.actor.id,
+            )
+        )
+        self.access.audit(
+            "agent.config.saved",
+            str(state.version),
+            {"revision": state.version, "secret_action": command.secret_action},
+        )
+        await self.db.flush()
+        return state
+
+    async def status(self, state, *, installed, ready, message):
+        self.access.need("agent.config.read")
+        row = await self.revision(state.draft_revision) if state.draft_revision else None
+        active = (
+            await self.revision(state.active_revision)
+            if state.source == "managed" and state.active_revision
+            else None
+        )
+        try:
+            await asyncio.to_thread(model_secrets.cipher, self.settings.agent_secret_key_file)
+            secret_store_ready = True
+        except Exception:  # noqa: BLE001 -- 只返回状态，不暴露路径或底层异常。
+            secret_store_ready = False
+        last_test = await self.db.scalar(
+            select(ModelConnectionTest)
+            .order_by(ModelConnectionTest.created_at.desc(), ModelConnectionTest.id.desc())
+            .limit(1)
+        )
+        return {
+            "last_test": {
+                "id": last_test.id,
+                "revision": last_test.revision,
+                "api": last_test.api,
+                "model": last_test.model,
+                "state": last_test.state,
+                "created_at": last_test.created_at,
+                "result": last_test.result,
+            }
+            if last_test
+            else None,
+            "version": state.version,
+            "draft_revision": state.draft_revision,
+            "active_revision": state.active_revision,
+            "source": state.source,
+            "installed": installed,
+            "ready": ready,
+            "secret_store_ready": secret_store_ready,
+            "secret_set": bool(row and row.secret_ciphertext),
+            "draft": row.config if row else None,
+            "active": active.config if active else None,
+            "test_timeout_seconds": min(
+                30,
+                row.config.get("request_timeout", 30),
+                row.config.get("limits", {}).get("seconds", 120),
+            )
+            if row
+            else 30,
+            "allowed_urls": list(self.settings.agent_model_urls),
+            "url_policy": self.settings.agent_model_url_policy,
+            "message": message,
+        }

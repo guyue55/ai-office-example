@@ -1,5 +1,6 @@
 """专属新实例配置、受限秘密与Compose；不接管已有目录或数据。"""
 
+import base64
 import hashlib
 import ipaddress
 import json
@@ -48,7 +49,16 @@ def settings(value):
     if not isinstance(value, dict) or set(value) - allowed:
         raise ValueError("安装配置包含未知字段")
     url = urlsplit(value.get("public_url", ""))
-    address = ipaddress.ip_address(value.get("listen_address", ""))
+    listen = value.get("listen_address") or "lan"
+    if not isinstance(listen, str):
+        raise TypeError("监听范围必须是 lan、local 或内网IPv4")
+    listen_mode = {"lan": "0.0.0.0", "local": "127.0.0.1"}.get(listen)
+    if listen_mode is None:
+        if listen == "0.0.0.0":
+            raise ValueError("监听所有网卡请使用 lan，不直接填写 0.0.0.0")
+        address = ipaddress.ip_address(listen)
+    else:
+        address = ipaddress.ip_address(listen_mode)
     demo = value.get("allow_lan_http_demo", False)
     if type(demo) is not bool:
         raise ValueError("演示模式必须是布尔值")
@@ -78,12 +88,13 @@ def settings(value):
         "127.0.0.1",
     }:
         raise ValueError("访问地址须为企业DNS域名")
-    if (
-        address.version != 4
-        or not (address.is_private or address.is_loopback)
-        or address.is_unspecified
-    ):
-        raise ValueError("必须明确指定服务器内网IPv4地址，不能监听所有地址")
+    if address.version != 4 or not (address.is_private or address.is_loopback):
+        raise ValueError("监听地址必须是内网IPv4、loopback或 lan/local 模式")
+    if listen_mode is None and address.is_unspecified:
+        raise ValueError("监听所有网卡请使用 lan 模式")
+    bind_mode = (
+        "lan" if listen_mode == "0.0.0.0" else "local" if listen_mode == "127.0.0.1" else "address"
+    )
     if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,64}", value.get("admin_username", "admin")):
         raise ValueError("管理员登录名格式无效")
     admin_name = value.get("admin_name", "企业管理员")
@@ -104,6 +115,8 @@ def settings(value):
         "port": url.port or (80 if demo else 443),
         "allow_lan_http_demo": demo,
         "hostname": url.hostname,
+        "listen_address": str(address),
+        "bind_mode": bind_mode,
         "admin_username": value.get("admin_username", "admin"),
         "admin_name": admin_name.strip(),
     }
@@ -218,6 +231,10 @@ def _prepare(root, host_root, source, value, image, pg_uid, pg_gid, kc_uid, kc_g
     write(root / "credentials/initial_password", passwords["first_admin"], 0, 0)
     write(root / "service/secrets/app_password", passwords["app"])
     write(root / "service/secrets/web_session_secret", passwords["web_session"])
+    write(
+        root / "service/secrets/model_encryption_key",
+        base64.urlsafe_b64encode(secrets.token_bytes(32)).decode(),
+    )
     write(root / "maintenance/secrets/owner_password", passwords["owner"])
     external = config.get("external_database")
     if external:
@@ -252,6 +269,9 @@ def _prepare(root, host_root, source, value, image, pg_uid, pg_gid, kc_uid, kc_g
             "database_user": external["user"] if external else "office_app",
             "database_password_file": "secrets/app_password",
             "web_session_secret_file": "secrets/web_session_secret",
+            "agent_secret_key_file": "secrets/model_encryption_key",
+            "agent_model_url_policy": "public",
+            "agent_model_urls": [],
         },
     )
     write(
@@ -281,6 +301,8 @@ def nginx(config):
     port = config["port"]
     demo = config.get("allow_lan_http_demo", False)
     scheme = "http" if demo else "https"
+    authority = config["hostname"] if port in (80, 443) else f"{config['hostname']}:{port}"
+    canonical = f"{scheme}://{authority}"
     tls = (
         ""
         if demo
@@ -294,6 +316,7 @@ http {{
   server {{
     listen {listen};
     server_name {config["hostname"]};
+    if ($host != "{config["hostname"]}") {{ return 308 {canonical}$request_uri; }}
     {tls}
     client_max_body_size 2m;
     proxy_set_header Host $http_host;
@@ -355,7 +378,7 @@ def compose(host, source, config, image, project, images=None):
             },
         },
         "identity": {
-            "image": "quay.io/keycloak/keycloak:26.8.1",
+            "image": "quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b",
             "environment": {
                 "KC_DB": "postgres",
                 "KC_DB_URL": "jdbc:postgresql://postgres:5432/office_identity",
@@ -376,7 +399,7 @@ def compose(host, source, config, image, project, images=None):
             "depends_on": {"postgres": {"condition": "service_healthy"}},
         },
         "gateway": {
-            "image": "nginx:1.28-alpine",
+            "image": "nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236",
             "ports": [f"{config['listen_address']}:{config['port']}:{config['port']}"],
             "volumes": [
                 bind("gateway/nginx.conf", "/etc/nginx/nginx.conf"),

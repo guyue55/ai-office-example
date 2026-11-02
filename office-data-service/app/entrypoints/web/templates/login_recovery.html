@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}重新登录 - {{ product.name }}{% endblock %}
+{% block content %}
+<section class="card state-page" aria-labelledby="login-recovery-title">
+  <h2 id="login-recovery-title">请重新登录</h2>
+  <p>{{ message }}</p>
+  <p><a class="button" href="/console">重新登录控制台</a></p>
+  <p class="muted">此入口会发起新的安全登录，不会重复提交先前的授权请求。</p>
+  <p class="muted">追踪号：{{ trace_id }}</p>
+</section>
+{% endblock %}

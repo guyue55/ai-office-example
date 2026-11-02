@@ -3,7 +3,7 @@
   "info": {
     "title": "企业智能办公平台",
     "description": "企业数据治理与AI工具协作基座",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "paths": {
     "/health/live": {
@@ -366,6 +366,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -419,6 +429,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -427,7 +438,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -589,6 +601,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -647,6 +669,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -655,7 +678,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -817,6 +841,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -875,6 +909,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -883,7 +918,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -1035,6 +1071,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -1093,6 +1139,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1101,7 +1148,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -1253,6 +1301,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -1311,6 +1369,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1319,7 +1378,4486 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration": {
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Model Configuration",
+        "operationId": "model_configuration_api_v2_agent_configuration_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/draft": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Save Model Configuration",
+        "operationId": "save_model_configuration_api_v2_agent_configuration_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/apply": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Apply Model Configuration",
+        "operationId": "apply_model_configuration_api_v2_agent_configuration_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelApply"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/disable": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Disable Model Configuration",
+        "operationId": "disable_model_configuration_api_v2_agent_configuration_disable_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelVersion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelStatus_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/models": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Discover Models",
+        "operationId": "discover_models_api_v2_agent_configuration_models_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelDiscover"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelDiscoveryResult_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/probe": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Probe Model",
+        "operationId": "probe_model_api_v2_agent_configuration_probe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelProbe"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelTestResult_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/configuration/test": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Test Model Configuration",
+        "operationId": "test_model_configuration_api_v2_agent_configuration_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ModelTestResult_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/conversations": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Conversation Create",
+        "operationId": "conversation_create_api_v2_agent_conversations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ConversationSummary_"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          },
+          "200": {
+            "description": "幂等重放返回当前实体",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ConversationSummary_"
+                }
+              }
+            }
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      },
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Conversation List",
+        "operationId": "conversation_list_api_v2_agent_conversations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2147483647,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Archived"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_AccessPage_ConversationSummary__"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/conversations/{identifier}": {
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Conversation Get",
+        "operationId": "conversation_get_api_v2_agent_conversations__identifier__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ConversationView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/conversations/archive": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Conversation Archive",
+        "operationId": "conversation_archive_api_v2_agent_conversations_archive_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationArchive"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ConversationSummary_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/conversations/rename": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Conversation Rename",
+        "operationId": "conversation_rename_api_v2_agent_conversations_rename_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_ConversationSummary_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/capabilities": {
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Capabilities",
+        "operationId": "assistant_capabilities_api_v2_agent_capabilities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_AgentCapability_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Start",
+        "operationId": "assistant_start_api_v2_agent_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      },
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Runs",
+        "operationId": "assistant_runs_api_v2_agent_runs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 40,
+              "default": "",
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 40,
+              "default": "",
+              "title": "Until"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2147483647,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "awaiting_confirmation",
+                    "completed",
+                    "failed",
+                    "cancelled",
+                    "interrupted",
+                    "outcome_unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "const": "",
+                  "type": "string"
+                }
+              ],
+              "default": "",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_AccessPage_RunSummary__"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs/{identifier}": {
+      "get": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Run",
+        "operationId": "assistant_run_api_v2_agent_runs__identifier__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Request Timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Server Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        },
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs/decision": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Decide",
+        "operationId": "assistant_decide_api_v2_agent_runs_decision_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
+        ]
+      }
+    },
+    "/api/v2/agent/runs/cancel": {
+      "post": {
+        "tags": [
+          "智能助手"
+        ],
+        "summary": "Assistant Cancel",
+        "operationId": "assistant_cancel_api_v2_agent_runs_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCancel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success_RunView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-business-codes": [
+          400001,
+          400002,
+          400099,
+          401001,
+          401002,
+          403001,
+          403002,
+          403003,
+          404001,
+          404002,
+          404003,
+          405001,
+          408001,
+          409001,
+          409002,
+          409003,
+          409004,
+          409005,
+          409006,
+          409007,
+          409008,
+          409009,
+          409010,
+          409011,
+          413001,
+          413002,
+          415001,
+          422001,
+          422003,
+          422004,
+          422005,
+          422006,
+          422007,
+          422008,
+          422009,
+          422010,
+          422011,
+          422012,
+          422015,
+          422016,
+          422017,
+          429002,
+          500001,
+          500002,
+          500099,
+          503001,
+          503002,
+          503003,
+          503004,
+          503005,
+          503006,
+          503007
         ]
       }
     },
@@ -1583,6 +6121,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -1636,6 +6184,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1644,7 +6193,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -1809,6 +6359,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -1862,6 +6422,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -1870,7 +6431,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2022,6 +6584,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -2080,6 +6652,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2088,7 +6661,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2258,6 +6832,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -2311,6 +6895,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2319,7 +6904,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2487,6 +7073,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -2540,6 +7136,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2548,7 +7145,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2710,6 +7308,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -2768,6 +7376,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -2776,7 +7385,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -2944,6 +7554,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -2997,6 +7617,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3005,7 +7626,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -3183,6 +7805,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -3236,6 +7868,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3244,7 +7877,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -3422,6 +8056,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -3475,6 +8119,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3483,7 +8128,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -3748,6 +8394,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -3801,6 +8457,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -3809,7 +8466,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -3998,6 +8656,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -4061,6 +8729,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4069,7 +8738,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4221,6 +8891,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -4279,6 +8959,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4287,7 +8968,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4449,6 +9131,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -4507,6 +9199,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4515,7 +9208,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4677,6 +9371,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -4735,6 +9439,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -4743,7 +9448,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -4964,6 +9670,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5017,6 +9733,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5025,7 +9742,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -5203,6 +9921,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5256,6 +9984,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5264,7 +9993,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -5455,6 +10185,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5508,6 +10248,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5516,7 +10257,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "put": {
@@ -5723,6 +10465,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -5776,6 +10528,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -5784,7 +10537,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -5946,6 +10700,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -6004,6 +10768,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6012,7 +10777,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6192,6 +10958,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -6245,6 +11021,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6253,7 +11030,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6415,6 +11193,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -6473,6 +11261,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6481,7 +11270,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6643,6 +11433,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            }
+          },
           "4XX": {
             "description": "Client Error",
             "content": {
@@ -6701,6 +11501,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6709,7 +11510,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -6890,6 +11692,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -6943,6 +11755,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -6951,7 +11764,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -7116,6 +11930,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7179,6 +12003,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7187,7 +12012,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -7365,6 +12191,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7418,6 +12254,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7426,7 +12263,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -7610,6 +12448,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7663,6 +12511,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7671,7 +12520,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -7847,6 +12697,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -7910,6 +12770,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -7918,7 +12779,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -8115,6 +12977,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8168,6 +13040,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8176,7 +13049,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "post": {
@@ -8341,6 +13215,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8404,6 +13288,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8412,7 +13297,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -8580,6 +13466,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8633,6 +13529,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8641,7 +13538,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "patch": {
@@ -8817,6 +13715,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -8870,6 +13778,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -8878,7 +13787,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       },
       "delete": {
@@ -9053,6 +13963,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9106,6 +14026,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9114,7 +14035,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -9292,6 +14214,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9345,6 +14277,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9353,7 +14286,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -9531,6 +14465,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9584,6 +14528,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9592,7 +14537,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -9760,6 +14706,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -9813,6 +14769,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -9821,7 +14778,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     },
@@ -10011,6 +14969,16 @@
             },
             "description": "Server Error"
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Failure"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "4XX": {
             "content": {
               "application/json": {
@@ -10064,6 +15032,7 @@
           422015,
           422016,
           422017,
+          429002,
           500001,
           500002,
           500099,
@@ -10072,7 +15041,8 @@
           503003,
           503004,
           503005,
-          503006
+          503006,
+          503007
         ]
       }
     }
@@ -10243,6 +15213,50 @@
           "has_more"
         ],
         "title": "AccessPage[AuditOutput]"
+      },
+      "AccessPage_ConversationSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pagination"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "next",
+          "has_more"
+        ],
+        "title": "AccessPage[ConversationSummary]"
       },
       "AccessPage_EmployeeListOutput_": {
         "properties": {
@@ -10419,6 +15433,50 @@
           "has_more"
         ],
         "title": "AccessPage[RoleOutput]"
+      },
+      "AccessPage_RunSummary_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RunSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pagination"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "next",
+          "has_more"
+        ],
+        "title": "AccessPage[RunSummary]"
       },
       "AccessReference": {
         "properties": {
@@ -11145,6 +16203,35 @@
           "name"
         ],
         "title": "AccountUpdate"
+      },
+      "AgentCapability": {
+        "properties": {
+          "installed": {
+            "type": "boolean",
+            "title": "Installed"
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "installed",
+          "configured",
+          "ready",
+          "message"
+        ],
+        "title": "AgentCapability"
       },
       "AggregateOutput": {
         "properties": {
@@ -11877,6 +16964,194 @@
           "items"
         ],
         "title": "ConfirmedExport"
+      },
+      "ConversationArchive": {
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Identifier"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "version",
+          "archived"
+        ],
+        "title": "ConversationArchive"
+      },
+      "ConversationCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Title",
+            "default": "新会话"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ConversationCreate"
+      },
+      "ConversationRename": {
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Identifier"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "version",
+          "title"
+        ],
+        "title": "ConversationRename"
+      },
+      "ConversationSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "title",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConversationSummary"
+      },
+      "ConversationView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/RunView"
+            },
+            "type": "array",
+            "title": "Turns"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          },
+          "access_fingerprint": {
+            "type": "string",
+            "title": "Access Fingerprint"
+          },
+          "history_reset": {
+            "type": "boolean",
+            "title": "History Reset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "title",
+          "archived",
+          "created_at",
+          "updated_at",
+          "turns",
+          "has_more",
+          "next",
+          "access_fingerprint",
+          "history_reset"
+        ],
+        "title": "ConversationView"
       },
       "CorrectionInput": {
         "properties": {
@@ -12697,6 +17972,823 @@
         ],
         "title": "Meta"
       },
+      "ModelApply": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "revision"
+        ],
+        "title": "ModelApply"
+      },
+      "ModelChoice": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ModelChoice"
+      },
+      "ModelConnection": {
+        "properties": {
+          "api": {
+            "type": "string",
+            "enum": [
+              "openai-completions",
+              "openai-responses",
+              "anthropic-messages"
+            ],
+            "title": "Api",
+            "default": "openai-completions"
+          },
+          "model_url": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Model Url"
+          },
+          "anthropic_auth": {
+            "type": "string",
+            "enum": [
+              "bearer",
+              "x-api-key"
+            ],
+            "title": "Anthropic Auth",
+            "default": "bearer"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "api-key",
+              "none",
+              "custom-header"
+            ],
+            "title": "Auth Mode",
+            "default": "api-key"
+          },
+          "auth_header": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Auth Header",
+            "default": "x-api-key"
+          },
+          "extra_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 16,
+            "title": "Extra Headers"
+          },
+          "extra_query": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 16,
+            "title": "Extra Query"
+          },
+          "stream_output": {
+            "type": "boolean",
+            "title": "Stream Output",
+            "default": true
+          },
+          "request_timeout": {
+            "type": "number",
+            "maximum": 300.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Request Timeout",
+            "default": 30
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model_url"
+        ],
+        "title": "ModelConnection"
+      },
+      "ModelDiscover": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "reuse_secret_at_new_url": {
+            "type": "boolean",
+            "title": "Reuse Secret At New Url",
+            "default": false
+          },
+          "secret_action": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "replace",
+              "clear"
+            ],
+            "title": "Secret Action",
+            "default": "keep"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8192,
+                "minLength": 1,
+                "format": "password",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "connection": {
+            "$ref": "#/components/schemas/ModelConnection"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "connection"
+        ],
+        "title": "ModelDiscover"
+      },
+      "ModelDiscoveryResult": {
+        "properties": {
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "authentication",
+              "permission",
+              "endpoint_or_model",
+              "rate_limit",
+              "provider",
+              "dns",
+              "dns_fake_ip",
+              "dns_address",
+              "tls",
+              "connect",
+              "timeout",
+              "policy",
+              "invalid_response",
+              "response_limit"
+            ],
+            "title": "Category"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "suggestion": {
+            "type": "string",
+            "title": "Suggestion"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Elapsed Ms"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelChoice"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Items"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "passed",
+          "category",
+          "message",
+          "suggestion",
+          "elapsed_ms",
+          "items",
+          "truncated"
+        ],
+        "title": "ModelDiscoveryResult"
+      },
+      "ModelDraft": {
+        "properties": {
+          "api": {
+            "type": "string",
+            "enum": [
+              "openai-completions",
+              "openai-responses",
+              "anthropic-messages"
+            ],
+            "title": "Api",
+            "default": "openai-completions"
+          },
+          "model_url": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Model Url"
+          },
+          "anthropic_auth": {
+            "type": "string",
+            "enum": [
+              "bearer",
+              "x-api-key"
+            ],
+            "title": "Anthropic Auth",
+            "default": "bearer"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "api-key",
+              "none",
+              "custom-header"
+            ],
+            "title": "Auth Mode",
+            "default": "api-key"
+          },
+          "auth_header": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Auth Header",
+            "default": "x-api-key"
+          },
+          "extra_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 16,
+            "title": "Extra Headers"
+          },
+          "extra_query": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 16,
+            "title": "Extra Query"
+          },
+          "stream_output": {
+            "type": "boolean",
+            "title": "Stream Output",
+            "default": true
+          },
+          "request_timeout": {
+            "type": "number",
+            "maximum": 300.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Request Timeout",
+            "default": 30
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model"
+          },
+          "approved_model_data": {
+            "type": "boolean",
+            "title": "Approved Model Data",
+            "default": false
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ModelLimits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model_url",
+          "model"
+        ],
+        "title": "ModelDraft"
+      },
+      "ModelLimits": {
+        "properties": {
+          "requests": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Requests",
+            "default": 8
+          },
+          "tools": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Tools",
+            "default": 20
+          },
+          "pages": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Pages",
+            "default": 10
+          },
+          "seconds": {
+            "type": "integer",
+            "maximum": 600.0,
+            "minimum": 1.0,
+            "title": "Seconds",
+            "default": 120
+          },
+          "tokens": {
+            "type": "integer",
+            "maximum": 200000.0,
+            "minimum": 256.0,
+            "title": "Tokens",
+            "default": 32000
+          },
+          "input_bytes": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 128.0,
+            "title": "Input Bytes",
+            "default": 16000
+          },
+          "result_bytes": {
+            "type": "integer",
+            "maximum": 200000.0,
+            "minimum": 128.0,
+            "title": "Result Bytes",
+            "default": 32000
+          },
+          "output_bytes": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 128.0,
+            "title": "Output Bytes",
+            "default": 32000
+          },
+          "pending_writes": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Pending Writes",
+            "default": 8
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ModelLimits"
+      },
+      "ModelProbe": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "reuse_secret_at_new_url": {
+            "type": "boolean",
+            "title": "Reuse Secret At New Url",
+            "default": false
+          },
+          "secret_action": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "replace",
+              "clear"
+            ],
+            "title": "Secret Action",
+            "default": "keep"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8192,
+                "minLength": 1,
+                "format": "password",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/ModelDraft"
+          },
+          "acknowledge_cost": {
+            "type": "boolean",
+            "const": true,
+            "title": "Acknowledge Cost"
+          },
+          "request_key": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "draft",
+          "acknowledge_cost",
+          "request_key"
+        ],
+        "title": "ModelProbe"
+      },
+      "ModelSave": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "reuse_secret_at_new_url": {
+            "type": "boolean",
+            "title": "Reuse Secret At New Url",
+            "default": false
+          },
+          "secret_action": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "replace",
+              "clear"
+            ],
+            "title": "Secret Action",
+            "default": "keep"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8192,
+                "minLength": 1,
+                "format": "password",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/ModelDraft"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "draft"
+        ],
+        "title": "ModelSave"
+      },
+      "ModelStatus": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "draft_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Revision"
+          },
+          "active_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Revision"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "external",
+              "managed",
+              "disabled"
+            ],
+            "title": "Source"
+          },
+          "installed": {
+            "type": "boolean",
+            "title": "Installed"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "secret_store_ready": {
+            "type": "boolean",
+            "title": "Secret Store Ready"
+          },
+          "secret_set": {
+            "type": "boolean",
+            "title": "Secret Set"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url_policy": {
+            "type": "string",
+            "enum": [
+              "public",
+              "allowlist"
+            ],
+            "title": "Url Policy",
+            "default": "public"
+          },
+          "last_test": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelTestView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allowed_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Urls"
+          },
+          "test_timeout_seconds": {
+            "type": "number",
+            "maximum": 30.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Test Timeout Seconds",
+            "default": 30
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "draft_revision",
+          "active_revision",
+          "source",
+          "installed",
+          "ready",
+          "secret_store_ready",
+          "secret_set",
+          "draft",
+          "allowed_urls",
+          "message"
+        ],
+        "title": "ModelStatus"
+      },
+      "ModelTest": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "acknowledge_cost": {
+            "type": "boolean",
+            "const": true,
+            "title": "Acknowledge Cost"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "revision",
+          "acknowledge_cost"
+        ],
+        "title": "ModelTest"
+      },
+      "ModelTestResult": {
+        "properties": {
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "authentication",
+              "permission",
+              "endpoint_or_model",
+              "rate_limit",
+              "provider",
+              "dns",
+              "dns_fake_ip",
+              "dns_address",
+              "tls",
+              "connect",
+              "timeout",
+              "policy",
+              "invalid_response",
+              "response_limit"
+            ],
+            "title": "Category"
+          },
+          "suggestion": {
+            "type": "string",
+            "title": "Suggestion"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "passed",
+          "message",
+          "category",
+          "suggestion",
+          "elapsed_ms"
+        ],
+        "title": "ModelTestResult"
+      },
+      "ModelTestView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "api": {
+            "type": "string",
+            "title": "Api"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "started",
+              "completed",
+              "interrupted"
+            ],
+            "title": "State"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelTestResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "revision",
+          "api",
+          "model",
+          "state",
+          "created_at",
+          "result"
+        ],
+        "title": "ModelTestView"
+      },
+      "ModelVersion": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "ModelVersion"
+      },
       "MyRoleOutput": {
         "properties": {
           "id": {
@@ -13177,6 +19269,43 @@
         ],
         "title": "PreviewChangeInput"
       },
+      "ProgressStep": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Id"
+          },
+          "operation": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Operation"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Elapsed Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "operation",
+          "status",
+          "elapsed_ms"
+        ],
+        "title": "ProgressStep"
+      },
       "ProjectChange": {
         "properties": {
           "operation": {
@@ -13638,6 +19767,368 @@
         ],
         "title": "RoleOutput"
       },
+      "RunCancel": {
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Identifier"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "version"
+        ],
+        "title": "RunCancel"
+      },
+      "RunDecision": {
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Identifier"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "proposal_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Proposal Id"
+          },
+          "approve": {
+            "type": "boolean",
+            "title": "Approve"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "version",
+          "proposal_id",
+          "approve"
+        ],
+        "title": "RunDecision"
+      },
+      "RunProgress": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Schema Version",
+            "default": 1
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Seq"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Elapsed Ms"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "identity",
+              "model",
+              "reply",
+              "tool",
+              "awaiting_confirmation",
+              "completed",
+              "failed",
+              "timeout",
+              "budget_exceeded"
+            ],
+            "title": "Stage"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 16000,
+            "title": "Text"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressStep"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "title": "Steps"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "seq",
+          "elapsed_ms",
+          "stage",
+          "text",
+          "steps"
+        ],
+        "title": "RunProgress"
+      },
+      "RunStart": {
+        "properties": {
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "context_page": {
+            "type": "string",
+            "enum": [
+              "",
+              "dashboard",
+              "employees",
+              "roles",
+              "permission-sets",
+              "permissions",
+              "audit",
+              "client-authorizations",
+              "assistant"
+            ],
+            "title": "Context Page",
+            "default": ""
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 16000,
+            "minLength": 1,
+            "title": "Prompt"
+          },
+          "request_key": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 8,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Request Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "prompt",
+          "request_key"
+        ],
+        "title": "RunStart"
+      },
+      "RunSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "awaiting_confirmation",
+              "completed",
+              "failed",
+              "cancelled",
+              "interrupted",
+              "outcome_unknown"
+            ],
+            "title": "Status"
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "prompt",
+          "status",
+          "cancel_requested",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RunSummary"
+      },
+      "RunView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "awaiting_confirmation",
+              "completed",
+              "failed",
+              "cancelled",
+              "interrupted",
+              "outcome_unknown"
+            ],
+            "title": "Status"
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Revision"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "context_page": {
+            "type": "string",
+            "title": "Context Page",
+            "default": ""
+          },
+          "history_hidden": {
+            "type": "boolean",
+            "title": "History Hidden",
+            "default": false
+          },
+          "detail_truncated": {
+            "type": "boolean",
+            "title": "Detail Truncated",
+            "default": false
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "write_inflight": {
+            "type": "boolean",
+            "title": "Write Inflight"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "prompt",
+          "status",
+          "cancel_requested",
+          "created_at",
+          "updated_at",
+          "pending",
+          "result",
+          "write_inflight"
+        ],
+        "title": "RunView"
+      },
       "SchemaChange": {
         "properties": {
           "operation": {
@@ -14027,6 +20518,70 @@
         ],
         "title": "Success[AccessDetail]"
       },
+      "Success_AccessPage_ConversationSummary__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AccessPage_ConversationSummary_"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[AccessPage[ConversationSummary]]"
+      },
+      "Success_AccessPage_RunSummary__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AccessPage_RunSummary_"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[AccessPage[RunSummary]]"
+      },
       "Success_AccountCapability_": {
         "properties": {
           "code": {
@@ -14218,6 +20773,38 @@
           "message"
         ],
         "title": "Success[AccountSearchResult]"
+      },
+      "Success_AgentCapability_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgentCapability"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[AgentCapability]"
       },
       "Success_AggregateOutput_": {
         "properties": {
@@ -14475,6 +21062,70 @@
         ],
         "title": "Success[ConfirmedExport]"
       },
+      "Success_ConversationSummary_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ConversationSummary"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[ConversationSummary]"
+      },
+      "Success_ConversationView_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ConversationView"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[ConversationView]"
+      },
       "Success_DataPreview_": {
         "properties": {
           "code": {
@@ -14570,6 +21221,102 @@
           "message"
         ],
         "title": "Success[IdentityOutput]"
+      },
+      "Success_ModelDiscoveryResult_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModelDiscoveryResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[ModelDiscoveryResult]"
+      },
+      "Success_ModelStatus_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModelStatus"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[ModelStatus]"
+      },
+      "Success_ModelTestResult_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModelTestResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[ModelTestResult]"
       },
       "Success_Page_ConfirmationOutput__": {
         "properties": {
@@ -14794,6 +21541,38 @@
           "message"
         ],
         "title": "Success[RecordOutput]"
+      },
+      "Success_RunView_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0,
+            "title": "Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "default": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RunView"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta",
+          "code",
+          "message"
+        ],
+        "title": "Success[RunView]"
       },
       "Success_SchemaOutput_": {
         "properties": {

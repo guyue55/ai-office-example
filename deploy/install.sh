@@ -33,8 +33,21 @@ if [[ "$(uname -s)" == Darwin ]]; then
   REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   ENDPOINT="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
   [[ "$ENDPOINT" == unix://* && -z "${DOCKER_HOST:-}" ]] || { echo 'macOS安装要求本机Docker Desktop上下文' >&2; exit 2; }
-  exec docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$REPO_ROOT:$REPO_ROOT" \
-    -w "$REPO_ROOT" -e "OFFICE_IMAGE=${OFFICE_IMAGE:-}" docker:28-cli \
+  # 仓库外的公开配置在容器里也必须可见；否则会误报“配置不存在”。
+  CONFIG_HOST="${1:-$REPO_ROOT/deploy/.env}"
+  case "$CONFIG_HOST" in
+    /*) ;;
+    *) CONFIG_HOST="$REPO_ROOT/$CONFIG_HOST" ;;
+  esac
+  CONFIG_DIR="$(cd "$(dirname "$CONFIG_HOST")" 2>/dev/null && pwd || true)"
+  EXTRA_MOUNTS=()
+  if [[ -n "$CONFIG_DIR" && "$CONFIG_DIR/" != "$REPO_ROOT/"* ]]; then
+    EXTRA_MOUNTS=(-v "$CONFIG_DIR:$CONFIG_DIR:ro")
+  fi
+  CLI_ARGS=(run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$REPO_ROOT:$REPO_ROOT")
+  if [[ ${#EXTRA_MOUNTS[@]} -gt 0 ]]; then CLI_ARGS+=("${EXTRA_MOUNTS[@]}"); fi
+  exec docker "${CLI_ARGS[@]}" \
+    -w "$REPO_ROOT" -e "OFFICE_IMAGE=${OFFICE_IMAGE:-}" -e "OFFICE_AGENT=${OFFICE_AGENT:-}" docker:28-cli \
     sh -c 'apk add --no-cache bash coreutils util-linux >/dev/null && exec bash deploy/install.sh "$@"' office-install "$@"
 fi
 [[ "$(uname -s)" == Linux && "$EUID" -eq 0 ]] || { echo "Linux服务器请使用sudo；macOS需Docker Desktop" >&2; exit 2; }
@@ -45,11 +58,27 @@ ENDPOINT="${DOCKER_HOST:-$(docker context inspect --format '{{.Endpoints.docker.
 [[ "$ENDPOINT" == unix://* ]] || { echo '当前安装器要求服务器本机Docker，不能使用远程Docker上下文' >&2; exit 2; }
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_PATH="$(realpath "${1:-$REPO_ROOT/deploy/.env}")"
-IMAGE="${OFFICE_IMAGE:-office-data-service:installer-local}"
-if [[ -z "${OFFICE_IMAGE:-}" ]]; then
-  docker build --provenance=false -f "$REPO_ROOT/deploy/Dockerfile" -t "$IMAGE" "$REPO_ROOT"
+# 首次仅用固定摘要Python解释公开配置，不依赖业务镜像或宿主Python。
+BOOTSTRAP_IMAGE='python:3.13-slim-bookworm@sha256:a1165e272e578941b84abc79e4ab38a0305cd12803a5c4247979ac7655f4d641'
+SELECTION="$(docker run --rm --network none --read-only --cap-drop=ALL --security-opt=no-new-privileges:true \
+  -e "OFFICE_IMAGE=${OFFICE_IMAGE:-}" -e "OFFICE_AGENT=${OFFICE_AGENT:-}" \
+  -v "$REPO_ROOT/scripts/delivery_config.py:/bootstrap.py:ro" -v "$CONFIG_PATH:/input/config:ro" \
+  "$BOOTSTRAP_IMAGE" python /bootstrap.py /input/config)"
+mapfile -t SELECTED <<< "$SELECTION"
+AGENT="${SELECTED[0]}"
+IMAGE="${SELECTED[1]:-}"
+resolve_image() {
+  docker image inspect "$1" >/dev/null 2>&1 || docker pull "$1" >&2
+  docker image inspect "$1" --format '{{.Id}}'
+}
+if [[ -z "$IMAGE" ]]; then
+  IMAGE="office-data-service:installer-local-$AGENT"
+  docker build --provenance=false --build-arg "OFFICE_AGENT=$AGENT" -f "$REPO_ROOT/deploy/Dockerfile" -t "$IMAGE" "$REPO_ROOT"
 fi
-IMAGE_ID="$(docker image inspect "$IMAGE" --format '{{.Id}}')"
+IMAGE_ID="$(resolve_image "$IMAGE")"
+# 预检只导入包、不读实例秘密、不请求模型；能力错误在建库前拒绝。
+docker run --rm --network none --read-only --cap-drop=ALL "$IMAGE_ID" python -c \
+  'import importlib.util,sys; enabled=importlib.util.find_spec("office_agent") is not None; expected=sys.argv[1]=="1"; assert enabled==expected,"镜像与OFFICE_AGENT不匹配"; exec("import office_agent.runtime, openai, anthropic" if enabled else "pass")' "$AGENT"
 # 后续固定实际镜像ID，避免安装中标签被更换。
 BASE=(docker run --rm --user 0:0 -v "$REPO_ROOT/deploy/installer:/installer:ro" -v "$REPO_ROOT/scripts:/helpers:ro" -v "$CONFIG_PATH:/input/settings.json:ro" -v "$REPO_ROOT/deploy/database/init.sh:/input/database-init.sh:ro")
 PARAMETERS="$("${BASE[@]}" "$IMAGE_ID" python /installer/server.py parameters)"
@@ -61,7 +90,6 @@ INSTANCE_PATH="$(realpath -m "$INSTANCE_INPUT")"
 mkdir -p "$INSTANCE_PATH"
 exec 9>"$INSTANCE_PATH/.install.lock"
 flock -n 9 || { echo '此实例已有安装任务运行'; exit 2; }
-if [[ -n "${PARAMETERS_LINES[1]:-}" ]]; then IMAGE_ID="$(docker image inspect "${PARAMETERS_LINES[1]}" --format '{{.Id}}')"; fi
 MOUNTS=()
 if [[ -n "${PARAMETERS_LINES[2]:-}" || -n "${PARAMETERS_LINES[3]:-}" ]]; then
   [[ -f "${PARAMETERS_LINES[2]}" && -f "${PARAMETERS_LINES[3]}" ]]
@@ -77,13 +105,10 @@ for OFFSET in 5 6 7; do
   fi
 done
 # 所有组件固定到本机实际镜像ID；不在重跑时静默拉取新版。
-resolve_image() {
-  docker image inspect "$1" >/dev/null 2>&1 || docker pull "$1" >&2
-  docker image inspect "$1" --format '{{.Id}}'
-}
 PG_IMAGE="$(resolve_image pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0)"
-KC_IMAGE="$(resolve_image quay.io/keycloak/keycloak:26.8.1)"
-GW_IMAGE="$(resolve_image nginx:1.28-alpine)"
+# 多架构索引摘要：amd64与arm64服务器解析到各自平台，避免同名标签跨时间漂移。
+KC_IMAGE="$(resolve_image quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b)"
+GW_IMAGE="$(resolve_image nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236)"
 PG_UID="$(docker run --rm --entrypoint id "$PG_IMAGE" -u postgres)"
 PG_GID="$(docker run --rm --entrypoint id "$PG_IMAGE" -g postgres)"
 KC_UID="$(docker run --rm --entrypoint id "$KC_IMAGE" -u)"

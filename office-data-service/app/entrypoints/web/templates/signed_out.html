@@ -2,6 +2,7 @@
 {% block title %}已退出 - {{ product.name }}{% endblock %}
 {% block content %}
 <div class="card state-page">
+  <span class="state-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 4H4v16h5m6-13 5 5-5 5m5-5H9"/></svg></span>
   {% if authorization_ended %}<h2>登录授权已结束</h2>
   <p>本次登录的业务访问已停止，请重新授权后再使用。</p>
   {% if cleanup == 'done' %}<p>对应身份登录已结束。</p>{% else %}<p>如果身份会话清理尚未完成，请让管理员在“客户端授权”重试清理，或先在身份服务退出旧登录，再重新授权。</p>{% endif %}

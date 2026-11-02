@@ -23,7 +23,7 @@ def verifier():
     return module
 
 
-def seal(root):
+def seal(root, *, agent=False):
     artifacts = {
         p.name: hashlib.sha256(p.read_bytes()).hexdigest()
         for p in root.iterdir()
@@ -31,7 +31,13 @@ def seal(root):
     }
     (root / "release-manifest.json").write_text(
         json.dumps(
-            {"version": "1.0.0", "tag": "v1.0.0", "source_commit": "a" * 40, "artifacts": artifacts}
+            {
+                "version": "1.0.0",
+                "tag": "v1.0.0",
+                "source_commit": "a" * 40,
+                "artifacts": artifacts,
+                **({"agent_runtime": True} if agent else {}),
+            }
         )
     )
     (root / "SHA256SUMS").write_text(
@@ -70,6 +76,66 @@ def candidate(tmp_path):
 
 def test_exact_candidate_passes(verifier, candidate):
     assert verifier.verify(candidate, "v1.0.0", "a" * 40)["assets"] == 15
+
+
+def test_agent_assets_require_explicit_marker_and_complete_pair(verifier, candidate):
+    import shutil
+
+    shutil.copyfile(
+        candidate / "office_client-1.0.0-py3-none-any.whl",
+        candidate / "office_agent-1.0.0-py3-none-any.whl",
+    )
+    shutil.copyfile(
+        candidate / "office_client-1.0.0.tar.gz", candidate / "office_agent-1.0.0.tar.gz"
+    )
+    seal(candidate)
+    with pytest.raises(ValueError, match="白名单"):
+        verifier.verify(candidate)
+    manifest = candidate / "release-manifest.json"
+    data = json.loads(manifest.read_text())
+    data["agent_runtime"] = True
+    manifest.write_text(json.dumps(data))
+    checksums = candidate / "SHA256SUMS"
+    checksums.write_text(
+        "".join(
+            hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n"
+            for p in sorted(candidate.iterdir())
+            if p.name != "SHA256SUMS"
+        )
+    )
+    # 改名其他包、重算全部摘要并声明Agent仍不能通过内容核验。
+    with pytest.raises(ValueError, match="缺少Agent运行模块"):
+        verifier.verify(candidate)
+    modules = {
+        "office_agent/__init__.py": b'__version__="1.0.0"',
+        "office_agent/runtime.py": b"# isolated fixture\n",
+        "office_agent/py.typed": b"",
+    }
+    with zipfile.ZipFile(candidate / "example-source-1.0.0.zip", "a") as z:
+        for name, content in modules.items():
+            z.writestr("example-1.0.0/clients/agent/src/" + name, content)
+    with pytest.raises(ValueError):
+        verifier.verify_agent_content(candidate, "example-source-1.0.0.zip", "1.0.0")
+    meta = b"Metadata-Version: 2.4\nName: office-agent\nVersion: 1.0.0\n"
+    with zipfile.ZipFile(candidate / "office_agent-1.0.0-py3-none-any.whl", "w") as z:
+        z.writestr("office_agent-1.0.0.dist-info/METADATA", meta)
+        z.writestr("office_agent-1.0.0.dist-info/licenses/LICENSE", "test-license")
+        z.writestr("office_agent-1.0.0.dist-info/licenses/NOTICE", "test-notice")
+        for name, content in modules.items():
+            z.writestr(name, content)
+    with tarfile.open(candidate / "office_agent-1.0.0.tar.gz", "w:gz") as t:
+        for name, content in {
+            "PKG-INFO": meta,
+            **{"src/" + n: c for n, c in modules.items()},
+        }.items():
+            member = tarfile.TarInfo("office_agent-1.0.0/" + name)
+            member.size = len(content)
+            t.addfile(member, io.BytesIO(content))
+    seal(candidate, agent=True)
+    assert verifier.verify(candidate)["assets"] == 17
+    (candidate / "office_agent-1.0.0.tar.gz").unlink()
+    with pytest.raises(ValueError):
+        verifier.verify(candidate)
 
 
 def test_extra_file_and_resealed_extra_file_are_rejected(verifier, candidate):

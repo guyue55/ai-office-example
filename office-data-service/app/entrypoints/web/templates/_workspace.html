@@ -8,10 +8,10 @@
       <button type="button" class="secondary" data-workspace-close aria-label="关闭操作面板">关闭</button>
     </div>
   </header>
-  <div id="workspace-feedback" role="status" aria-live="polite"></div>
+  <div id="workspace-feedback" role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="workspace-content"></div>
 </dialog>
-<dialog id="action-confirm" class="confirm-dialog" aria-labelledby="confirm-title">
+<dialog id="action-confirm" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-description">
   <h2 id="confirm-title">确认操作</h2>
   <p id="confirm-description"></p>
   <div class="actions"><button type="button" class="secondary" data-confirm-cancel>取消</button><button type="button" data-confirm-accept>确认</button></div>

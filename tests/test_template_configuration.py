@@ -112,6 +112,7 @@ def test_live_instance_and_configuration_drift_are_blocked(tool, project):
 
 
 def test_configuration_output_symlink_is_rejected(tool, project, tmp_path):
+    original_version = (project / "VERSION").read_bytes()
     config = project / "template.toml"
     tool.configure(project, config)
     target = project / "deploy/installer/product.json"
@@ -122,4 +123,4 @@ def test_configuration_output_symlink_is_rejected(tool, project, tmp_path):
         pytest.skip("当前系统用户无符号链接创建权限")
     with pytest.raises(ValueError, match="软链"):
         tool.configure(project, config)
-    assert (project / "VERSION").read_text().strip() == "1.0.0"
+    assert (project / "VERSION").read_bytes() == original_version

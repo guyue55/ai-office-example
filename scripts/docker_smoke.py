@@ -1,6 +1,7 @@
 """独立容器验收：仅创建本次临时资源，不连接现有开发库、不删除任何卷。"""
 
 import argparse
+import base64
 import json
 import os
 import secrets
@@ -28,7 +29,19 @@ def docker(*args, stdin=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", default="office-data-service:local")
+    parser.add_argument("--expect-agent", choices=["0", "1"], default="0")
     args = parser.parse_args()
+    docker(
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        args.image,
+        "python",
+        "-c",
+        "import importlib.util,sys; assert (importlib.util.find_spec('office_agent') is not None)==(sys.argv[1]=='1')",
+        args.expect_agent,
+    )
     suffix = uuid4().hex[:12]
     network, postgres, service = ("office-ci-" + suffix + end for end in ("", "-pg", "-web"))
     uid, gid = os.getuid(), os.getgid()
@@ -63,6 +76,9 @@ def main():
                     }
                 )
             )
+        model_key = folder / "synthetic_model_key"
+        model_key.write_bytes(base64.urlsafe_b64encode(secrets.token_bytes(32)))
+        model_key.chmod(0o600)
         (folder / "identity.json").write_text(json.dumps({"subject": suffix, "name": "容器验收"}))
         mount = f"{folder}:/etc/office:ro"
         base = [
@@ -160,6 +176,17 @@ def main():
                     client.get("/health/live", headers={"Host": "evil.example"}).status_code == 400
                 )
                 assert client.get("/auth/config").json()["issuer"] == common["issuer"]
+            if args.expect_agent == "1":
+                output = docker(
+                    *base,
+                    "-v",
+                    f"{ROOT / 'scripts/container_agent_probe.py'}:/probe.py:ro",
+                    args.image,
+                    "python",
+                    "/probe.py",
+                )
+                assert "CONTAINER_AGENT_OK" in output
+                print(output)
             docker("stop", "--time", "15", service)
             # --rm容器已删除；不依赖现有开发卷或测试账户。
             print("DOCKER_SMOKE_OK migrations bootstrap readiness auth host shutdown")

@@ -16,10 +16,12 @@
 {{ field('action','操作','select',[('','全部操作')] + audit_actions.items()|list) }}
 {% elif filter_mode == 'operations' %}
 {{ field('status','状态','select',[('','全部状态')] + account_statuses.items()|list) }}
+{% elif filter_mode == 'tasks' %}
+{{ field('status','状态','select',[('','全部状态')] + statuses.items()|list) }}
 {% endif %}
 <button class="secondary" type="submit">{{ '查询' if filter_mode else '搜索' }}</button><a class="filter-reset" href="{{ request.url.path }}?limit={{ listing.pagination.page_size if listing is defined and listing.pagination else request.query_params.get('limit','10') }}{% for key in ['identifier','employee_id','scope'] if request.query_params.get(key) %}&{{ key }}={{ request.query_params.get(key)|urlencode }}{% endfor %}">重置</a>
 </div>
-{% if filter_mode %}
+{% if filter_mode in ['authorizations','audit','operations'] %}
 {% set advanced = (['client_id','since','until','archived','date_field'] if filter_mode == 'authorizations' else ['actor','since','until'] if filter_mode == 'audit' else ['kind','since','until']) %}
 {% set applied = namespace(count=0) %}{% for key in advanced %}{% if request.query_params.get(key) and request.query_params.get(key) not in ['false','created_at'] %}{% set applied.count = applied.count + 1 %}{% endif %}{% endfor %}
 <details class="filter-advanced" {% if applied.count %}open{% endif %}><summary>更多筛选{% if applied.count %}<span class="badge neutral">已应用 {{ applied.count }} 项</span>{% endif %}</summary><div class="filter-extra">

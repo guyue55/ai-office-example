@@ -213,6 +213,67 @@ class OfficeClient:
     def capabilities(self):
         return self.request("GET", "/api/v2/capabilities")
 
+    def assistant_conversation_create(self, title="新会话"):
+        return self.request("POST", "/api/v2/agent/conversations", json={"title": title})
+
+    def assistant_conversations(self, **params):
+        return self.request("GET", "/api/v2/agent/conversations", params=params)
+
+    def assistant_conversation(self, identifier, **params):
+        return self.request(
+            "GET", f"/api/v2/agent/conversations/{quote(identifier, safe='')}", params=params
+        )
+
+    def assistant_conversation_archive(self, identifier, version, archived):
+        return self.request(
+            "POST",
+            "/api/v2/agent/conversations/archive",
+            json={"identifier": identifier, "version": version, "archived": archived},
+        )
+
+    def assistant_conversation_rename(self, identifier, version, title):
+        return self.request(
+            "POST",
+            "/api/v2/agent/conversations/rename",
+            json={"identifier": identifier, "version": version, "title": title},
+        )
+
+    def assistant_capabilities(self):
+        return self.request("GET", "/api/v2/agent/capabilities")
+
+    def assistant_start(self, prompt, request_key, *, conversation_id=None, context_page=""):
+        """启动服务器模型任务；request_key重试须不变，受理不等于完成。"""
+        payload = {"prompt": prompt, "request_key": request_key}
+        if conversation_id is not None:
+            payload.update(conversation_id=conversation_id, context_page=context_page)
+        elif context_page:
+            payload["context_page"] = context_page
+        return self.request("POST", "/api/v2/agent/runs", json=payload)
+
+    def assistant_runs(self, **params):
+        return self.request("GET", "/api/v2/agent/runs", params=params)
+
+    def assistant_run(self, identifier):
+        return self.request("GET", f"/api/v2/agent/runs/{quote(identifier, safe='')}")
+
+    def assistant_decide(self, identifier, version, proposal_id, approve):
+        """真人核对服务器预览后决定；不允许替换参数或提交模型历史。"""
+        return self.request(
+            "POST",
+            "/api/v2/agent/runs/decision",
+            json={
+                "identifier": identifier,
+                "version": version,
+                "proposal_id": proposal_id,
+                "approve": approve,
+            },
+        )
+
+    def assistant_cancel(self, identifier, version):
+        return self.request(
+            "POST", "/api/v2/agent/runs/cancel", json={"identifier": identifier, "version": version}
+        )
+
     def access_list(self, kind, **params):
         return self.request("GET", f"/api/v2/access/{quote(kind, safe='')}", params=params)
 

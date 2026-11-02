@@ -1,6 +1,6 @@
 # 企业 AI 办公基座模板
 
-将企业AI工具与内部数据／管理服务连接起来的独立部署基座。员工通过安装技能的AI工具使用CLI／SDK，服务端提供受控接口、身份权限、审计和管理控制台。服务端和Web不调用模型、不运行Agent，客户端不直连数据库。
+将企业AI工具与内部数据／管理服务连接起来的独立部署基座。员工可通过AI工具、技能及CLI／SDK访问受控服务。`codex/agent`分支正升级为员工端与服务端均支持AI的智能体基座：已实现员工端独立运行、服务端持久任务与Web确认入口，以及外部CLI／SDK／MCP接入。客户端和模型不直连数据库。
 
 ## 具备的能力
 
@@ -42,3 +42,22 @@ GitHub 仓库与 CI／候选制品／镜像发布边界见 [自动化说明](doc
 自有源码及文档采用 [Apache-2.0](LICENSE)，允许商用与修改。对外分发时保留许可证、适用的版权／归属声明与 NOTICE，修改过的文件需显著注明变更；可在产品文档的第三方声明中注明来源：[ai-office-example](https://github.com/guyue55/ai-office-example)。不强制界面展示 Logo 或广告，也不授予商标使用权。第三方依赖遵守其各自许可，具体边界见 [来源说明](docs/SOURCE.md) 和 [第三方声明](THIRD_PARTY_NOTICES.md)。
 
 常用开发、发版准备、安装升级与恢复操作见 [操作手册](docs/OPERATIONS.md)。
+
+Agent分支：[总体方案](docs/AGENT_PLATFORM_DESIGN.md) · [调研](docs/AGENT_RESEARCH.md) · [员工端运行设计](docs/AGENT_DESIGN.md) · [执行计划](docs/AGENT_PLAN.md) · [可选运行时安装](clients/agent/README.md) · [自定义模型配置](docs/AGENT_MODEL_CONFIGURATION.md)。部署及操作见[运行指南](docs/AGENT_OPERATIONS.md)，全局侧栏／会话方案与验收见[助手工作区计划](docs/AGENT_WORKSPACE_PLAN.md)。Agent分支支持控制台全局入口、共享侧栏／全页会话、服务端有界续问和原审批闭环；[聊天交互计划与验收](docs/AGENT_CHAT_UX_PLAN.md)补充会话草稿隔离、受限Markdown、复制降级、搜索改名和可调侧栏。[视觉实施与验收](docs/AGENT_CHAT_VISUAL_IMPLEMENTATION.md)记录紧凑头部、可搜索历史浮层、共享图标／焦点、输入与回执分级，以及独立浏览器到临时PG的真实审批写入测试。这不会自动升级既有交付；框架隔离验收不等于真实供应商已经验收，原v1.0.0交付不因分支开发而自动升级。
+
+控制台与助手的方案、范围和阶段验收见 [UI整体升级计划](docs/UI_UPGRADE_PLAN.md)，后续独立审阅整改见 [UI审阅整改计划](docs/UI_REVIEW_REMEDIATION.md)。页面及共享组件清单维护在 `tests/ui-pages.json`；局部检查通过不代表整体升级完成。
+
+已安装HTTP演示实例因内网IP变化需要恢复时，使用[显式迁址维护入口](docs/INSTANCE_RELOCATION.md)，保留数据与身份映射，不删除实例重新安装。
+
+Agent前端下一阶段研究见[前端路线、产品范围与验证计划](docs/COPILOTKIT_FRONTEND_RESEARCH.md)：包含CopilotKit示例核查、替代UI候选、模型配置前置、状态／审批边界和阶段验收。目前为研究草案，不表示已引入React、AG-UI或第三方Runtime。
+
+管理员模型配置见[控制台管理与运维](docs/MODEL_CONFIGURATION_OPERATIONS.md)：三协议草稿、直接填写公网HTTPS端点／显式内网HTTP、默认或自定义密钥头／无密钥模式、非秘密网关参数、秘密加密、当前输入获取模型／测试、保存并启用、修订与临时回执区分、显式启停、响应字节预算、独立连接测试时限与取消／遗留回执恢复；当前分支新增，已有实例需迁移至0017并配置独立秘密后才能使用。
+
+会话体验新增真实阶段／有界工具过程、同源SSE进度快照、增量文本、原位更新及中文结果卡片；侧栏和全页复用。流式／非流式在模型高级设置显式选择，连接测试使用相同设置，不在错误后自动重试。公开推理摘要未默认启用，不展示原始思维。方案、边界与验收见[会话事件实施计划](docs/plans/2026-10-29-conversation-events.md)。本轮功能已完成本机既有实例升级；升级范围与供应商验收边界见上述计划的实例升级记录。
+
+
+服务器安装可在 `deploy/.env` 选择 `OFFICE_AGENT=0/1` 与可选 `OFFICE_IMAGE`；两变体共用安装链路，建库前验证能力。Agent 依赖安装后还需管理员配置模型。双变体构建、恢复及未验收边界见[交付计划](docs/plans/2026-10-28-agent-delivery-implementation.md)，安装步骤见[INSTALL.md](INSTALL.md)。
+
+登录与模型接入的通用性整改见[方案与验收](docs/plans/2026-10-28-usability-boundaries.md)：实例Cookie隔离、失效登录恢复、内网模型和三协议网关适配。新代码不会自动更新已运行实例。
+
+模型配置交互依据见[交互调研与推荐方案](docs/MODEL_SETTINGS_UX_RESEARCH.md)：当前输入直接获取模型、手动ID与就近测试；实现与隔离验收见[主流程计划](docs/plans/2026-10-28-model-settings-workflow.md)，已运行实例不会自动升级。

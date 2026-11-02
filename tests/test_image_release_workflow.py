@@ -75,3 +75,20 @@ def test_bad_image_input_has_no_side_effects(tagged_repo, tag):
     assert execute(tagged_repo, tag).returncode != 0
     assert not (tagged_repo / "injected").exists()
     assert not (tagged_repo / "output").exists()
+
+
+def test_dual_variant_manifest_and_build_are_explicit():
+    workflow = yaml.load(
+        (ROOT / ".github/workflows/image-release.yml").read_text(), Loader=yaml.BaseLoader
+    )
+    job = workflow["jobs"]["publish"]
+    assert job["strategy"]["matrix"]["include"] == [
+        {"variant": "base", "agent": "0", "suffix": ""},
+        {"variant": "agent", "agent": "1", "suffix": "-agent"},
+    ]
+    build = next(s for s in job["steps"] if s.get("id") == "build")["with"]
+    assert build["build-args"] == "OFFICE_AGENT=${{ matrix.agent }}"
+    assert build["sbom"] == "true" and build["provenance"] == "mode=min"
+    assert build["tags"].count("${{ matrix.suffix }}") == 2
+    artifact = job["steps"][-1]["with"]
+    assert "${{ matrix.variant }}" in artifact["name"]

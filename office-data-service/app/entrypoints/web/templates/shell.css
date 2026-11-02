@@ -1,0 +1,80 @@
+/* 全站外壳：定位、导航和响应行为；业务组件继续使用各自的共享样式。 */
+.shell-nav {padding-top:24px;z-index:20}
+.shell-nav>a {display:flex;align-items:center;gap:11px;min-height:42px}
+.nav-icon {width:18px;height:18px;flex-shrink:0;opacity:.9}
+.brand {font-size:19px;letter-spacing:.3px}
+.brand small {line-height:1.5;letter-spacing:0;margin-top:6px}
+.nav-label {letter-spacing:.5px;margin-top:18px}
+.shell-context {display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin-bottom:24px;min-height:24px}
+.shell-context strong {font-weight:500;color:var(--ink)}
+.mobile-shell {display:none}
+.page-header h2 {font-size:26px;line-height:1.4;letter-spacing:-.4px}
+.page-header .muted {line-height:1.8;max-width:760px}
+.card {border-radius:12px;box-shadow:0 1px 2px #172b3a03}
+.table-wrap {border-radius:7px}
+@media(max-width:700px) {
+  /* 无脚本时仍展示原生导航；增强后菜单按需展开，不挤占整个首屏。 */
+  .js .mobile-shell {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;background:#112b32;color:#fff;min-height:60px}
+  .mobile-shell strong {font-size:16px}
+  .mobile-shell button {background:transparent;border:1px solid #62838a;color:#fff;min-height:36px;padding:5px 10px}
+  .js .shell-nav {display:none}
+  .js.navigation-open .shell-nav {display:flex;position:relative;flex-direction:column;flex-wrap:nowrap;width:100%;padding:8px 16px 16px;max-height:65dvh;overflow:auto}
+  .js .shell-nav .brand {display:none}
+  .js .shell-nav .nav-label {display:block;margin:12px 9px 3px}
+  .js .shell-nav>a {padding:8px 10px}
+  .js .nav-bottom {padding-top:10px;margin-top:10px}
+  .js .account-menu {max-width:none}
+  .js .account-panel {position:static;width:100%;margin-top:8px}
+  .shell-context {margin-bottom:16px}
+  .page-header h2 {font-size:24px}
+}
+@media(prefers-reduced-motion:reduce) {.shell-nav * {transition:none!important}}
+
+.list-empty {padding:24px 16px;text-align:center;color:var(--muted)}
+.list-empty strong {display:block;color:var(--ink);font-weight:600;font-size:14px}
+.list-empty p {font-size:13px;line-height:1.7;margin:7px auto 10px;max-width:440px}
+.list-empty a {font-size:13px}
+@media(prefers-reduced-motion:reduce) {.assistant-launch {transition:none!important}}
+
+/* 错误摘要与就地提示共用，输入保留；不使用颜色作为唯一的错误标识。 */
+.form-errors {padding:14px 16px;border:1px solid #a83b35;border-left-width:4px;border-radius:8px;background:#fff7f6;color:#8c2923;margin-bottom:12px}
+.form-errors strong {font-size:14px}
+.form-errors ul {margin:8px 0 0;padding-left:18px}
+.field-error-link {display:inline;background:transparent;border:0;color:#8c2923;text-align:left;padding:2px 0;font-size:13px;font-weight:400;text-decoration:underline}
+.field-error-link:hover {background:transparent;color:#6f211c}
+.field-error {display:block;color:#8c2923;font-size:13px;line-height:1.6;margin-top:5px}
+[aria-invalid=true]:is(input,select,textarea) {border-color:#a83b35}
+[aria-invalid=true]:is(input,select,textarea):focus {border-color:#a83b35;box-shadow:0 0 0 3px #a83b3514}
+[aria-invalid=true]:is(input,select,textarea):focus-visible {outline-color:#a83b35;box-shadow:none}
+
+.task-receipt {padding:14px 0;border-top:1px solid var(--line)}
+.task-receipt .section-head {align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.task-receipt details {font-size:13px}
+.task-technical {margin-top:18px;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--muted)}
+
+.check-option {display:flex;align-items:center;gap:10px;line-height:1.6}
+.check-option input[type=checkbox] {flex:0 0 17px;width:17px;margin:0}
+/* 完整工作区按可用高度分配会话空间，输入区不能被顶部说明挤出首屏。 */
+.assistant-workspace-main {height:100dvh;display:flex;flex-direction:column;min-height:0;padding-bottom:12px}
+.assistant-workspace-main > .assistant-full {height:auto;min-height:0;flex:1}
+.assistant-workspace-main > .shell-context,.assistant-workspace-main > .hint {flex-shrink:0}
+.assistant-workspace-main > .trace {display:none}
+@media(max-width:700px) {
+  .js .assistant-workspace-main {height:calc(100dvh - 60px)}
+  html:not(.js) .assistant-workspace-main {height:auto}
+}
+
+.state-page {max-width:720px;padding:32px}
+.state-mark {display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--soft);color:var(--ink);margin-bottom:20px}
+.state-error .state-mark {background:#fff1ef;color:#a83b35}
+.state-facts {display:grid;grid-template-columns:64px minmax(0,1fr);gap:6px 12px;font-size:12px;color:var(--muted);padding:14px 0;border-block:1px solid var(--line);margin:20px 0}
+.state-facts dd {margin:0;overflow-wrap:anywhere}
+.task-state {border-left:3px solid var(--control-border);padding:9px 12px;color:var(--muted);background:#fff;line-height:1.7}
+@media(max-width:700px) {.state-page {padding:24px 18px}}
+
+/* 多列管理表局部滚动，避免窄屏把姓名与状态压成逐字竖排。 */
+@media(max-width:700px) {.table-wrap > .management-table {min-width:680px}}
+
+/* 短表单保持可阅读宽度，不扩展成满屏空卡片。 */
+.form-card {max-width:820px}
+.account-preview-facts {margin-block:20px}

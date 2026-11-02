@@ -7,6 +7,7 @@ import pytest
 import test_web_console
 from app.common.errors import DomainError
 from app.entrypoints.web.login_gate import LoginGate
+from app.entrypoints.web.responses import instance_cookie
 from app.infrastructure.config import LoginProtection
 
 console_fixture = test_web_console.web
@@ -70,7 +71,9 @@ def test_spoofed_forwarding_header_cannot_bypass_real_route_gate(web, monkeypatc
         )
     web.client.cookies.clear()
     assert web.client.get("/console", headers={"x-forwarded-for": "192.0.2.1"}).status_code == 503
-    web.client.cookies.set("office_web_session", web.cookie)
+    web.client.cookies.set(
+        instance_cookie("office_web_session", web.application.settings.public_url), web.cookie
+    )
     assert web.client.get("/console").headers["location"] == "/console/dashboard"
     assert web.client.get("/console/dashboard").status_code == 200
 
@@ -102,7 +105,9 @@ def test_security_reauthentication_cannot_bypass_shared_gate(web, monkeypatch):
     )
     for _ in range(60):
         web.client.cookies.clear()
-        web.client.cookies.set("office_web_session", web.cookie)
+        web.client.cookies.set(
+            instance_cookie("office_web_session", web.application.settings.public_url), web.cookie
+        )
         assert (
             web.client.post("/console/security/password", data={"csrf": "form-csrf"}).status_code
             == 303

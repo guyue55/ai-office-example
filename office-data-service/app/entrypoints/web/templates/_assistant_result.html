@@ -1,0 +1,14 @@
+{# 完整任务页面的服务端回执视图；与侧栏相同，以工具回执而非模型文字判断执行。 #}
+<section class="card task-result">
+<h3>处理结果与实际回执</h3>
+{% if task.result.explanation %}<p class="assistant-text">{{ task.result.explanation }}</p>{% endif %}
+<p class="muted">AI说明仅作辅助。以下是工具返回的实际回执，请逐项核对。</p>
+{% for receipt in task.result.receipts|default([]) %}
+<section class="task-receipt">
+<div class="section-head"><strong>{{ operations.get(receipt.operation, receipt.operation) }}</strong>
+<span class="badge {{ 'off' if receipt.status == 'denied' else 'neutral' }}">{{ {'read':'只读查询回执','denied':'已拒绝，未执行','received':'已收到执行回执'}.get(receipt.status,'回执状态需核对') }}</span></div>
+{% if receipt.result %}<details><summary>查看完整回执</summary><pre class="assistant-json">{{ receipt.result|tojson(indent=2) }}</pre></details>{% endif %}
+</section>
+{% else %}<p class="muted">本轮没有工具回执，不能据此认定完成了数据操作。</p>{% endfor %}
+<details class="task-technical"><summary>完整结果与技术信息</summary><pre class="assistant-json">{{ task.result|tojson(indent=2) }}</pre></details>
+</section>

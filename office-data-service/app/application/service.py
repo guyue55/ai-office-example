@@ -5,8 +5,6 @@ import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from functools import lru_cache
-from importlib.resources import files
 from typing import Any
 
 from pydantic import ValidationError
@@ -14,6 +12,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 
 from app.application.account_service import Accounts
+from app.application.capability_catalog import transport_coverage
 from app.application.commands import validate_command
 from app.application.contracts import OPERATION_OUTPUTS, validate_output
 from app.application.data_changes import DataChanges
@@ -33,15 +32,18 @@ from app.modules.data.service import Data
 logger = logging.getLogger("office.service")
 
 
-@lru_cache(maxsize=1)
-def transport_coverage():
-    return json.loads(files("app.application").joinpath("capability_map.json").read_text())
-
-
 class Application:
     def __init__(self, settings, sessions, verifier):
         self.settings, self.sessions, self.verifier = settings, sessions, verifier
         self._accounts = None
+        self._agent = None
+
+    def agent_service(self):
+        if self._agent is None:
+            from app.application.agent_service import AgentCoordinator
+
+            self._agent = AgentCoordinator(self)
+        return self._agent
 
     def account_service(self):
         if self._accounts is None:
@@ -49,14 +51,26 @@ class Application:
         return self._accounts
 
     async def call(
-        self, principal, operation: str, payload: dict, trace_id: str, *, presenter=None
+        self,
+        principal,
+        operation: str,
+        payload: dict,
+        trace_id: str,
+        *,
+        presenter=None,
+        authenticate=None,
     ):
         actor_token = actor_context.set(None)
         started = time.monotonic()
         outcome, code = "failed", "internal_error"
         try:
             result = await self._execute(
-                principal, operation, payload, trace_id, presenter=presenter
+                principal,
+                operation,
+                payload,
+                trace_id,
+                presenter=presenter,
+                authenticate=authenticate,
             )
             outcome, code = "succeeded", "ok"
             return result
@@ -122,7 +136,14 @@ class Application:
             actor_context.reset(actor_token)
 
     async def _execute(
-        self, principal, operation: str, payload: dict, trace_id: str, *, presenter=None
+        self,
+        principal,
+        operation: str,
+        payload: dict,
+        trace_id: str,
+        *,
+        presenter=None,
+        authenticate=None,
     ):
         def output(result):
             checked = validate_output(operation, payload, result)
@@ -147,6 +168,15 @@ class Application:
         )
         try:
             payload = validate_command(operation, payload)
+            if operation.startswith("agent."):
+                return await self.agent_service().request(
+                    principal,
+                    operation,
+                    payload,
+                    trace_id,
+                    presenter=presenter,
+                    authenticate=authenticate,
+                )
             if operation.startswith("session."):
 
                 def session_output(result):

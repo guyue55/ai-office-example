@@ -2,6 +2,9 @@
 
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -38,27 +41,68 @@ def test_server_rejects_unsafe_public_address(url):
 
 
 @pytest.mark.parametrize("address", ["0.0.0.0", "8.8.8.8", "::1"])
-def test_server_requires_explicit_private_listen(address):
+def test_server_rejects_unsafe_listen(address):
     layout = module("deploy/installer/layout.py")
     with pytest.raises(ValueError):
         layout.settings({"public_url": "https://office.example", "listen_address": address})
 
 
+@pytest.mark.parametrize(
+    "listen,expected_mode,expected_address",
+    [
+        (None, "lan", "0.0.0.0"),
+        ("lan", "lan", "0.0.0.0"),
+        ("local", "local", "127.0.0.1"),
+        ("192.168.1.10", "address", "192.168.1.10"),
+    ],
+)
+def test_server_bind_modes_are_explicit(listen, expected_mode, expected_address):
+    layout = module("deploy/installer/layout.py")
+    value = {"public_url": "https://office.example"}
+    if listen is not None:
+        value["listen_address"] = listen
+    config = layout.settings(value)
+    assert config["bind_mode"] == expected_mode
+    assert config["listen_address"] == expected_address
+
+
+def test_https_public_address_can_use_certificate_ip():
+    layout = module("deploy/installer/layout.py")
+    config = layout.settings({"public_url": "https://192.168.1.10", "listen_address": "lan"})
+    assert config["hostname"] == "192.168.1.10"
+
+
 def test_compose_only_exposes_gateway_and_separates_maintenance():
     layout = module("deploy/installer/layout.py")
-    config = layout.settings(
-        {"public_url": "https://office.example", "listen_address": "192.168.1.10"}
-    )
+    config = layout.settings({"public_url": "https://office.example", "listen_address": "lan"})
     services = layout.compose(
         "/srv/instance", "/opt/source", config, "sha256:candidate", "isolated"
     )["services"]
     assert [name for name, service in services.items() if service.get("ports")] == ["gateway"]
-    assert services["gateway"]["ports"] == ["192.168.1.10:443:443"]
+    assert services["gateway"]["ports"] == ["0.0.0.0:443:443"]
     assert services["setup"]["profiles"] == ["setup"]
     assert all("maintenance" not in row["source"] for row in services["service"]["volumes"])
     assert services["service"]["read_only"]
     assert "/identity/" in layout.nginx(config)
     assert "access_log off" in layout.nginx(config)
+    assert (
+        'if ($host != "office.example") { return 308 https://office.example$request_uri; }'
+        in layout.nginx(config)
+    )
+
+
+def test_infrastructure_images_are_digest_pinned_and_agree_with_installer():
+    layout = module("deploy/installer/layout.py")
+    config = layout.settings({"public_url": "https://office.example", "listen_address": "lan"})
+    services = layout.compose(
+        "/srv/instance", "/opt/source", config, "sha256:candidate", "isolated"
+    )["services"]
+    installer = (ROOT / "deploy/install.sh").read_text()
+    for name in ("postgres", "identity", "gateway"):
+        image = services[name]["image"]
+        assert "@sha256:" in image, image
+        reference = image.split("@", 1)[1]
+        assert reference in installer, f"install.sh未固定与布局一致的{name}摘要"
 
 
 def test_existing_directory_refused_before_secret_write(tmp_path):
@@ -99,6 +143,14 @@ def test_pc_bundle_rejects_tamper(tmp_path):
     )
     (tmp_path / "setup.ps1").write_text("tampered")
     with pytest.raises(ValueError, match="摘要"):
+        setup.load_bundle(tmp_path)
+
+
+@pytest.mark.parametrize("value", ["true", 1, None])
+def test_pc_bundle_rejects_ambiguous_agent_mode(tmp_path, value):
+    setup = module("installers/client/setup_client.py")
+    (tmp_path / "bundle.json").write_text(json.dumps({"agent_runtime": value}))
+    with pytest.raises(ValueError, match="Agent安装标记"):
         setup.load_bundle(tmp_path)
 
 
@@ -216,6 +268,21 @@ def test_server_still_requires_explicit_demo(tmp_path):
             issuer="http://192.168.1.5/identity/realms/office",
             audience="http://192.168.1.5/mcp",
         )
+
+
+def test_delivery_defaults_to_lan_binding_and_accepts_certificate_ip(tmp_path):
+    from delivery_config import read_env, server_settings
+
+    values = server_settings(
+        {
+            "OFFICE_PUBLIC_URL": "https://office.example",
+            "OFFICE_DEPLOYMENT_MODE": "https",
+        }
+    )
+    assert values["listen_address"] == "lan"
+    path = tmp_path / "delivery.env"
+    path.write_text("OFFICE_DEPLOYMENT_MODE=https\nOFFICE_PUBLIC_URL=https://192.168.1.10\n")
+    assert read_env(path)["OFFICE_PUBLIC_URL"] == "https://192.168.1.10"
 
 
 def test_editable_connection_preserves_package_integrity(tmp_path):
@@ -516,3 +583,147 @@ def test_verify_waits_for_restarting_identity_without_weakening_issuer(tmp_path,
     monkeypatch.setattr(server, "write", lambda path, value, uid, gid: None)
     server.verify_phase()
     assert len(attempts) == 2
+
+
+def test_new_install_generates_independent_model_key_once(tmp_path, monkeypatch):
+    """仅写本轮临时目录；不创建容器或接触已有实例。"""
+    import base64
+
+    from app.infrastructure.config import Settings
+
+    layout = module("deploy/installer/layout.py")
+    monkeypatch.setattr(layout.os, "chown", lambda *args: None)
+    original_read = Path.read_text
+
+    def read(path, *args, **kwargs):
+        if str(path) == "/input/database-init.sh":
+            return "# synthetic installer fixture\n"
+        return original_read(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read)
+    options = {
+        "public_url": "http://192.168.1.10:18880",
+        "listen_address": "192.168.1.10",
+        "allow_lan_http_demo": True,
+    }
+    args = (
+        tmp_path,
+        "/synthetic/instance",
+        "/synthetic/source",
+        options,
+        "synthetic-candidate",
+        999,
+        999,
+        1000,
+        0,
+    )
+    layout.prepare(*args)
+    key = tmp_path / "service/secrets/model_encryption_key"
+    original = key.read_bytes()
+    assert len(base64.urlsafe_b64decode(original)) == 32
+    assert not key.stat().st_mode & 0o077
+    assert original != (tmp_path / "service/secrets/web_session_secret").read_bytes()
+    config = Settings.load(str(tmp_path / "service/service.json"))
+    assert config.agent_secret_key_file == key
+    assert config.agent_model_urls == []
+    layout.prepare(*args)
+    assert key.read_bytes() == original  # 重入安装绝不换掉已生成的根密钥。
+
+
+def test_image_selection_unifies_file_and_environment(tmp_path):
+    from delivery_config import image_selection, read_env
+
+    path = tmp_path / "delivery.env"
+    path.write_text(
+        "OFFICE_PUBLIC_URL=https://office.example\nOFFICE_AGENT=1\nOFFICE_IMAGE=example/service:agent\n"
+    )
+    values = read_env(path)
+    assert image_selection(values, {}) == {
+        "OFFICE_AGENT": "1",
+        "OFFICE_IMAGE": "example/service:agent",
+    }
+    assert image_selection({}, {})["OFFICE_AGENT"] == "0"
+    for environment in [{"OFFICE_AGENT": "0"}, {"OFFICE_IMAGE": "other/image"}]:
+        with pytest.raises(ValueError, match="冲突"):
+            image_selection(values, environment)
+    for value in ["2", "true", "-1"]:
+        with pytest.raises(ValueError):
+            image_selection({"OFFICE_AGENT": value}, {})
+
+
+def test_instance_image_metadata_updates_compose_and_marker_together(tmp_path):
+    root = tmp_path / "instance"
+    root.mkdir()
+    old_image = "sha256:" + "1" * 64
+    new_image = "sha256:" + "2" * 64
+    installation = root / "installation.json"
+    compose = root / "compose.json"
+    installation.write_text(json.dumps({"format": 1, "project": "office-test", "image": old_image}))
+    compose.write_text(
+        json.dumps(
+            {
+                "services": {
+                    "service": {"image": old_image},
+                    "setup": {"image": old_image},
+                }
+            }
+        )
+    )
+    installation.chmod(0o600)
+    compose.chmod(0o600)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "deploy/installer/set_instance_image.py"),
+            str(root),
+            "--image",
+            new_image,
+            "--status",
+            "healthy",
+            "--from-image",
+            old_image,
+            "--backup",
+            "/secure/backup",
+            "--migration",
+            "0017",
+            "--commit",
+            "abc123",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    marker = json.loads(installation.read_text())
+    services = json.loads(compose.read_text())["services"]
+    assert marker["image"] == new_image
+    assert marker["last_upgrade"]["status"] == "healthy"
+    assert services["service"]["image"] == new_image
+    assert services["setup"]["image"] == new_image
+    assert installation.stat().st_mode & 0o077 == 0
+    assert compose.stat().st_mode & 0o077 == 0
+
+
+def test_bootstrap_image_selection_does_not_execute_env(tmp_path):
+    config = tmp_path / "delivery.env"
+    config.write_text(
+        "OFFICE_PUBLIC_URL=https://office.example.invalid\nOFFICE_AGENT=1\nOFFICE_IMAGE=ghcr.io/example/service:1-agent\n"
+    )
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/delivery_config.py"), str(config)],
+        env={**os.environ, "OFFICE_AGENT": "", "OFFICE_IMAGE": ""},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0
+    assert result.stdout.splitlines() == ["1", "ghcr.io/example/service:1-agent"]
+    config.write_text("OFFICE_AGENT=$(touch injected)\n")
+    rejected = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/delivery_config.py"), str(config)],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert rejected.returncode == 2 and not (tmp_path / "injected").exists()

@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block title %}操作失败 - {{ product.name }}{% endblock %}
 {% block content %}
-<div class="card state-page">
+<div class="card state-page state-error">
+  <span class="state-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 3h.01"/></svg></span>
   <h2>操作未成功</h2>
   <p>原因：<strong>{{ message }}</strong></p>
-  <p class="muted">错误码：{{ code }} · 追踪号：{{ trace_id }}</p>
+  <dl class="state-facts"><dt>错误码</dt><dd>{{ code }}</dd><dt>追踪号</dt><dd>{{ trace_id }}</dd></dl>
   {% if recovery_path %}
   <p>{{ '请重新打开配置，核对最新内容后再修改；不要重复提交旧表单。' if conflict else '请重新打开页面，核对填写内容后重试。' }}</p>
   <p><a class="button" href="{{ recovery_path }}">重新打开操作页面</a></p>

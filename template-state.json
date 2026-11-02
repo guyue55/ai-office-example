@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "template_version": "1.0.0",
+  "template_version": "1.1.0",
   "config_sha256": "f30f7e93d197fce7b888bbe9c118f57034881961259bdd391ec3e0df9b73a159",
   "identity_namespace": "office",
   "command": "office",

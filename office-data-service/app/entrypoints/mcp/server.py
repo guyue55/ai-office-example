@@ -28,6 +28,7 @@ from app.modules.access.change_contracts import Change
 from app.modules.access.outputs import (
     AccessDetail,
     AccessListing,
+    AccessPage,
     CapabilitiesOutput,
     ChangePreview,
     ChangeResult,
@@ -35,6 +36,13 @@ from app.modules.access.outputs import (
     PendingIdentityPage,
 )
 from app.modules.access.session_schemas import SessionPage, SessionView
+from app.modules.agent.outputs import (
+    AgentCapability,
+    ConversationSummary,
+    ConversationView,
+    RunSummary,
+    RunView,
+)
 from app.modules.data.change_contracts import DataChange, DataPreview, DataResult
 from app.modules.data.outputs import (
     ConfirmationOutput,
@@ -93,8 +101,11 @@ def build_mcp(application):
         # 每次工具调用重新校验令牌时效及业务权限，不信任 MCP 会话的旧授权。
         try:
             principal = await application.verifier.verify_async(token.token)
+            options = {}
+            if operation.startswith("agent."):
+                options["authenticate"] = lambda: application.verifier.verify_async(token.token)
             return await application.call(
-                principal, operation, payload or {}, trace_context.get() or str(uuid4())
+                principal, operation, payload or {}, trace_context.get() or str(uuid4()), **options
             )
         except DomainError as error:
             raise ContractToolError(tool_error_text(error, trace_context.get())) from None
@@ -444,6 +455,123 @@ def build_mcp(application):
             "record.history",
             {"identifier": record_id, "after_revision": after_revision, "limit": limit},
         )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def create_assistant_conversation(title: str = "新会话") -> ConversationSummary:
+        """创建本人工作会话，不执行模型。"""
+        return await call("agent.conversation.create", {"title": title})
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def list_assistant_conversations(
+        after: str = "",
+        limit: int = 10,
+        page: int | None = None,
+        archived: bool = False,
+        q: str = "",
+    ) -> AccessPage[ConversationSummary]:
+        """分页读取本人活动或归档会话；只读不执行模型。"""
+        return await call(
+            "agent.conversation.list",
+            {"after": after, "limit": limit, "page": page, "archived": archived, "q": q},
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def get_assistant_conversation(
+        identifier: str, before: str = "", limit: int = 10
+    ) -> ConversationView:
+        """读取本人有界历史，权限修订变化时隐藏旧正文。"""
+        return await call(
+            "agent.conversation.get", {"identifier": identifier, "before": before, "limit": limit}
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def archive_assistant_conversation(
+        identifier: str, version: int, archived: bool
+    ) -> ConversationSummary:
+        """归档或恢复本人会话，不删除执行和审批证据。"""
+        return await call(
+            "agent.conversation.archive",
+            {"identifier": identifier, "version": version, "archived": archived},
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def rename_assistant_conversation(
+        identifier: str, version: int, title: str
+    ) -> ConversationSummary:
+        """按当前版本重命名本人会话，不改变审批或执行记录。"""
+        return await call(
+            "agent.conversation.rename",
+            {"identifier": identifier, "version": version, "title": title},
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def assistant_capabilities() -> AgentCapability:
+        """核对服务器智能助手是否配置就绪；不代表模型真实调用已验收。"""
+        return await call("agent.capabilities")
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def start_assistant_run(
+        prompt: str, request_key: str, conversation_id: str | None = None, context_page: str = ""
+    ) -> RunView:
+        """受理本人任务；重试保留request_key。受理不等于执行成功。"""
+        return await call(
+            "agent.start",
+            {
+                "prompt": prompt,
+                "request_key": request_key,
+                "conversation_id": conversation_id,
+                "context_page": context_page,
+            },
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def list_assistant_runs(
+        after: str = "",
+        limit: int = 10,
+        page: int | None = None,
+        q: str = "",
+        status: str = "",
+        since: str = "",
+        until: str = "",
+    ) -> AccessPage[RunSummary]:
+        """分页查询本人任务；不读取其他员工的模型输入或结果。"""
+        return await call(
+            "agent.list",
+            {
+                "after": after,
+                "limit": limit,
+                "page": page,
+                "q": q,
+                "status": status,
+                "since": since,
+                "until": until,
+            },
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=True))
+    async def get_assistant_run(identifier: str) -> RunView:
+        """查看本人任务的待确认预览与实际操作回执。"""
+        return await call("agent.get", {"identifier": identifier})
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=True))
+    async def decide_assistant_run(
+        identifier: str, version: int, proposal_id: str, approve: bool
+    ) -> RunView:
+        """仅在真人核对完整预览后提交决定；不能从模型建议推断用户已同意。"""
+        return await call(
+            "agent.decide",
+            {
+                "identifier": identifier,
+                "version": version,
+                "proposal_id": proposal_id,
+                "approve": approve,
+            },
+        )
+
+    @server.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
+    async def cancel_assistant_run(identifier: str, version: int) -> RunView:
+        """请求停止本人任务；已完成的操作保留，不承诺事务回滚。"""
+        return await call("agent.cancel", {"identifier": identifier, "version": version})
 
     subapp = server.streamable_http_app(
         streamable_http_path="/mcp", stateless_http=True, json_response=True

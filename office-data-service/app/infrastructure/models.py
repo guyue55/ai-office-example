@@ -249,3 +249,89 @@ class ClientAuthorization(Entity):
     cleanup: Mapped[str] = mapped_column(
         String(20), default="not_requested", server_default="not_requested"
     )
+
+
+class AgentRun(Entity):
+    """服务端任务权威记录；不保存模型密钥、OAuth或可重放模型历史。"""
+
+    __tablename__ = "agent_run"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "request_key", name="uq_agent_run_request"),
+        CheckConstraint(
+            "status IN ('queued','running','awaiting_confirmation','completed','failed',"
+            "'cancelled','interrupted','outcome_unknown')",
+            name="ck_agent_run_status",
+        ),
+        Index("ix_agent_run_owner_created", "owner_id", "created_at", "id"),
+    )
+    model_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    conversation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("agent_conversation.id"), nullable=True, index=True
+    )
+    context_page: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    access_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    request_key: Mapped[str] = mapped_column(String(100))
+    request_digest: Mapped[str] = mapped_column(String(64))
+    prompt: Mapped[str] = mapped_column(String(16000))
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    pending: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    progress: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    write_inflight: Mapped[bool] = mapped_column(Boolean, default=False)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    trace_id: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AgentConversation(Entity):
+    """本人会话；每轮消息和回执沿用AgentRun，不建立第二份执行事实。"""
+
+    __tablename__ = "agent_conversation"
+    __table_args__ = (Index("ix_agent_conversation_owner_updated", "owner_id", "updated_at", "id"),)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    title: Mapped[str] = mapped_column(String(100))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ModelConfiguration(Base):
+    """唯一配置选择器；停用不回退外部文件，修订以不可变记录保留。"""
+
+    __tablename__ = "model_configuration"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, default=0)
+    draft_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    active_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source: Mapped[str] = mapped_column(String(20), default="external")
+
+
+class ModelConfigurationRevision(Base):
+    __tablename__ = "model_configuration_revision"
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    config: Mapped[dict] = mapped_column(JSONB)
+    secret_ciphertext: Mapped[str | None] = mapped_column(String(12000), nullable=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ModelConnectionTest(Entity):
+    __tablename__ = "model_connection_test"
+    __table_args__ = (
+        Index("ix_model_connection_test_created", "created_at", "id"),
+        Index("uq_model_test_actor_request", "actor_id", "request_key", unique=True),
+    )
+    revision: Mapped[int | None] = mapped_column(
+        ForeignKey("model_configuration_revision.revision"), nullable=True
+    )
+    request_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("employee.id"))
+    api: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str] = mapped_column(String(200))
+    state: Mapped[str] = mapped_column(String(20), default="started")
+    result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

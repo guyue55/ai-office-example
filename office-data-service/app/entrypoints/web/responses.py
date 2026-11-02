@@ -1,7 +1,9 @@
 """页面响应边界；错误页不再次查询身份或业务，避免异常递归。"""
 
+import hashlib
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from fastapi import Request
@@ -11,12 +13,15 @@ from fastapi.templating import Jinja2Templates
 from app.application.codebook import legacy_code
 from app.common.errors import DomainError
 from app.common.product import PRODUCT
+from app.entrypoints.web.navigation import page_location
 from app.modules.access.session_errors import SessionEnded
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 TEMPLATES.env.globals["product"] = PRODUCT
+TEMPLATES.env.globals["page_location"] = page_location
 TEMPLATES.env.trim_blocks = True
 TEMPLATES.env.lstrip_blocks = True
+TEMPLATES.env.policies["json.dumps_kwargs"] = {"sort_keys": True, "ensure_ascii": False}
 
 
 def business_time(value: datetime) -> str:
@@ -28,6 +33,31 @@ TEMPLATES.env.filters["business_time"] = business_time
 
 COOKIE = "office_web_session"
 LOGIN_COOKIE = "office_web_login"
+
+
+def instance_cookie(base: str, public_url: str) -> str:
+    """Cookie 不按端口隔离；使用受信配置地址，禁止依据请求 Host 决定身份空间。"""
+    url = urlsplit(public_url)
+    port = url.port or (443 if url.scheme == "https" else 80)
+    origin = f"{url.scheme.lower()}://{url.hostname}:{port}{url.path.rstrip('/')}"
+    namespace = hashlib.sha256(origin.encode()).hexdigest()[:20]
+    return f"{base}_{namespace}"
+
+
+def session_cookie(request: Request) -> str:
+    return instance_cookie(COOKIE, request.app.state.application.settings.public_url)
+
+
+def login_recovery(request: Request, message: str, status: int = 400):
+    """固定站内恢复入口，不回显授权码、state 或身份服务异常。"""
+    response = TEMPLATES.TemplateResponse(
+        request,
+        "login_recovery.html",
+        {"message": message, "trace_id": request.state.trace_id},
+        status_code=status,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def recovery_path(path: str) -> str | None:
@@ -58,11 +88,11 @@ def web_error_response(request: Request, error: DomainError):
             {"trace_id": request.state.trace_id, "authorization_ended": True},
             status_code=401,
         )
-        ended_response.delete_cookie(COOKIE, path="/")
+        ended_response.delete_cookie(session_cookie(request), path="/")
         return ended_response
     if error.status == 401:
         response = RedirectResponse("/console", status_code=303)
-        response.delete_cookie(COOKIE, path="/")
+        response.delete_cookie(session_cookie(request), path="/")
         return response
     return TEMPLATES.TemplateResponse(
         request,

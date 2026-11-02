@@ -13,6 +13,18 @@
 !clients/
 !clients/python/
 !clients/python/pyproject.toml
+!clients/python/README.md
+!clients/python/LICENSE
+!clients/python/NOTICE
+!clients/python/src/
+!clients/python/src/**
+!clients/agent/
+!clients/agent/pyproject.toml
+!clients/agent/README.md
+!clients/agent/LICENSE
+!clients/agent/NOTICE
+!clients/agent/src/
+!clients/agent/src/**
 !deploy/
 !deploy/Dockerfile
 # 白名单内仍排除本机产物和秘密。

@@ -501,8 +501,8 @@
     "message": "任务执行服务尚不可用",
     "definition": "未具备持久受理／恢复能力或执行依赖不可用，不返回伪202。",
     "recovery_hint": "retry_later",
-    "availability": "planned",
-    "legacy_aliases": []
+    "availability": "current-source",
+    "legacy_aliases": [{"symbol": "execution_unavailable", "status": 503}]
   },
 {
   "code": 422015,
@@ -561,6 +561,26 @@
     {
       "symbol": "query_budget_exceeded",
       "status": 422
+    }
+  ]
+},
+{
+  "code": 429002,
+  "key": "agent_capacity",
+  "owner": "office.agent",
+  "severity": "error",
+  "http_status": 429,
+  "allowed_http_statuses": [
+    429
+  ],
+  "message": "智能助手活动任务已达上限",
+  "definition": "达到当前员工或实例的活动任务预算，未受理新的执行，不自动排队或重复计费。",
+  "recovery_hint": "retry_later",
+  "availability": "current-source",
+  "legacy_aliases": [
+    {
+      "symbol": "agent_capacity",
+      "status": 429
     }
   ]
 }

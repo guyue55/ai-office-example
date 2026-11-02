@@ -12,13 +12,18 @@ COPY contracts/openapi.json contracts/openapi.json
 COPY deploy/installer/product.json deploy/installer/product.json
 COPY deploy/identity/ deploy/identity/
 COPY installers/client/product.json installers/client/product.json
-COPY clients/python/pyproject.toml clients/python/pyproject.toml
-COPY clients/python/src/office_client/product.json clients/python/src/office_client/product.json
+COPY clients/python/ clients/python/
+COPY clients/agent/ clients/agent/
 COPY packages/api-contracts/ packages/api-contracts/
 COPY office-data-service/ office-data-service/
 RUN python scripts/configure_template.py --check
+ARG OFFICE_AGENT=0
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev --no-editable --package office-data-service
+    case "$OFFICE_AGENT" in \
+      0) uv sync --locked --no-dev --no-editable --package office-data-service ;; \
+      1) uv sync --locked --no-dev --no-editable --package office-data-service --extra agent ;; \
+      *) echo 'OFFICE_AGENT须为0或1' >&2; exit 2 ;; \
+    esac
 
 FROM ${PYTHON_IMAGE} AS runtime
 ENV PATH=/opt/office/venv/bin:$PATH \

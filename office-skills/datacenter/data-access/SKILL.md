@@ -9,7 +9,7 @@ metadata:
 
 # 企业办公数据与基础管理
 
-先读[统一规则](../../RULES.md)。本技能复用当前员工的MCP／SDK／CLI，不另建认证，不直连数据库，服务端无AI。
+先读[统一规则](../../RULES.md)。本技能复用当前员工的MCP／SDK／CLI，不另建认证，不直连数据库。服务器可选启用内部助手，按实际能力判断，不改变本技能的数据授权边界。
 
 ## 按目标选路径
 
@@ -24,7 +24,7 @@ metadata:
 | 记录确认／更正／正式事实 | 按下方冻结规则，不读工作候选冒充正式值 |
 | 超时、协议错误、权限或结果不确定 | 读[恢复](../../references/recovery.md)，不自动换账号或重放写入 |
 
-所有CLI调用优先使用交付安装结果中的绝对cli及cli_args（--config），没有交付配置时才显式--service；全局参数在子命令前。缺地址先对话，首次／换址／连接异常按认证指引核验，不猜localhost。先用capabilities.transport_coverage选择实际入口，不根据外部技能猜flags或HTTP路径。
+所有CLI调用优先使用交付安装结果中的绝对cli及cli_args（--config），没有交付配置时才显式--service；全局参数在子命令前。独立模型Agent是例外，按[助手说明](../../references/assistant.md)使用自身配置，不叠加普通连接参数。缺地址先对话，首次／换址／连接异常按认证指引核验，不猜localhost。先用capabilities.transport_coverage选择实际入口，不根据外部技能猜flags或HTTP路径。
 
 ## 项目资料上报
 

@@ -1,4 +1,4 @@
-"""服务端 Web 控制台（BFF）：会话、页面与授权操作；禁止模型调用。"""
+"""服务端Web控制台：复用应用服务，助手执行由可选协调器负责。"""
 
 import base64
 import hashlib
@@ -16,11 +16,21 @@ from fastapi.routing import APIRoute
 from pydantic import ValidationError
 
 from app.common.errors import DomainError, log_rejection, validation_error
+from app.entrypoints.errors import error_response
 from app.entrypoints.web.accounts import register_accounts
+from app.entrypoints.web.assistant import OPERATIONS, OUTCOMES, STATUSES, register_assistant
+from app.entrypoints.web.assistant_ui import register_assistant_ui
 from app.entrypoints.web.authentication import WebAuthentication, bind_identity
 from app.entrypoints.web.client_sessions import register_client_sessions
 from app.entrypoints.web.login_gate import LoginGate
-from app.entrypoints.web.responses import COOKIE, LOGIN_COOKIE, TEMPLATES, web_error_response
+from app.entrypoints.web.model_settings import register_model_settings
+from app.entrypoints.web.responses import (
+    LOGIN_COOKIE,
+    TEMPLATES,
+    instance_cookie,
+    login_recovery,
+    web_error_response,
+)
 from app.entrypoints.web.session import LoginRequired, SessionStore, new_csrf
 from app.entrypoints.web.tables import table_query
 from app.modules.access.catalog import (
@@ -31,7 +41,6 @@ from app.modules.access.catalog import (
 )
 from app.modules.access.schemas import AccessList
 
-LOGIN_COOKIE_PREFIX = LOGIN_COOKIE + "_"
 LOGIN_COOKIE_LIMIT = 8
 ACCESS_LABELS = {
     "employees": "人员",
@@ -41,13 +50,15 @@ ACCESS_LABELS = {
 }
 
 
-def login_cookie_name(state: str) -> str:
+def login_cookie_name(state: str, public_url: str) -> str:
     """state由服务端生成，Cookie按事务隔离，避免标签页覆盖彼此的浏览器绑定。"""
-    return LOGIN_COOKIE_PREFIX + state
+    return instance_cookie(LOGIN_COOKIE, public_url) + "_" + state
 
 
 def web_router(application):
     settings = application.settings
+    COOKIE = instance_cookie("office_web_session", settings.public_url)
+    login_prefix = instance_cookie(LOGIN_COOKIE, settings.public_url) + "_"
     store = SessionStore(
         settings.web_session_secret,
         settings.web_session_ttl,
@@ -74,6 +85,13 @@ def web_router(application):
                 if error.status == 401:
                     store.destroy(request.cookies.get(COOKIE))
                 log_rejection(request.state.trace_id, error.code, error.status, "web")
+                if (
+                    request.url.path.startswith("/console/assistant-ui/")
+                    or request.url.path == "/console/model-settings/inspect"
+                ):
+                    response = error_response(error, request.state.trace_id)
+                    response.headers["Cache-Control"] = "no-store"
+                    return response
                 return web_error_response(request, error)
 
             return guarded
@@ -113,6 +131,10 @@ def web_router(application):
         identity = await application.call(principal, "me", {}, request.state.trace_id)
         context.update(
             me=identity,
+            page_template=template,
+            assistant_statuses=STATUSES,
+            assistant_outcomes=OUTCOMES,
+            assistant_operations=OPERATIONS,
             demo_mode=settings.allow_lan_http_demo,
             csrf=token.get("csrf", ""),
             trace_id=request.state.trace_id,
@@ -131,6 +153,7 @@ def web_router(application):
             account_actions=ACCOUNT_ACTIONS,
             account_statuses=ACCOUNT_STATUSES,
             notice=token.pop("notice", None),
+            notice_error=token.pop("notice_error", False),
         )
         return TEMPLATES.TemplateResponse(request, template, context)
 
@@ -139,7 +162,13 @@ def web_router(application):
             principal = await principal_of(request)
         except LoginRequired:
             raise DomainError(401, "login_required", "请先登录") from None
-        return await application.call(principal, operation, payload or {}, request.state.trace_id)
+        options = {}
+        if operation.startswith("agent."):
+            cookie = request.cookies.get(COOKIE)
+            options["authenticate"] = lambda: authentication.principal(cookie)
+        return await application.call(
+            principal, operation, payload or {}, request.state.trace_id, **options
+        )
 
     def require_csrf(request: Request, form: dict):
         supplied = str(form.get("csrf", ""))
@@ -154,8 +183,9 @@ def web_router(application):
             raise DomainError(422, "invalid_input", "页面版本无效，请刷新后重试")
         return int(value)
 
-    def notify(request, message):
-        store.load(request.cookies.get(COOKIE))["notice"] = message
+    def notify(request, message, *, error=False):
+        session = store.load(request.cookies.get(COOKIE))
+        session["notice"], session["notice_error"] = message, error
 
     @router.get("/", include_in_schema=False)
     async def home():
@@ -168,10 +198,8 @@ def web_router(application):
         try:
             store.load(request.cookies.get(COOKIE))
         except LoginRequired:
-            existing = [name for name in request.cookies if name.startswith(LOGIN_COOKIE_PREFIX)]
-            active = [
-                name for name in existing if name[len(LOGIN_COOKIE_PREFIX) :] in store.pending
-            ]
+            existing = [name for name in request.cookies if name.startswith(login_prefix)]
+            active = [name for name in existing if name[len(login_prefix) :] in store.pending]
             if len(active) >= LOGIN_COOKIE_LIMIT:
                 raise DomainError(
                     503, "authentication_busy", "待完成的登录过多，请先完成登录或等待十分钟后重试"
@@ -210,10 +238,8 @@ def web_router(application):
             for name in existing:
                 if name not in active:
                     response.delete_cookie(name, path="/")
-            # 清理旧版本共享Cookie；新事务不接受它作为绑定凭据。
-            response.delete_cookie(LOGIN_COOKIE, path="/auth/callback")
             response.set_cookie(
-                login_cookie_name(state),
+                login_cookie_name(state, settings.public_url),
                 binding,
                 max_age=600,
                 path="/",
@@ -228,17 +254,17 @@ def web_router(application):
     async def callback(request: Request, code: str = "", state: str = ""):
         pending = store.pending.get(state)
         if pending is None:
-            return HTMLResponse("登录状态失效，请重新打开控制台。", status_code=400)
+            return login_recovery(request, "登录请求已失效，可能已过期或服务已更新。请重新登录。")
         pending_value, deadline = pending
         if not hmac.compare_digest(
-            request.cookies.get(login_cookie_name(state), "").encode(),
+            request.cookies.get(login_cookie_name(state, settings.public_url), "").encode(),
             pending_value["binding"].encode(),
         ):
-            raise DomainError(400, "invalid_request", "登录来源不匹配，请重新打开控制台")
+            return login_recovery(request, "无法确认当前浏览器的登录请求。请在同一浏览器重新登录。")
         # 校验浏览器后消费，防重放；错误浏览器不能消耗其他人的登录请求。
         store.pending.pop(state)
         if time.monotonic() > deadline:
-            return HTMLResponse("登录超时，请重新打开控制台。", status_code=400)
+            return login_recovery(request, "登录请求已超时，请重新登录。")
         try:
             token = await token_request(code, pending_value["verifier"])
             verified = await application.verifier.verify_async(token["access_token"])
@@ -273,7 +299,9 @@ def web_router(application):
                 "[Trace: OfficeService/Web/token_exchange_failed] trace_id=%s",
                 request.state.trace_id,
             )
-            return HTMLResponse("登录失败，请重新打开控制台重试。", status_code=502)
+            return login_recovery(
+                request, "登录失败：身份服务暂未完成登录，请重新登录；如持续失败请联系管理员。", 502
+            )
         bind_identity(token, verified)
         token["csrf"] = pending_value["csrf"]
         store.destroy(request.cookies.get(COOKIE))
@@ -295,7 +323,7 @@ def web_router(application):
             samesite="lax",
             secure=settings.public_url.startswith("https://"),
         )
-        response.delete_cookie(login_cookie_name(state), path="/")
+        response.delete_cookie(login_cookie_name(state, settings.public_url), path="/")
         return response
 
     @router.get("/console/dashboard", response_class=HTMLResponse)
@@ -575,6 +603,9 @@ def web_router(application):
             },
         )
 
+    register_model_settings(router, operate, render, require_csrf, notify)
+    register_assistant_ui(router, operate, render, require_csrf)
+    register_assistant(router, operate, render, require_csrf, form_version, notify)
     register_client_sessions(router, operate, render, require_csrf, form_version, notify, store)
     register_accounts(
         router,

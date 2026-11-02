@@ -23,7 +23,10 @@
 <a href="#my-permissions">查看权限说明 ↓</a>
 </section>
 <section class="card">
-<span class="muted">常用入口</span>{% if 'access.read' in me.permissions %}
+<span class="muted">常用入口</span>
+{% if 'agent.run' in me.permissions %}<p><a class="button" href="/console/assistant/workspace">开始使用智能助手</a></p>{% endif %}
+<p><a href="/console/client-authorizations?scope=own">管理我的客户端授权</a></p>
+{% if 'access.read' in me.permissions %}
 <ul class="subtle-list">
 <li>
 <a href="/console/employees">查看人员及角色</a>
@@ -35,7 +38,7 @@
 <a href="/console/audit">查看操作记录</a>
 </li>{% endif %}
 </ul>{% else %}
-<p style="margin:12px 0">业务操作通过客户端技能使用</p>
+<p style="margin:12px 0">可通过已授权的客户端使用业务能力。</p>
 <p class="muted">需要新增能力时，请联系管理员。</p>{% endif %}
 </section>
 </div>

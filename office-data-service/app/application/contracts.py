@@ -27,6 +27,14 @@ from app.modules.access.outputs import (
     RoleOutput,
 )
 from app.modules.access.session_schemas import SessionPage, SessionView
+from app.modules.agent.model_configuration import ModelDiscoveryResult, ModelStatus, ModelTestResult
+from app.modules.agent.outputs import (
+    AgentCapability,
+    ConversationSummary,
+    ConversationView,
+    RunSummary,
+    RunView,
+)
 from app.modules.data.change_contracts import DataPreview, DataResult
 from app.modules.data.outputs import (
     ArchiveOutput,
@@ -39,6 +47,24 @@ from app.modules.data.outputs import (
 from app.modules.query.outputs import AggregateOutput
 
 OPERATION_OUTPUTS: dict[str, type[BaseModel]] = {
+    "agent.conversation.create": ConversationSummary,
+    "agent.conversation.list": AccessPage[ConversationSummary],
+    "agent.conversation.get": ConversationView,
+    "agent.conversation.archive": ConversationSummary,
+    "agent.conversation.rename": ConversationSummary,
+    "agent.config.get": ModelStatus,
+    "agent.config.save": ModelStatus,
+    "agent.config.apply": ModelStatus,
+    "agent.config.disable": ModelStatus,
+    "agent.config.test": ModelTestResult,
+    "agent.config.probe": ModelTestResult,
+    "agent.config.models": ModelDiscoveryResult,
+    "agent.capabilities": AgentCapability,
+    "agent.start": RunView,
+    "agent.list": AccessPage[RunSummary],
+    "agent.get": RunView,
+    "agent.decide": RunView,
+    "agent.cancel": RunView,
     "data.aggregate": AggregateOutput,
     "data.change.preview": DataPreview,
     "data.change.apply": DataResult,

@@ -8,6 +8,9 @@
   if (!dialog?.showModal) return;
   document.documentElement.classList.add('ui-enhanced');
   let local, tipTarget, tipTimer, tipHideTimer, lastFocusKey, confirmationPending = false;
+  let focusTip = null, hoverTip = null, overTip = false, pendingTip = null;
+  const dismissedTips = new WeakSet();
+  const pickerOpen = () => CSS.supports('selector(select:open)') && !!document.querySelector('select:open');
   const icons = {
     account: ['M3 5h18v14H3Z','M7 9h3v3H7Z','M14 9h4M14 13h4M7 16h11'],
     eye: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12','M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6'],
@@ -19,7 +22,13 @@
     retry: ['M20 7a9 9 0 1 0 1 9','M20 2v5h-5'],
     play: ['m8 4 12 8-12 8Z'],
     clock: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20','M12 6v6l4 2'],
-    more: ['M4 12h2m5 0h2m5 0h2']
+    more: ['M4 12h2m5 0h2m5 0h2'],
+    copy: ['M9 9h11v12H9Z','M5 16H3V3h12v2'],
+    close: ['m6 6 12 12M6 18 18 6'],
+    collapse: ['M3 4h18v16H3Z','M15 4v16','m7 8 4 4-4 4'],
+    chevron: ['m7 10 5 5 5-5'],
+    info: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20','M12 11v6M12 7v1'],
+    down: ['M12 4v16m-6-6 6 6 6-6']
   };
   function iconFor(label) {
     if (/归档/.test(label)) return 'archive';
@@ -48,13 +57,28 @@
     // 同一员工的姓名编辑与启停可能共用地址，按控件类型区分恢复目标。
     const actionKind = control.parentElement.querySelector('input[name=action]')?.value || '';
     if (focusKey) control.dataset.focusKey = focusKey + '|' + control.tagName + '|' + actionKind;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
-    for (const d of icons[iconFor(label)]) {
-      const path = document.createElementNS(svg.namespaceURI, 'path'); path.setAttribute('d', d); svg.append(path);
-    }
+    const svg = icon(iconFor(label));
     const text = document.createElement('span'); text.className = 'sr-only'; text.textContent = label;
     control.replaceChildren(svg, text);
+  }
+  // 图标显式命名；原表格增强器与新组件共用SVG，不靠新文案猜操作。
+  function icon(name) {
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');
+    for(const d of icons[name]||icons.more){const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',d);svg.append(path);}
+    return svg;
+  }
+  function decorateIcon(control,name,label,{text=false}={}) {
+    control.dataset.iconAction='';control.setAttribute('aria-label',label);
+    control.classList.add(text?'ui-text-action':'ui-icon-button');
+    if(!text)control.dataset.tooltip=label;
+    control.removeAttribute('title');
+    const span=document.createElement('span');span.textContent=label;if(!text)span.className='sr-only';
+    control.replaceChildren(icon(name),span);return control;
+  }
+  function iconButton(name,label,action) {
+    const control=document.createElement('button');control.type='button';decorateIcon(control,name,label);
+    control.addEventListener('click',action);return control;
   }
   function notify(message, error = false) {
     const notice = document.createElement('div');
@@ -98,6 +122,7 @@
   }
   function hideTip() {
     clearTimeout(tipTimer); clearTimeout(tipHideTimer);
+    pendingTip = null;
     if (tipTarget) {
       const ids = (tipTarget.getAttribute('aria-describedby') || '').split(' ').filter(id => id && id !== tip.id);
       if (ids.length) tipTarget.setAttribute('aria-describedby', ids.join(' ')); else tipTarget.removeAttribute('aria-describedby');
@@ -105,42 +130,70 @@
     tipTarget = null;
     if (tip.matches(':popover-open')) tip.hidePopover();
   }
-  function showTip(target) {
-    if (!target?.dataset.tooltip) return;
-    hideTip();
-    tipTimer = setTimeout(() => {
-      if (!target.isConnected) return;
-      tipTarget = target; tip.textContent = target.dataset.tooltip;
-      target.setAttribute('aria-describedby', [target.getAttribute('aria-describedby'), tip.id].filter(Boolean).join(' '));
-      if (tip.showPopover) tip.showPopover();
-      const rect = target.getBoundingClientRect();
-      const width = tip.offsetWidth, height = tip.offsetHeight;
-      tip.style.left = Math.max(8, Math.min(innerWidth-width-8, rect.x+rect.width/2-width/2)) + 'px';
-      tip.style.top = (rect.top > height+12 ? rect.top-height-8 : rect.bottom+8) + 'px';
-    }, 150);
+  function validTip(target) {
+    return target?.dataset.tooltip && target.isConnected && !target.disabled && !dismissedTips.has(target) && !!target.getClientRects().length;
   }
-  document.addEventListener('pointerover', event => {
-    const target = event.target.closest('[data-tooltip]');
-    if (target && !target.contains(event.relatedTarget)) showTip(target);
+  function placeTip(target) {
+    const rect = target.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(innerWidth-width-8, rect.x+rect.width/2-width/2)) + 'px';
+    tip.style.top = Math.max(8,Math.min(innerHeight-height-8,rect.top > height+12 ? rect.top-height-8 : rect.bottom+8)) + 'px';
+  }
+  function syncTip() {
+    clearTimeout(tipHideTimer);
+    // 悬停提示自身时保持对应对象；否则新指针意图优先，离开后回到有效焦点对象。
+    const target = overTip && validTip(tipTarget) ? tipTarget : validTip(hoverTip) ? hoverTip : validTip(focusTip) ? focusTip : null;
+    if (!target) {hideTip();return;}
+    const rect=target.getBoundingClientRect();
+    if (rect.bottom<0 || rect.top>innerHeight) {hideTip();return;}
+    if (tipTarget===target && tip.matches(':popover-open')) {placeTip(target);return;}
+    if (pendingTip===target) return;
+    hideTip();pendingTip=target;
+    tipTimer=setTimeout(()=>{
+      pendingTip=null;if(!validTip(target))return;
+      tipTarget=target;tip.textContent=target.dataset.tooltip;
+      if(target.getAttribute('aria-label')!==target.dataset.tooltip)target.setAttribute('aria-describedby',[target.getAttribute('aria-describedby'),tip.id].filter(Boolean).join(' '));
+      if(tip.showPopover)tip.showPopover();placeTip(target);
+    },150);
+  }
+  document.addEventListener('pointerover',event=>{
+    if(matchMedia('(hover: none)').matches)return;
+    const target=event.target.closest('[data-tooltip]');
+    if(target&&!target.contains(event.relatedTarget)){hoverTip=target;overTip=false;dismissedTips.delete(target);syncTip();}
   });
-  document.addEventListener('pointerout', event => {
-    const target = event.target.closest('[data-tooltip]');
-    if (target && !target.contains(event.relatedTarget)) tipHideTimer = setTimeout(hideTip, 150);
+  document.addEventListener('pointerout',event=>{
+    const target=event.target.closest('[data-tooltip]');
+    if(target&&!target.contains(event.relatedTarget)&&hoverTip===target){hoverTip=null;clearTimeout(tipHideTimer);tipHideTimer=setTimeout(syncTip,150);}
   });
-  tip.addEventListener('pointerenter', () => clearTimeout(tipHideTimer));
-  tip.addEventListener('pointerleave', hideTip);
-  document.addEventListener('focusin', event => showTip(event.target.closest('[data-tooltip]')));
-  document.addEventListener('focusout', hideTip);
-  window.addEventListener('scroll', hideTip, true); window.addEventListener('resize', hideTip);
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && tipTarget) { hideTip(); event.preventDefault(); event.stopPropagation(); } }, true);
+  tip.addEventListener('pointerenter',()=>{overTip=true;clearTimeout(tipHideTimer);});
+  tip.addEventListener('pointerleave',()=>{overTip=false;syncTip();});
+  document.addEventListener('focusin',event=>{
+    focusTip=event.target.closest('[data-tooltip]');hoverTip=null;overTip=false;
+    if(focusTip)dismissedTips.delete(focusTip);syncTip();
+  });
+  document.addEventListener('focusout',event=>{
+    if(focusTip===event.target.closest('[data-tooltip]'))focusTip=null;
+    syncTip();
+  });
+  function repositionTip(){overTip=false;syncTip();}
+  window.addEventListener('scroll',repositionTip,true);window.addEventListener('resize',repositionTip);
+  document.addEventListener('keydown',event=>{
+    if (pickerOpen()) return;
+    if(event.key==='Escape'&&(tipTarget||pendingTip)){
+      // 同次交互的焦点／悬停均抑制，避免滚动时退回另一个提示而重新弹出。
+      [tipTarget,pendingTip,focusTip,hoverTip].filter(Boolean).forEach(target=>dismissedTips.add(target));
+      overTip=false;hideTip();event.preventDefault();event.stopPropagation();
+    }
+  },true);
   // 所有站内确认复用同一组件；重复点击不替换仍未完成的确认。
   function confirm(message, options = {}) {
     const box = document.getElementById('action-confirm');
     if (!box || box.open || confirmationPending) return Promise.resolve(false);
     confirmationPending = true;
+    window.OfficeUI.closePopovers?.();
     const previous = document.activeElement;
     const cancel = box.querySelector('[data-confirm-cancel]');
     const accept = box.querySelector('[data-confirm-accept]');
+    cancel.textContent = options.cancel || '取消';
     box.querySelector('#confirm-title').textContent = options.title || '确认操作';
     box.querySelector('#confirm-description').textContent = message;
     accept.textContent = options.accept || (message.startsWith('确认停用') ? '确认停用' : message.startsWith('确认重新启用') ? '确认启用' : message.startsWith('确认撤销') ? '确认撤销' : message.startsWith('确认归档') ? '确认归档' : message.startsWith('确认重试') ? '确认重试' : '确认操作');
@@ -202,7 +255,15 @@
     if (target) target.focus({preventScroll:true});
     lastFocusKey = null; return !!target;
   };
-  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus};
+  function present(title, content) {
+    if(dialog.open)return false;
+    window.OfficeUI.closePopovers?.();
+    const previous=document.activeElement;
+    heading.textContent=title;holder.replaceChildren(content);
+    dialog.addEventListener('close',()=>{holder.replaceChildren();previous?.isConnected&&previous.focus({preventScroll:true});},{once:true});
+    dialog.showModal();heading.focus();return true;
+  }
+  window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present, icon, decorateIcon, iconButton, pickerOpen};
   enhance(document);
   let pending = false;
   new MutationObserver(records => {

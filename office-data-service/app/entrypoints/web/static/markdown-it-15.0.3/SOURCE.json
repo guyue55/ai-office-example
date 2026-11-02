@@ -1,0 +1,39 @@
+{
+  "name": "markdown-it",
+  "version": "15.0.3",
+  "source": "https://registry.npmjs.org/markdown-it/-/markdown-it-15.0.3.tgz",
+  "integrity": "sha512-+Az7Ojz3iRGu8KYMvJ6xVhvrxP3eE+vEtJX75Ow88XBpcQNV/0lGX5ZynIIBftREo4DC2jsveAMDaeltmm8QvQ==",
+  "bundle_sha256": "391f2aa638e75e6c7859d0a5c5650ef0956722a45998f17e05b83bc655778e1e",
+  "bundled_licenses": [
+    {
+      "name": "entities",
+      "version": "8.1.0",
+      "license": "BSD-2-Clause",
+      "source": "https://registry.npmjs.org/entities/-/entities-8.1.0.tgz"
+    },
+    {
+      "name": "linkify-it",
+      "version": "6.1.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/linkify-it/-/linkify-it-6.1.0.tgz"
+    },
+    {
+      "name": "mdurl",
+      "version": "2.1.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/mdurl/-/mdurl-2.1.0.tgz"
+    },
+    {
+      "name": "punycode.js",
+      "version": "2.3.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/punycode.js/-/punycode.js-2.3.1.tgz"
+    },
+    {
+      "name": "uc.micro",
+      "version": "3.0.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/uc.micro/-/uc.micro-3.0.0.tgz"
+    }
+  ]
+}

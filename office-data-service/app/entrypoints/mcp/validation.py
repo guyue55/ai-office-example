@@ -54,7 +54,31 @@ class ExportArguments(Input):
     max_records: Annotated[int, Field(strict=True, ge=1, le=5000)] = 1000
 
 
+from app.common.inputs import IdentifierInput as ReadIdentifierArguments
+from app.modules.agent.schemas import (
+    ConversationArchive,
+    ConversationCreate,
+    ConversationGet,
+    ConversationList,
+    ConversationRename,
+    RunCancel,
+    RunDecision,
+    RunList,
+    RunStart,
+)
+
 TOOL_INPUTS: dict[str, type[BaseModel]] = {
+    "create_assistant_conversation": ConversationCreate,
+    "list_assistant_conversations": ConversationList,
+    "get_assistant_conversation": ConversationGet,
+    "archive_assistant_conversation": ConversationArchive,
+    "rename_assistant_conversation": ConversationRename,
+    "assistant_capabilities": EmptyInput,
+    "start_assistant_run": RunStart,
+    "list_assistant_runs": RunList,
+    "get_assistant_run": ReadIdentifierArguments,
+    "decide_assistant_run": RunDecision,
+    "cancel_assistant_run": RunCancel,
     "aggregate_data": AggregateRequest,
     "preview_data_change": DataPreviewInput,
     "apply_data_change": DataApplyInput,

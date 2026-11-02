@@ -8,6 +8,59 @@ on:
 permissions:
   contents: read
 jobs:
+  agent:
+    name: Agent (${{ matrix.os }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-24.04, python: '3.13'}
+          - {os: ubuntu-24.04, python: '3.14'}
+          - {os: windows-2025, python: '3.13'}
+          - {os: macos-15, python: '3.13'}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.9.18'
+          python-version: ${{ matrix.python }}
+      - run: uv sync --project clients/agent --locked --python ${{ matrix.python }}
+      - run: uv run --project clients/agent --frozen ruff check clients/agent
+      - run: uv run --project clients/agent --frozen ruff format --check clients/agent
+      - run: uv run --project clients/agent --frozen mypy --config-file clients/agent/pyproject.toml clients/agent/src
+      - run: uv run --project clients/agent --frozen pytest clients/agent/tests -q
+      - name: 内部异步工具适配与托管模型出口
+        if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
+        run: uv run --extra agent --locked pytest tests/test_agent_application_bridge.py tests/test_model_dns.py tests/test_model_egress.py tests/test_model_response.py -q
+      - name: 隔离助手浏览器交互
+        if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
+        shell: bash
+        run: |
+          uv run --extra agent --locked playwright install --with-deps chromium
+          OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_browser.py tests/test_assistant_workspace_browser.py tests/test_ui_state_browser.py tests/test_ui_catalog_browser.py tests/test_visual_foundation_browser.py -q
+      - name: 独立PG18与共享Agent回执及越权验收
+        if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
+        shell: bash
+        run: |
+          docker pull pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0
+          OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --locked pytest tests/test_agent_postgres.py tests/test_agent_records_postgres.py tests/test_agent_conversations_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_model_configuration_postgres.py tests/test_model_backup_restore_postgres.py tests/test_model_configuration_upgrade.py tests/test_model_test_lifecycle_postgres.py -q
+          OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_model_settings_browser.py -q
+      - name: 构建独立包与普通客户端依赖
+        run: |
+          uv build --project clients/agent --out-dir dist/agent
+          uv build --package office-client --out-dir dist/agent
+          uv build --package office-api-contracts --out-dir dist/agent
+      - name: 安装消费验收
+        run: uv run --project clients/agent --frozen python clients/agent/scripts/verify_install.py --wheels dist/agent
+      - name: Agent运行依赖漏洞审计
+        if: matrix.os == 'ubuntu-24.04' && matrix.python == '3.13'
+        shell: bash
+        run: |
+          mkdir -p runtime/ci
+          uv export --project clients/agent --locked --no-dev --no-emit-project --no-emit-local --format requirements-txt --output-file runtime/ci/agent-requirements.txt
+          uvx --python 3.13 pip-audit==2.9.0 --disable-pip --no-deps -r runtime/ci/agent-requirements.txt
   source-safety:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -43,6 +96,8 @@ jobs:
           python-version: ${{ matrix.python }}
           enable-cache: true
       - run: uv sync --locked --python ${{ matrix.python }}
+      - name: 管理脚本Linux预检
+        run: OFFICE_PREFLIGHT_OFFLINE=1 ./manage.sh preflight
       - run: uv run --frozen python scripts/configure_template.py --check
       - run: uv run --frozen ruff check office-data-service clients/python scripts tests packages/api-contracts deploy/installer installers
       - run: uv run --frozen ruff format --check office-data-service clients/python scripts tests packages/api-contracts deploy/installer installers
@@ -79,7 +134,37 @@ jobs:
             dist/*.whl
             dist/build-manifest.json
           retention-days: 7
+  macos-ops:
+    # 管理脚本与安装脚本跑在macOS自带的Bash 3.2下，Linux通过不能替代。
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.9.18'
+          python-version: '3.13'
+      - run: uv sync --locked
+      - name: ShellCheck与Bash语法
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v shellcheck >/dev/null 2>&1 || brew install shellcheck
+          shellcheck -f gcc manage.sh deploy/*.sh installers/client/*.sh
+          for f in manage.sh deploy/*.sh installers/client/*.sh; do /bin/bash -n "$f"; done
+      - name: 管理脚本在Bash 3.2下的回归
+        shell: bash
+        run: |
+          set -euo pipefail
+          /bin/bash --version | head -n 1
+          uv run --frozen pytest tests/test_deployment_entrypoints.py tests/test_deployment_contract.py -q
   container:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {variant: base, agent: '0'}
+          - {variant: agent, agent: '1'}
     needs: quality
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -97,9 +182,10 @@ jobs:
           file: deploy/Dockerfile
           load: true
           push: false
+          build-args: OFFICE_AGENT=${{ matrix.agent }}
           tags: office-data-service:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=service-${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=service-${{ matrix.variant }}
         env:
           # 不再上传额外的构建记录；镜像／数据库验收仍由后续步骤执行。
           DOCKER_BUILD_RECORD_UPLOAD: "false"
@@ -107,7 +193,7 @@ jobs:
       - name: 独立PG18受控聚合与撤权取消验收
         run: OFFICE_QUERY_PG_TESTS=1 uv run --frozen pytest tests/test_query_postgres.py tests/test_postgres_readiness.py -q
       - name: 全新临时数据库迁移与容器验收
-        run: uv run --frozen python scripts/docker_smoke.py --image office-data-service:ci
+        run: uv run --frozen python scripts/docker_smoke.py --image office-data-service:ci --expect-agent ${{ matrix.agent }}
   windows-client:
     needs: quality
     runs-on: windows-2025

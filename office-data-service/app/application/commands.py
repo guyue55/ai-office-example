@@ -16,6 +16,25 @@ from app.modules.access.account_schemas import (
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import ACCESS_INPUTS, normalize_access_command
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
+from app.modules.agent.model_configuration import (
+    ModelApply,
+    ModelDiscover,
+    ModelProbe,
+    ModelSave,
+    ModelTest,
+    ModelVersion,
+)
+from app.modules.agent.schemas import (
+    ConversationArchive,
+    ConversationCreate,
+    ConversationGet,
+    ConversationList,
+    ConversationRename,
+    RunCancel,
+    RunDecision,
+    RunList,
+    RunStart,
+)
 from app.modules.data.change_contracts import DataApplyInput, DataPreviewInput
 from app.modules.data.schemas import (
     ArchiveInput,
@@ -43,6 +62,24 @@ class UpdateInput[T](IdentifierInput):
 
 
 OPERATION_INPUTS: dict[str, type[BaseModel]] = {
+    "agent.conversation.create": ConversationCreate,
+    "agent.conversation.list": ConversationList,
+    "agent.conversation.get": ConversationGet,
+    "agent.conversation.archive": ConversationArchive,
+    "agent.conversation.rename": ConversationRename,
+    "agent.config.get": EmptyInput,
+    "agent.config.save": ModelSave,
+    "agent.config.apply": ModelApply,
+    "agent.config.disable": ModelVersion,
+    "agent.config.test": ModelTest,
+    "agent.config.models": ModelDiscover,
+    "agent.config.probe": ModelProbe,
+    "agent.capabilities": EmptyInput,
+    "agent.start": RunStart,
+    "agent.list": RunList,
+    "agent.get": IdentifierInput,
+    "agent.decide": RunDecision,
+    "agent.cancel": RunCancel,
     "data.aggregate": AggregateRequest,
     "data.change.preview": DataPreviewInput,
     "data.change.apply": DataApplyInput,

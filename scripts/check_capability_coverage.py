@@ -35,6 +35,9 @@ def check():
     parser = build_parser()
     commands = next(action.choices for action in parser._actions if action.dest == "action")
     for operation, row in rows.items():
+        if row["mode"] == "server-admin":
+            assert operation.startswith("agent.config.") and row.get("reason")
+            continue
         assert row["mcp"] in tools, operation
         assert callable(getattr(OfficeClient, row["sdk"], None)), operation
         assert row["cli"] in commands, operation

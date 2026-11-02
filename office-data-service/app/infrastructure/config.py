@@ -4,9 +4,10 @@ import ipaddress
 import json
 import os
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from app.common.product import PRODUCT
 
@@ -66,6 +67,17 @@ class Settings(BaseModel):
     request_body_timeout: float = Field(default=10, gt=0, le=120)
     operation_timeout: float = Field(default=15, gt=0, le=120)
     auth_workers: int = Field(default=8, ge=1, le=64)
+    agent_config_file: Path | None = None
+    agent_secret_key_file: Path | None = None
+    agent_model_url_policy: Literal["public", "allowlist"] = "public"
+    agent_model_doh_scope: Literal["auto", "domains"] = "auto"
+    agent_model_doh_url: str | None = Field(default=None, max_length=2048)
+    agent_model_doh_domains: list[str] = Field(default_factory=list, max_length=20)
+    agent_model_urls: list[str] = Field(default_factory=list, max_length=20)
+    agent_model_response_wire_bytes: int = Field(default=4194304, ge=65536, le=16777216)
+    agent_model_response_decoded_bytes: int = Field(default=4194304, ge=65536, le=16777216)
+    agent_max_running: int = Field(default=8, ge=1, le=64)
+    agent_max_per_user: int = Field(default=2, ge=1, le=8)
     client_id: str = PRODUCT["client_id"]
     redirect_uri: str = "http://127.0.0.1:8765/callback"
     web_session_secret_file: Path | None = None
@@ -75,6 +87,97 @@ class Settings(BaseModel):
     web_session_limit: int = Field(default=2048, ge=1, le=10000)
     web_pending_limit: int = Field(default=256, ge=1, le=10000)
     web_login_protection: LoginProtection = Field(default_factory=LoginProtection)
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_model_policy(cls, data):
+        # 旧实例非空白名单保留限制；只有显式选择public才扩大出口。
+        if (
+            isinstance(data, dict)
+            and data.get("agent_model_urls")
+            and "agent_model_url_policy" not in data
+        ):
+            return {**data, "agent_model_url_policy": "allowlist"}
+        return data
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_model_dns(cls, data):
+        if (
+            isinstance(data, dict)
+            and data.get("agent_model_doh_domains")
+            and "agent_model_doh_scope" not in data
+        ):
+            return {**data, "agent_model_doh_scope": "domains"}
+        return data
+
+    @model_validator(mode="after")
+    def model_dns_scope(self):
+        if self.agent_model_doh_scope == "domains" and (
+            not self.agent_model_doh_url or not self.agent_model_doh_domains
+        ):
+            raise ValueError("限定域名模式须指定HTTPS解析器及域名清单")
+        if self.agent_model_doh_scope == "auto" and self.agent_model_doh_domains:
+            raise ValueError("自动模式无需域名清单，请移除清单或选择限定模式")
+        if self.agent_model_doh_url:
+            url = urlparse(self.agent_model_doh_url)
+            if (
+                url.scheme != "https"
+                or not url.hostname
+                or url.username
+                or url.password
+                or url.query
+                or url.fragment
+                or not url.path
+                or url.port == 0
+                or any(c.isspace() or ord(c) < 32 for c in self.agent_model_doh_url)
+            ):
+                raise ValueError("模型DoH须为无凭证、无查询参数的HTTPS接口")
+        return self
+
+    @field_validator("agent_model_doh_domains")
+    @classmethod
+    def model_dns_domains(cls, values):
+        from app.infrastructure.model_dns import dns_name
+
+        domains = []
+        for value in values:
+            value = dns_name(value)
+            try:
+                ipaddress.ip_address(value)
+            except ValueError:
+                domains.append(value)
+            else:
+                raise ValueError("模型DoH清单只接受精确域名")
+        return list(dict.fromkeys(domains))
+
+    @field_validator("agent_model_urls")
+    @classmethod
+    def model_destinations(cls, values: list[str]):
+        for value in values:
+            url = urlparse(value)
+            if (
+                not url.hostname
+                or url.username
+                or url.password
+                or url.query
+                or url.fragment
+                or url.scheme not in {"https", "http"}
+                or url.port == 0
+                or any(c.isspace() or ord(c) < 32 for c in value)
+            ):
+                raise ValueError("模型出口须为无凭证的HTTPS或显式授权的内网HTTP base URL")
+        return list(dict.fromkeys(value.rstrip("/") for value in values))
+
+    @model_validator(mode="after")
+    def independent_model_key(self):
+        if (
+            self.agent_secret_key_file
+            and self.web_session_secret_file
+            and self.agent_secret_key_file.resolve() == self.web_session_secret_file.resolve()
+        ):
+            raise ValueError("模型加密根密钥必须独立于Web会话密钥")
+        return self
 
     @field_validator("web_session_secret_file")
     @classmethod
@@ -125,7 +228,12 @@ class Settings(BaseModel):
         config_file = Path(path).expanduser().resolve()
         data = json.loads(config_file.read_text())
         if isinstance(data, dict):
-            for name in ("database_password_file", "web_session_secret_file"):
+            for name in (
+                "database_password_file",
+                "web_session_secret_file",
+                "agent_config_file",
+                "agent_secret_key_file",
+            ):
                 value = data.get(name)
                 if isinstance(value, str):
                     reference = Path(value).expanduser()

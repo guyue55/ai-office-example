@@ -21,6 +21,24 @@ from app.modules.access.authentication import Principal
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
 from app.modules.access.schemas import EmployeeUpdate, GrantUpdate, Links, Named, NewEmployee
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
+from app.modules.agent.model_configuration import (
+    ModelApply,
+    ModelDiscover,
+    ModelProbe,
+    ModelSave,
+    ModelTest,
+    ModelVersion,
+)
+from app.modules.agent.schemas import (
+    ConversationArchive,
+    ConversationCreate,
+    ConversationList,
+    ConversationRename,
+    RunCancel,
+    RunDecision,
+    RunList,
+    RunStart,
+)
 from app.modules.data.change_contracts import DataApplyInput, DataPreviewInput
 from app.modules.data.schemas import (
     ConfirmInput,
@@ -38,6 +56,18 @@ class SessionQuery(SessionList):
     # URL查询参数天然为文本；仅传输适配允许转换，应用层仍严格验证。
     model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
     limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 20
+    page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
+
+
+class AgentQuery(RunList):
+    model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
+    limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 10
+    page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
+
+
+class ConversationQuery(ConversationList):
+    model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
+    limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 10
     page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
 
 
@@ -76,6 +106,9 @@ def router(application, *, registry, prefix="/api/v2"):
 
     async def invoke(request, principal, operation, payload=None):
         allowed = {
+            "agent.list": set(RunList.model_fields),
+            "agent.conversation.list": set(ConversationList.model_fields),
+            "agent.conversation.get": {"before", "limit"},
             "session.list": set(SessionList.model_fields),
             "access.list": {"after", "limit", "q", "page", "actor", "action", "since", "until"},
             "account.search": {"q"},
@@ -111,9 +144,127 @@ def router(application, *, registry, prefix="/api/v2"):
                 registry=registry,
             )
 
+        options = {}
+        if operation.startswith("agent."):
+            raw_token = request.headers.get("authorization", "").partition(" ")[2]
+            options["authenticate"] = lambda: application.verifier.verify_async(raw_token)
         return await application.call(
-            principal, operation, payload or {}, request.state.trace_id, presenter=present
+            principal,
+            operation,
+            payload or {},
+            request.state.trace_id,
+            presenter=present,
+            **options,
         )
+
+    agent = group(tags=["智能助手"])
+
+    @agent.get("/agent/configuration", response_model=OPERATION_OUTPUTS["agent.config.get"])
+    async def model_configuration(request: Request, principal: Actor):
+        return await invoke(request, principal, "agent.config.get")
+
+    @agent.post("/agent/configuration/draft", response_model=OPERATION_OUTPUTS["agent.config.save"])
+    async def save_model_configuration(request: Request, principal: Actor, args: ModelSave):
+        return await invoke(request, principal, "agent.config.save", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/apply", response_model=OPERATION_OUTPUTS["agent.config.apply"]
+    )
+    async def apply_model_configuration(request: Request, principal: Actor, args: ModelApply):
+        return await invoke(request, principal, "agent.config.apply", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/disable", response_model=OPERATION_OUTPUTS["agent.config.disable"]
+    )
+    async def disable_model_configuration(request: Request, principal: Actor, args: ModelVersion):
+        return await invoke(request, principal, "agent.config.disable", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/models", response_model=OPERATION_OUTPUTS["agent.config.models"]
+    )
+    async def discover_models(request: Request, principal: Actor, args: ModelDiscover):
+        return await invoke(request, principal, "agent.config.models", args.model_dump())
+
+    @agent.post(
+        "/agent/configuration/probe", response_model=OPERATION_OUTPUTS["agent.config.probe"]
+    )
+    async def probe_model(request: Request, principal: Actor, args: ModelProbe):
+        return await invoke(request, principal, "agent.config.probe", args.model_dump())
+
+    @agent.post("/agent/configuration/test", response_model=OPERATION_OUTPUTS["agent.config.test"])
+    async def test_model_configuration(request: Request, principal: Actor, args: ModelTest):
+        return await invoke(request, principal, "agent.config.test", args.model_dump())
+
+    @agent.post(
+        "/agent/conversations",
+        status_code=201,
+        response_model=OPERATION_OUTPUTS["agent.conversation.create"],
+    )
+    async def conversation_create(request: Request, args: ConversationCreate, principal: Actor):
+        return await invoke(request, principal, "agent.conversation.create", args.model_dump())
+
+    @agent.get("/agent/conversations", response_model=OPERATION_OUTPUTS["agent.conversation.list"])
+    async def conversation_list(
+        request: Request, principal: Actor, args: Annotated[ConversationQuery, Query()]
+    ):
+        return await invoke(request, principal, "agent.conversation.list", args.model_dump())
+
+    @agent.get(
+        "/agent/conversations/{identifier}",
+        response_model=OPERATION_OUTPUTS["agent.conversation.get"],
+    )
+    async def conversation_get(
+        request: Request,
+        principal: Actor,
+        identifier: str,
+        before: str = "",
+        limit: Annotated[int, Query(ge=1, le=20)] = 10,
+    ):
+        return await invoke(
+            request,
+            principal,
+            "agent.conversation.get",
+            {"identifier": identifier, "before": before, "limit": limit},
+        )
+
+    @agent.post(
+        "/agent/conversations/archive",
+        response_model=OPERATION_OUTPUTS["agent.conversation.archive"],
+    )
+    async def conversation_archive(request: Request, args: ConversationArchive, principal: Actor):
+        return await invoke(request, principal, "agent.conversation.archive", args.model_dump())
+
+    @agent.post(
+        "/agent/conversations/rename", response_model=OPERATION_OUTPUTS["agent.conversation.rename"]
+    )
+    async def conversation_rename(request: Request, args: ConversationRename, principal: Actor):
+        return await invoke(request, principal, "agent.conversation.rename", args.model_dump())
+
+    @agent.get("/agent/capabilities", response_model=OPERATION_OUTPUTS["agent.capabilities"])
+    async def assistant_capabilities(request: Request, principal: Actor):
+        return await invoke(request, principal, "agent.capabilities")
+
+    @agent.post("/agent/runs", status_code=202, response_model=OPERATION_OUTPUTS["agent.start"])
+    async def assistant_start(request: Request, args: RunStart, principal: Actor):
+        return await invoke(request, principal, "agent.start", args.model_dump())
+
+    @agent.get("/agent/runs", response_model=OPERATION_OUTPUTS["agent.list"])
+    async def assistant_runs(
+        request: Request, principal: Actor, args: Annotated[AgentQuery, Query()]
+    ):
+        return await invoke(request, principal, "agent.list", args.model_dump())
+
+    @agent.get("/agent/runs/{identifier}", response_model=OPERATION_OUTPUTS["agent.get"])
+    async def assistant_run(request: Request, identifier: str, principal: Actor):
+        return await invoke(request, principal, "agent.get", {"identifier": identifier})
+
+    @agent.post("/agent/runs/decision", response_model=OPERATION_OUTPUTS["agent.decide"])
+    async def assistant_decide(request: Request, args: RunDecision, principal: Actor):
+        return await invoke(request, principal, "agent.decide", args.model_dump())
+
+    @agent.post("/agent/runs/cancel", response_model=OPERATION_OUTPUTS["agent.cancel"])
+    async def assistant_cancel(request: Request, args: RunCancel, principal: Actor):
+        return await invoke(request, principal, "agent.cancel", args.model_dump())
 
     @data.post("/data/aggregate", response_model=OPERATION_OUTPUTS["data.aggregate"])
     async def aggregate(body: AggregateRequest, request: Request, *, principal: Actor):
@@ -529,6 +680,7 @@ def router(application, *, registry, prefix="/api/v2"):
         )
 
     api.include_router(identity)
+    api.include_router(agent)
     api.include_router(access)
     api.include_router(data)
     return api

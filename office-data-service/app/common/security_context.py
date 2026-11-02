@@ -3,3 +3,4 @@
 from contextvars import ContextVar
 
 actor_context: ContextVar[str | None] = ContextVar("office_actor", default=None)
+agent_run_context: ContextVar[str | None] = ContextVar("office_agent_run", default=None)

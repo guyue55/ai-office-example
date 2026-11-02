@@ -161,6 +161,7 @@ def test_server_rejects_owner_runtime(tmp_path):
 
 
 def test_oauth_rejects_wrong_state_before_code_exchange():
+    import socket
     from concurrent.futures import ThreadPoolExecutor
     from queue import Queue
     from urllib.parse import parse_qs, urlparse
@@ -175,24 +176,25 @@ def test_oauth_rejects_wrong_state_before_code_exchange():
             self.saved = True
 
     store, urls = EmptyStore(), Queue()
+    # 不占用员工实际登录常用的8765端口，测试只连接本轮临时监听器。
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    callback = f"http://127.0.0.1:{port}/callback"
     oauth = OAuth("http://127.0.0.1:8800", store, browser_open=urls.put)
     oauth._config = {
         "issuer": "http://127.0.0.1:8081/realms/office",
         "client_id": PRODUCT["client_id"],
-        "redirect_uri": "http://127.0.0.1:8765/callback",
+        "redirect_uri": callback,
         "scope": "openid office",
     }
     try:
         with ThreadPoolExecutor(max_workers=1) as executor:
             result = executor.submit(oauth.login, 5)
             state = parse_qs(urlparse(urls.get(timeout=2)).query)["state"][0]
-            wrong = httpx.get(
-                "http://127.0.0.1:8765/callback", params={"code": "injected", "state": "wrong"}
-            )
+            wrong = httpx.get(callback, params={"code": "injected", "state": "wrong"})
             assert wrong.status_code == 400
-            httpx.get(
-                "http://127.0.0.1:8765/callback", params={"error": "access_denied", "state": state}
-            )
+            httpx.get(callback, params={"error": "access_denied", "state": state})
             with pytest.raises(ClientError, match="未完成授权"):
                 result.result(timeout=2)
         assert not store.saved

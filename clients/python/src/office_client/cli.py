@@ -3,6 +3,7 @@
 import hmac
 import json
 import sys
+from importlib import import_module
 from importlib.metadata import version
 
 import httpx
@@ -35,6 +36,9 @@ def build_parser():
     )
     parser.add_argument("--config", help="读取安装器生成的公开连接JSON")
     sub = parser.add_subparsers(dest="action", metavar="命令", prog=parser.prog)
+    agent = sub.add_parser("agent", help="运行可选的独立员工端Agent")
+    agent.add_argument("--agent-config", required=True, help="可信Agent TOML配置")
+    agent.add_argument("--prompt", required=True, help="单次自然语言任务，请勿输入秘密")
     for name in ("logout", "whoami", "capabilities", "auth-status"):
         sub.add_parser(name)
     login = sub.add_parser("login", help="浏览器PKCE授权；授权链接仅供同机浏览器使用")
@@ -150,6 +154,14 @@ def main():
     if args.action is None:
         parser.print_help()
         return
+    if args.action == "agent":
+        if args.service or args.config or args.lan_http_demo:
+            parser.error("Agent使用--agent-config中的服务与模型配置，不混用普通连接参数")
+        try:
+            agent_main = import_module("office_agent.cli").main
+        except ImportError:
+            parser.exit(2, "尚未安装可选Agent包；请按clients/agent/README.md安装，不会自动下载。\n")
+        raise SystemExit(agent_main(["--config", args.agent_config, "--prompt", args.prompt]))
     if args.action == "login" and not 30 <= args.timeout <= 600:
         parser.error("登录等待时间必须为30–600秒")
     if not args.service and args.action != "doctor":

@@ -21,6 +21,9 @@
 | 设置品牌／创建新企业 | [配置边界](docs/CONFIGURATION.md)、template.toml、scripts/new_project.py、scripts/configure_template.py |
 | 服务端／员工部署 | [INSTALL.md](INSTALL.md)、对应安装脚本及其帮助 |
 | 开发、检查、活体验收 | [CONTRIBUTING.md](CONTRIBUTING.md)、[验收记录与边界](docs/ACCEPTANCE.md) |
+| 控制台与助手整体体验升级 | [整体UI方案及阶段清单](docs/UI_UPGRADE_PLAN.md)、tests/ui-pages.json；局部通过不能代替全部阶段完成 |
+| Agent前端选型／CopilotKit示例研究 | [路线与证据核查](docs/COPILOTKIT_FRONTEND_RESEARCH.md)；含产品范围、模型配置前置、交互数据流及阶段门槛；仍为研究草案，不代表已接入AG-UI或新前端 |
+| 模型协议与管理员配置 | [三协议与文件格式](docs/AGENT_MODEL_CONFIGURATION.md)、[管理闭环复核方案](docs/MODEL_CONFIGURATION_MANAGEMENT.md)、[管理操作与恢复](docs/MODEL_CONFIGURATION_OPERATIONS.md)；协议、保存、应用与供应商可用分别验收；托管模式需迁移、独立秘密和允许出口 |
 | 追溯模板来源与实现 | [来源](docs/SOURCE.md)、[实现记录](docs/IMPLEMENTATION.md) |
 | 通过 AI 操作真实服务 | [SKILL.md](office-skills/SKILL.md)、[RULES.md](office-skills/RULES.md)，再按情境读 references |
 
@@ -31,7 +34,7 @@
 | 路径 | 职责与约束 |
 |---|---|
 | office-data-service/app/common/ | 通用基础与产品元信息，不承载业务编排 |
-| office-data-service/app/modules/ | access 身份与权限、data 容器与版本记录、query 受控查询；保持模块边界 |
+| office-data-service/app/modules/ | access 身份与权限、data 容器与版本记录、query 受控查询、agent 本人任务与决定记录；保持模块边界 |
 | office-data-service/app/application/ | 应用操作注册与编排 |
 | office-data-service/app/infrastructure/ | 数据库、身份服务、配置等适配 |
 | office-data-service/app/entrypoints/ | HTTP、MCP、Web、CLI 入口，复用应用能力，不复制授权与业务规则 |
@@ -46,7 +49,7 @@
 
 依赖方向由 scripts/check_architecture.py 核查。业务模块不反向依赖 application 或传输入口；通用层不依赖业务／基础设施／传输层。新增入口必须复用服务端权限、审计和操作注册，不能建立旁路。
 
-**服务端与 Web 没有 AI、不调用模型、不运行 Agent；客户端不直连数据库。** AI 理解、清洗与表达由员工 AI 工具承担；服务端负责受控数据管理和确定性校验。MCP 是受控工具入口，不是任意 SQL 或服务端 Agent。
+**Agent分支范围更新（2026-10-25）：用户已明确要求服务端和员工端都支持AI，整体升级为智能体基座。** 采用共享运行时、员工端SDK适配、服务端原应用异步适配及外部HTTP／MCP接入；具体设计及真实完成状态见[总体方案](docs/AGENT_PLATFORM_DESIGN.md)和[执行计划](docs/AGENT_PLAN.md)。服务端Agent和Web助手已实现；全局侧栏／持久会话见[工作区计划](docs/AGENT_WORKSPACE_PLAN.md)，须维护服务端历史、本人有效权限指纹和单会话串行，不允许浏览器上传模型历史或自批。未来增加项目级数据范围或安全维度时，必须同时扩展Access.authorization_fingerprint与历史可见性，不能仅改前端筛选。运行配置、单进程约束与验收边界见[运行指南](docs/AGENT_OPERATIONS.md)，不能将可选依赖安装当成能力已上线。客户端和模型都不直连数据库；模型调用不得替代原权限、版本、幂等和审计。
 
 FastAPI 请求链路保持异步：复用现有异步数据库、HTTP 和生命周期管理，不在事件循环执行阻塞 I/O 或重计算；必要的阻塞操作应明确隔离并验证取消、超时和资源释放。不能跨并发任务共享同一个有状态数据库会话。
 
@@ -136,6 +139,7 @@ uv sync --frozen
 | 任务 | 执行顺序 |
 |---|---|
 | 日常修改 | 核对仓库／分支与已有修改 → 相关门禁 → 文档同步 → 明确文件提交；受保护 main 走 PR |
+| 可选Agent变更 | 先读AGENT_PLAN与AGENT_OPERATIONS；共享引擎及三协议HTTP回归／内部桥／隔离PG／浏览器；会话变更额外检查test_agent_conversations_postgres及test_assistant_workspace_browser，普通与Agent镜像分别核验；新版本同步两份锁文件和Agent模块版本 |
 | 模型、业务码、数据库变更 | 真实模型／注册表 → 生成并审核契约 → 配套迁移与兼容验证，不手改生成指纹 |
 | 发版准备 | 确定版本／范围 → 同步 VERSION、工作区包、锁文件、OpenAPI 与发布说明 → 最终源码提交及 CI |
 | 候选构建 | 显式传当前版本 Tag 参数与新输出目录 → 核对两个 manifest 的 SHA → 摘要、许可与隔离安装验收 |
@@ -157,4 +161,136 @@ uv sync --frozen
 - 镜像首次创建通常是私有；源码公开不证明镜像公开。独立核验包可见性、匿名拉取、平台、镜像内版本／来源及隔离容器运行。GitHub 网页登录或二次验证由本人处理，不索取密码，不用未公开接口绕过设置。
 - 镜像发布环境已有明确发布授权时可由维护者按平台允许的审核路径继续；不删除审批保护来省略审核。未完成平台审核、匿名拉取或真实运行时，不声明镜像发布验收完成。
 
+- 助手交互修改须同时核对原生工作台表单处理器：已preventDefault的组件提交不能二次导航；局域网HTTP不能依赖randomUUID或Clipboard安全上下文能力。草稿仅按会话保存在页面内存；Markdown保持固定本地解析器、允许列表DOM与许可证，禁止innerHTML及模型图片／嵌入。
+
 - 浏览器验收以页面就绪及具体可见元素／操作结果为依据，不以全局 networkidle 代替业务断言；会话期限探针应独立计时，区分闲置失效、最长寿命与多设备隔离。短周期探针只作用于隔离恢复实例，不修改真实用户策略。
+
+- UI确认页必须展示实际目标与提交字段；额外读取资料须核对版本，隐藏字段只作查询线索。保持原摘要／版本／幂等参数，不以客户端显示信息取代服务端核验。
+- 助手桌面并排为非模态，窄屏全覆盖应隔离背景与循环焦点；尺寸变化和关闭须恢复原状态，共享Dialog／Popover仍负责各自焦点。任务详情与侧栏复用预览摘要，完整服务器预览与无JS阅读不能删除。
+- 页面定位由web/navigation.py集中维护；新页面要验证无JS位置栏及所属导航。单页列表无需翻页或跳转，但每页数量与总数保留。UI独立审阅问题与验收边界持续记录于docs/UI_REVIEW_REMEDIATION.md。
+- 站内真正离页须复用OfficeUI.confirmNavigation核对助手草稿，不依赖宿主可能隐藏的beforeunload提示；刷新／关页仍保留原生保护。原生select picker打开时Esc／Tab先交由浏览器，不穿透关闭父浮层；增强采用能力检测，保持触摸与无JS回退。
+
+- 实例内网地址失效时，先核对网卡与安装公开配置；不得伪造旧IP或只改监听。内置PG、同端口HTTP演示迁址可用deploy/relocate.sh，按docs/INSTANCE_RELOCATION.md预检、备份、停写及验证；旧客户端需更新公开地址并本人重新登录。其他迁移范围不能套用此入口。
+
+## 跨环境发版与验收经验（持续维护）
+
+本节记录可复用规则，不记录“当前已通过”的长期结论。每轮先读取VERSION、实际分支／HEAD、远端Tag／Release和工作流；历史证据见对应`docs/RELEASE_READINESS_<版本>.md`，不能把旧版本测试数量或本机状态当成本轮结果。
+
+1. **版本同步以程序清单为准**：读取prepare_release.py的PROJECTS；当前为根项目及四个工作区的五份pyproject。同步本地包间的精确版本约束、Agent模块版本、根和Agent独立锁文件、真实模型导出的OpenAPI及生成的template-state.json。只改产品版本时审核锁文件差异，不顺带升级第三方依赖。版本保护测试从VERSION取值；历史兼容夹具可固定旧版，但不能全局替换历史记录。
+2. **不绕过实例保护**：配置生成器因runtime足迹拒绝写入时，不删足迹、不改身份、不手改生成状态。仅版本元数据更新可在隔离源码副本运行原生成器，审核输出仅含预期版本差异后回填源码，并执行--check；存在品牌、身份或运行配置差异则按迁移方案另行处理。
+3. **验收分层且保留失败证据**：分别核对普通服务、可选Agent、数据库迁移、UI与安装包。合成身份／模型、隔离PG和真实供应商是不同证据；排除、跳过和未运行不算通过。失败先定位再修复并回归，不通过反复重跑掩盖不稳定。测试环境变量与真实命令以CONTRIBUTING及当前CI为准。
+4. **安装必须消费制品**：普通CLI和可选Agent分别在仓库外临时环境安装候选轮包，核对模块来自安装环境、发行版本、内容指纹、帮助和依赖一致性；不能把editable源码测试当发行包证据。Agent验收目录只放脚本要求的Agent／SDK／契约三份轮包，不把全部发布资产传入三包校验器。不得因此升级全局工具或访问本人凭证。
+5. **来源必须闭合**：所有待交付源码和文档提交后再构建。文档提交、修复或PR合并改变HEAD，旧候选仍属于旧SHA；使用新目录重建并校验两个manifest、verify_release和SHA256SUMS，不手改来源清单。记录构建SHA、安装验收SHA及未重验范围，避免为写入“最终SHA”反复改文档；最终SHA可放交付报告。
+6. **升级查真实迁移head**：读取Alembic链，不抄旧文档中的迁移号；检查权限种子、数据保留和启用条件。全新库迁移成功不等于已有数据升级／备份恢复已验收；应用回退不等于可降级数据库。模型依赖安装、模型配置就绪和真实供应商可用也分别核验。
+7. **交付形态分别核验**：普通镜像默认无Agent依赖；OFFICE_AGENT=1镜像另构建验收，发布工作流是否实际构建／推送该变体须查源码。依赖审计只证明查询时未发现已知漏洞。最终远端CI、跨系统矩阵、镜像公开与双架构、下载复核和运行实例更新分别报告，不互相替代。
+8. **保留用户操作与界面边界**：登录／改密／钥匙串确认由本人完成。助手刷新使用OfficeUI.reloadPage；待HTTP回执时保护离页，已受理的后台任务不阻止导航；结束当前授权先确认草稿再发请求。验证取消无写入、成功有回执及异常不盲目重放，不把UI确认当服务端权限检查。
+
+后续发现可复用问题时，将短规则更新到本文，命令和分支步骤更新到[操作手册](docs/OPERATIONS.md)，逐次事实更新到验收记录；保持三者一致，不将本机IP、秘密路径、凭证或一次性测试状态固化为模板默认值。
+
+- 面板加载／重试修改须同时测试普通抽屉与紧凑开户弹窗，覆盖403／5xx、取消重开及成功恢复；设置hidden=false不证明可见，必须检查CSS最终效果。错误提示不能直接展示整份main，失败标题不能继续显示加载中；保留有界错误和显式只读重试。
+
+- 托管模型配置管理只面向人工HTTP/Web；不可把密钥操作注册为Agent/MCP工具。保存不等于应用，测试必须明确费用确认。新增迁移与独立根密钥／允许出口需同步部署和恢复说明；不读取旧密钥填表、不覆盖根密钥来修复解密失败。
+
+- 原生表单的等待反馈使用共享`office:submit-approved`事件，确认取消不能进入busy；不可提前禁用待序列化的输入字段。原生reset后的依赖UI在默认重置完成后再同步，不能假定微任务一定晚于reset；密码不纳入草稿快照。设置页布局使用容器查询，兼容助手并排，保留无JS与减少动态回退。
+
+- 托管模型出口默认public；旧非空白名单未写策略保留allowlist。保存不发网络请求，实际调用必须使用受控transport逐请求解析、校验全部IP并固定连接，保留Host／SNI／证书校验；员工Agent及文件模式另有原边界。测试只用固定合成提示，不要求业务外发许可；启用仍要求。测试结果必须绑定不可变修订且持久化，重启中断不自动重试，撤权不能抹掉已发生的结果。
+- 原生多提交按钮须保留submitter的formaction与专属确认文案；Enter默认无费用保存。共享等待事件携带实际按钮，不能把所有按钮同时改成同一阶段文案。
+
+- 模型HTTP传输预算与业务输出预算独立；托管出口在SDK读取／解析前限制原始及解压后字节，错误体也受限。有界解压不得依赖无硬上限flush，未知压缩不直接交SDK解码。合成探针响应额外收紧至64KiB。
+- 模型测试收尾必须覆盖开始提交、网络、输出校验与结果事务；请求取消不能丢失已知结果，也不能释放后立即重复计费。收尾独立任务需持有、观察和等待，并有时限；恢复排除真实活跃ID，不重发模型。DB故障只能报告回执未知，不能宣称调用未发生。
+
+
+- 双变体交付：`OFFICE_AGENT=0/1`与镜像引用在建库前统一解析；文件／环境冲突不可静默覆盖，未设置与显式0不能混淆。普通与Agent镜像分别构建、运行、记录来源；发布矩阵须分离标签／摘要／证明，不能因工作流存在就声称远端已发布。
+- 模型恢复必须配套数据库与独立加密根密钥；隔离dump/restore验证活动修订、未应用草稿、缺失／错误密钥降级及普通功能，不能覆盖真实根密钥来修复。隔离同集群恢复不等于跨机整实例灾备验收。
+
+- 模型DNS默认支持统一auto兼容，不要求业务人员逐供应商维护清单；可信解析器由运维统一设置。保留正常系统解析及已授权私网目标，不对私有解析结果做公共兜底；限定域名只属显式高级模式，旧配置兼容保持原语义。不把DoH当作绕过地址校验。DNS与模型响应都须有界、可取消、关闭资源；新增错误分类同步输出枚举和导出的契约。修复网络不代表模型有效，历史测试不重写，不自动重复计费调用。
+
+- Web Cookie必须按受信public_url派生实例命名空间（含端口），涵盖登录、再次认证、退出和授权终止；不从请求Host生成，不清理其他实例Cookie。重启仍结束内存会话，统一提供本站恢复入口，不放宽PKCE／浏览器绑定或回放旧回调。Cookie命名隔离不能当作同主机恶意服务的安全边界。
+- 连接探针预算与普通数据库操作预算分开；页面说明有效测试时限，保留独立收尾及费用确认。网关参数用结构化header/query，秘密经独立凭证通道；无密钥模式不读宿主密钥、不发占位认证。服务契约与独立Agent保持校验一致并有对照回归；禁止为了复用将可选Agent依赖引入普通服务。内网HTTP模型须独立明确授权，不套用企业服务HTTP演示许可。
+- 模型目录与当前输入测试不以保存为前提，但只能由人工管理入口调用，不能注册成Agent/MCP工具。目录需有页数、ID数量、字节和总时限边界，截断与无目录手填通路必须可见。临时测试沿用同一收尾／恢复组件，revision=null且请求去重；不可自动绑定到保存修订或重发收费请求。
+- 密钥显隐输入使用data-sensitive等稳定标记，脏表单快照不能只按type=password排除。保留密钥且更换目标时明确确认沿用；不把占位星号当密钥，不向浏览器回填原值。保存并启用分阶段失败要准确报告，不把保存成功说成全失败。
+
+- 会话流式复用共享运行时observe、任务内progress及同源SSE；展示seq不改审批version。SSE重连仅回读已有任务，每次核验身份和权限；断线不取消任务，不重放写入。订阅代次必须隔离迟到事件，关闭和BackgroundTask释放幂等，失权清空旧内容。
+- 模型连接测试与正式任务必须使用相同stream_output配置；不支持流式时由管理员显式关闭，失败不自动降级重发。ThinkingPart／签名不是可直接公开的摘要，禁止透传。UI增量更新需保留选区、焦点及阅读位置；完整门禁增加test_agent_progress_postgres、test_assistant_progress_browser和流式／非流式test_assistant_browser_postgres。
+
+- 进度DOM标记在初始空正文和终态时保持稳定，只隐藏／清空内容，不删除后续querySelector依赖的标记；浏览器须覆盖空→有内容→终态→再次同步并捕获pageerror。模型目录调用成功不能当业务查询成功。模型事件消费不能等待进度落库，观察采用有界最新槽、单任务保存及终态／取消清理；参数为空须区分供应商原始结构与SDK解析时序。只读／预览操作使用`read_*`／`prepare_*`具名工具，参数不合规返回结构化提示而非终止整轮；执行工具、网络异常与未知回执不得自动重试。模型出口的域名解析失败须与模型协议错误分开报告。只读工具必须全部常驻（按页面隐藏会导致模型不搜索而循环超限）；变更预览可按明确意图预载，其余用内置`search_tools`发现，搜索只影响可见性，不替代服务端权限。完整排障、工具装载与验收步骤见第 9 节。
+
+- Agent流式驱动使用公开的逐节点接口，完整消费ModelRequestNode后才进入工具节点；普通／流式及审批恢复共用累计预算与每次模型请求前的身份核验。真实供应商原始参数完整但SDK校验为空时，检查事件消费和节点推进顺序，不能通过猜参数、自动重试或默认关闭流式掩盖。临时诊断只存结构元信息，验收后移除，最终须在无诊断注入的实例复验。
+
+## 9. 智能助手对话失败排障与工具装载（2026-10-29）
+
+本节记录一次真实故障的根因、修复和验收方法；新环境遇到“处理记录 N 项后失败”“工具参数格式不正确”“页面报 null.hidden”时先照此排查。
+
+### 9.1 症状 → 根因 → 修复
+
+| 症状 | 根因 | 修复 |
+|---|---|---|
+| 前端 Cannot set properties of null (setting hidden) | 终态时删除 data-progress-text 标记，后续重绘仍查询该节点 | 保留标记，只隐藏并清空；回归覆盖“空正文→增量→终态→再次同步”并捕获 pageerror（tests/test_assistant_progress_browser.py） |
+| 进度显示“1 项已完成”后整轮失败、参数为空 | 进度写库同步 await 观察端，阻塞模型事件流消费 | Progress 改为单工作任务 + 单一最新待保存槽；终态 flush，取消时清理（clients/agent/src/office_agent/progress.py） |
+| 流式与非流式结果不一致、工具未执行 | agent.run(event_stream_handler=...) 与节点推进时序 | 使用公开 Agent.iter() + node.stream(run.ctx)，完整消费 ModelRequestNode 后再进入工具节点 |
+| 模型先查身份、再发“空参数”调用 | 通用工具 read_office(operation, arguments) 依赖模型拼参数；该模型收到一次纠错仍重复空参数 | 20 个只读操作拆成 read_ 前缀具名工具，9 个变更拆成 prepare_ 前缀；参数不合规返回结构化 invalid_arguments，不抛异常终止整轮 |
+| 预览时整轮崩溃 | 工具内部非业务异常（如把 change 传成纯文本触发 AttributeError）未被兜住 | 工具异常转结构化结果并记录类型；预览失败明确“未执行任何变更”；预览工具说明写明对象结构 |
+| 模型域名解析失败却显示“模型或工具执行失败” | 出口异常被当作未知异常 | 捕获 ModelEgressError，按 dns／policy 输出明确提示，请求未发出、未自动重试 |
+| 按页面隐藏只读工具后预算超限 | 模型不调用搜索，反复查核心工具 | 只读工具全部常驻；仅变更预览延迟加载；该激进方案已回退 |
+
+### 9.2 工具装载策略（clients/agent/src/office_agent/toolsets.py）
+
+- 只读组 core/data/access/account（20 个 read_ 工具）每次全部可见，不按页面裁剪，保证任意页面都能查询。
+- 变更组 data_write/access_write/account_write（9 个 prepare_ 工具）默认延迟加载；提示词出现“新建、创建、上报、提交、确认、更正、归档”等意图时预载对应组。
+- 未预载时使用 Pydantic AI 内置 ToolSearch 能力：不支持原生 tool search 的供应商会得到本地 search_tools；自定义策略支持中文同义词（“待认领身份”“客户端授权”等）。
+- execute_write 始终可见，仍须外部真人批准；工具可见性只影响上下文，权限、版本、幂等和审计全部由服务端逐次核验。
+- 参考：Anthropic Advanced tool use（常驻 3–5 个高频工具、其余按需发现）、OpenAI Tool search（defer_loading、命名空间≤10）。不要把“隐藏只读工具”当作省 token 手段。
+
+### 9.3 真实服务验收步骤
+
+1. 静态与单元门禁：
+
+        uv run --project clients/agent --frozen pytest clients/agent/tests -q
+        uv run --extra agent --frozen pytest -m 'not live' -q
+        uv run mypy office-data-service/app clients/python/src clients/agent/src --check-untyped-defs
+        uv run ruff check clients/agent/src clients/agent/tests
+
+2. 构建可选 Agent 镜像并更新实例：
+
+        docker build --build-arg OFFICE_AGENT=1 -f deploy/Dockerfile -t office-conversation:<tag> .
+        # 修改 runtime/<实例>/compose.json 中 service/setup 的 image，再：
+        docker compose -f runtime/<实例>/compose.json up -d --no-deps service
+        curl -s -o /dev/null -w '%{http_code}\n' <public_url>/health/ready
+
+   同步更新实例 installation.json 的 image／commit；核对容器内 office_agent/runtime.py、toolsets.py 与仓库源码 sha256 一致。
+
+3. 运行态证据（数据库只读）：
+
+        docker compose -f runtime/<实例>/compose.json exec -T postgres psql -U postgres -d office -Atc \
+          "SELECT created_at,status,result->'usage',progress->'steps' FROM office.agent_run ORDER BY created_at DESC LIMIT 3;"
+        docker compose -f runtime/<实例>/compose.json logs --since 10m service | rg 'OfficeAgent/(failed|validate|egress|cause)'
+
+   completed + steps 含预期操作 + 无 validate/egress 错误，才算真实链路通过；requests=0 的失败先查出口与容器重启。
+
+4. 建议提示词（覆盖查询、跨组、越界、预览）：
+   “我具备的权限”“查询可访问的数据容器并说明覆盖范围，不要修改”“查询待认领身份，最多 5 条”“列出服务路径和系统信息”“预览新建项目 X，只预览不执行”。预览后必须核对业务表未变化、未产生写入。
+
+5. 业务数据不变校验（只读）：
+
+        SELECT jsonb_build_object('count', count(*),
+               'digest', md5(coalesce(string_agg(md5(row_to_json(t)::text), '' ORDER BY md5(row_to_json(t)::text)), '')))
+        FROM office.<table> t;
+
+   对 project / project_creation / project_schema / record / record_confirmation 验收前后逐表比对。浏览器侧检查“完成后再同步会话状态”无页面错误、控制台无应用报错。
+
+### 9.4 常见误修
+
+- 不要用 prepare 返回 None 隐藏工具：该工具会变成“未知工具”，模型无法恢复，整轮直接失败。
+- 不要依赖“让模型补参数”的纠错：弱模型会重复空参数；应以具名工具 + 结构化参数提示解决。
+- 不要向用户直接展示未知异常类型或模型响应正文；日志只记类型、代码位置与白名单工具名。
+- 不要为了省 token 默认关闭流式；流式与非流式必须使用同一配置，失败不自动降级重发。
+- 实测收益：只读常驻方案约降 11%–17% token、耗时约 6.5–10 秒；若未来接入更多 MCP 工具，再做按角色/意图分组，并以“查询不失败”为前置门槛。
+
+### 9.5 第二阶段（暂不实施）与当前取舍
+
+- **当前选择：只读常驻、写入按需。** 20 个 read_ 工具全部可见；9 个 prepare_ 工具按意图预载（新建/创建/上报/提交/确认/更正/归档等），未命中时用内置 search_tools 发现。这是可靠性与成本之间更稳的平衡：按页面隐藏只读工具时，真实模型不调用搜索而是重复核心查询，最终预算超限，该方案已回退。
+- **触发条件（满足任一才推进第二阶段）：** ① 接入更多 MCP 数据源、工具数量明显增长（经验阈值：工具总数超过约 40，或工具 schema 明显超过 1 万 token）；② 现有分组仍出现明显选错工具或延迟；③ 业务需要按角色/页面强约束可见能力。
+- **第二阶段方案：按角色/意图分组 + 搜索发现。** 常驻 3–5 个高频核心工具，其余按组延迟加载；分组建议不超过 10 个工具（OpenAI Tool search 建议），组名与描述要可检索；可用 Pydantic AI ToolSearch（无原生支持的供应商走本地 search_tools）、OpenAI tool search 或 Anthropic Tool Search。
+- **权限边界不变：** 分组只影响上下文可见性，不替代服务端权限；不要硬编码角色名称，按权限/页面意图映射分组，并随权限变更实时生效。
+- **进入第二阶段的门槛：** 跨组查询成功率不低于当前；token 与延迟有实测下降；不存在因隐藏工具导致的未知工具或预算超限回归；先在隔离实例影子运行，再切换在用实例。
+- **当前状态：** 第二阶段仅记录、未实施。任何实施前先复测工具 schema 的实际 token 与真实查询成功率，不以理论收益替代实测。
