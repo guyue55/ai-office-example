@@ -51,6 +51,7 @@ def test_managed_no_auth_revision_does_not_require_or_decrypt_secret(tmp_path, m
     import asyncio
     from types import SimpleNamespace
 
+    pytest.importorskip("office_agent", reason="需uv sync --extra agent，独立Agent门另行执行")
     from app.application.model_runtime import prepare_runtime
 
     def forbidden(*args):
@@ -100,6 +101,7 @@ def test_managed_no_auth_revision_does_not_require_or_decrypt_secret(tmp_path, m
     ],
 )
 def test_managed_and_employee_gateway_validation_agree(options):
+    pytest.importorskip("office_agent", reason="需uv sync --extra agent，独立Agent门另行执行")
     from office_agent.config import AgentConfig
 
     outcomes = []

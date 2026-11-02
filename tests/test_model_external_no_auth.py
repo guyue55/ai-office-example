@@ -5,11 +5,13 @@ from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import pytest
 from app.application.agent_service import AgentCoordinator
 from app.infrastructure.config import Settings
 
 
 def test_external_no_auth_starts_without_reading_key(tmp_path, monkeypatch):
+    pytest.importorskip("office_agent", reason="需uv sync --extra agent，独立Agent门另行执行")
     config = tmp_path / "agent.toml"
     config.write_text(
         'service_url="https://office.invalid"\nmodel_url="https://model.invalid/v1"\nmodel="fixture"\nauth_mode="none"\napproved_model_data=true\n'

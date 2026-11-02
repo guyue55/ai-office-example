@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 
+import pytest
 from app.modules.agent.outputs import RunView
 
 
@@ -35,6 +36,7 @@ def test_run_view_exposes_bounded_progress_without_requiring_it_for_old_tasks():
 
 
 def test_stream_setting_is_explicit_and_shared_with_managed_configuration():
+    pytest.importorskip("office_agent", reason="需uv sync --extra agent，独立Agent门另行执行")
     from app.modules.agent.model_configuration import ModelDraft
     from office_agent.config import AgentConfig
 

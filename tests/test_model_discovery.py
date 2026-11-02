@@ -6,6 +6,9 @@ from types import SimpleNamespace
 
 import httpx2
 import pytest
+
+pytest.importorskip("office_agent", reason="需uv sync --extra agent，独立Agent门另行执行")
+
 from app.application.model_discovery import discover_models
 from office_agent.config import AgentConfig
 from office_agent.providers import configured_model

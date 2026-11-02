@@ -4,6 +4,10 @@ import asyncio
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
+import pytest
+
+pytest.importorskip("office_agent", reason="需uv sync --extra agent，独立Agent门另行执行")
+
 from app.application.model_runtime import test_runtime as probe
 from office_agent.config import AgentConfig
 from pydantic_ai.messages import ModelResponse, TextPart
