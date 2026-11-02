@@ -36,6 +36,7 @@ PAGE_PATHS = {
     "assistant.html": "/console/assistant",
     "assistant_task.html": "/console/assistant/task",
     "assistant_workspace.html": "/console/assistant/workspace",
+    "login_recovery.html": "/auth/callback",
 }
 
 
