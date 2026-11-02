@@ -82,8 +82,9 @@ def test_hosted_runner_waits_for_owned_decision_then_records_result(request, sto
         try:
             async with factory.begin() as db:
                 access = await Access.create(db, user, str(uuid4()), exclusive=True)
+                # 写意图用于预载变更预览工具；避免合成模型绕过search_tools直接调用延迟工具。
                 row, _ = await AgentRecords(access).create(
-                    "测试", uuid4().hex, "a" * 64, per_user=2, total=8
+                    "上报记录", uuid4().hex, "a" * 64, per_user=2, total=8
                 )
             runner.launch(row.id, authenticate)
             task = runner.tasks[row.id]

@@ -446,6 +446,8 @@ def test_no_key_gateway_saved_tested_applied_and_reloaded(request, tmp_path, mon
                             "model_url": "https://model.invalid/v1",
                             "model": "fixture",
                             "auth_mode": "none",
+                            # 合成服务只返回非流式JSON，显式关闭流式以匹配测试替身。
+                            "stream_output": False,
                             "extra_headers": {"x-route": "blue"},
                             "extra_query": {"api-version": "2026-01-01"},
                             "approved_model_data": True,
