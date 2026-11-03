@@ -12,7 +12,12 @@
 
 - `prepare_release.py --check --tag v1.1.1`、`configure_template.py --check`、`export_contracts.py --check` 通过。
 - 候选 17 份资产；`verify_release.py`（全 SHA）、`SHA256SUMS`、`check_client_install` 通过。
-- 镜像 `1.1.1` / `1.1.1-agent` 公开、双架构；OCI revision/version 与 base/agent 差异核对。
+- 镜像：`image-release` 运行因 Agent checks 失败被取消，`1.1.1`／`1.1.1-agent` **未发布**（匿名拉取确认不存在）。
+
+## 发布后的缺陷与替代
+
+- `clients/agent/pyproject.toml` 与 `office-data-service/pyproject.toml` 的本地包精确约束仍为 1.1.0，导致 `office_agent-1.1.1` 轮包不可安装（`verify_install.py` 失败）。
+- 按规范不覆盖已发布 Tag 与资产，改用 **v1.1.2** 修复；本版 Release 描述已加提示。
 
 ## 边界
 
