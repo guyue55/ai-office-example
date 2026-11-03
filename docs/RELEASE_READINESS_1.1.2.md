@@ -24,3 +24,10 @@
 
 - v1.1.1 的 Agent 轮包不可用；已发布 Tag／资产不覆盖，改用本版。
 - 实例升级与全局客户端更新不在本补丁范围。
+
+## 2026-11-03 发布记录
+
+- 附注 Tag `v1.1.2` 指向 `4fc2d9aa00d8d6b72da6de7c863ef09b2da2a004`（合并后 main）；GitHub Release 已发布并标记 Latest，17 份资产。
+- 下载后复核：`verify_release.py`（全 SHA）、`SHA256SUMS`、`check_client_install`（office 1.1.2）通过。
+- 镜像 `ghcr.io/guyue55/ai-office-example/data-service:1.1.2`、`:1.1.2-agent` 及对应 `sha-*` 标签公开、双架构（amd64／arm64）；OCI revision `4fc2d9a`、version `1.1.2`；base 无 `office_agent`，agent 含 `office-agent 1.1.2`。`ENABLE_IMAGE_RELEASE` 已恢复 `false`。
+- 为消除 `test_model_settings_browser` 在 Linux CI 的重复超时，测试增加了保存后 `wait_for_load_state("load")` 与 `#model-reset` 启用断言；仅测试改动，未改生产 UI 代码。
