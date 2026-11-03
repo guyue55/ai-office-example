@@ -200,9 +200,15 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
                 expect(page.locator("#model-secret")).to_have_value("")
                 expect(page.locator("#model-key-label")).to_have_text("已配置")
                 assert "synthetic-browser-model-key" not in page.content()
+                # 保存会整页导航；等待 load 确保 model-settings.js 已完成初始化再 fill，
+                # 否则已填值可能被初始化当作 baseline，导致“还原修改”一直不可用。
+                page.wait_for_load_state("load")
+                expect(page.locator("#model-url")).to_have_value("https://model.invalid/v1")
                 page.locator("#model-url").fill("https://other.invalid/v1")
                 page.get_by_role("button", name="获取模型列表", exact=True).click()
                 expect(page.locator("#model-inline-result")).to_contain_text("请确认沿用原密钥")
+                # 变更后重置按钮必须可用；失败时立即暴露，不靠30秒点击超时。
+                expect(page.locator("#model-reset")).to_be_enabled()
                 page.get_by_role("button", name="还原修改", exact=True).click()
                 expect(page.locator("#model-url")).to_have_value("https://model.invalid/v1")
                 # 更换与显示不向脏表单快照加入秘密。
