@@ -200,7 +200,9 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
                 expect(page.locator("#model-secret")).to_have_value("")
                 expect(page.locator("#model-key-label")).to_have_text("已配置")
                 assert "synthetic-browser-model-key" not in page.content()
-                # 等待保存后的导航完成，避免后续 fill 与页面重载竞争。
+                # 保存会整页导航；等待 load 确保 model-settings.js 已完成初始化再 fill，
+                # 否则已填值可能被初始化当作 baseline，导致“还原修改”一直不可用。
+                page.wait_for_load_state("load")
                 expect(page.locator("#model-url")).to_have_value("https://model.invalid/v1")
                 page.locator("#model-url").fill("https://other.invalid/v1")
                 page.get_by_role("button", name="获取模型列表", exact=True).click()
