@@ -106,3 +106,9 @@ OFFICE_QUERY_PG_TESTS=1 OFFICE_IDENTITY_CONTAINER_TESTS=1 uv run --extra agent -
 ```
 
 第一项验证真实Keycloak管理接口及越权拒绝；第二项执行正式PG迁移和真实身份端口，覆盖预览零创建、提交去重、临时凭证准备及重复领取拒绝、最终启用、已有账号关联和撤权后启停不补权。授权主体仍为合成Principal，执行器由测试显式驱动；不证明浏览器OIDC登录、再次认证、首次改密、后台轮询或邮件投递完成。相关浏览器回归应独立运行，不能据分层通过声称同一真实端到端链路全部通过。临时容器和秘密在夹具收尾清理；失败不自动重放真实人员操作。
+
+真实浏览器闭环命令：
+
+    OFFICE_QUERY_PG_TESTS=1 OFFICE_IDENTITY_CONTAINER_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome uv run --extra agent --frozen pytest tests/test_account_oidc_browser.py -q
+
+该浏览器验收使用独立PG、Keycloak和随机回环应用端口，覆盖真实OIDC登录、管理员再次认证、后台执行器轮询、临时密码一次性显示、员工首次改密、停用拒绝、重新启用后的新登录，以及旧会话不复活。失效会话可能由Web层返回403或重定向到/console／身份服务，均须确认没有继续返回受保护页面；仍不覆盖邮件投递、异常中断恢复和在用实例。
