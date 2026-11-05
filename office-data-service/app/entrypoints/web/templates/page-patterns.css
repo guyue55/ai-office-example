@@ -24,3 +24,18 @@
 @media(max-width:700px) {.task-steps {gap:var(--space-3)}.task-steps li {font-size:12px}.account-profile {grid-template-columns:1fr;gap:var(--space-1)}.account-profile dd {margin-bottom:var(--space-3)}}
 
 .event-time {white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* 选择控制只针对当前页；重置与保存留在同一任务操作区。 */
+.grant-bulk {display:inline-flex;align-items:center;gap:var(--space-2);font-weight:500}
+.grant-bulk[hidden] {display:none}
+[data-selection-count] {margin:0 0 var(--space-3)}
+.account-candidate-edit {border-top:1px solid var(--line);padding-top:var(--space-3)}
+.account-candidate-edit > summary {font-weight:600;color:var(--accent);cursor:pointer}
+.account-candidate-edit[open] > summary {margin-bottom:var(--space-4)}
+
+.applied-filters {display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);margin:0 0 var(--space-4)}
+.applied-filters a {display:inline-flex;align-items:center;gap:var(--space-2);max-width:100%;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-control);font-size:12px;color:var(--ink);background:var(--surface-subtle)}
+.applied-filters a > span:first-child {overflow-wrap:anywhere;min-width:0}
+.applied-filters a:hover {background:var(--soft);border-color:var(--accent);text-decoration:none}
+[data-grant-editor] tbody tr:has(input[type=checkbox]:checked) {background:var(--soft)}
+[data-grant-editor] tbody tr:focus-within {outline:2px solid var(--focus-ring);outline-offset:-2px}

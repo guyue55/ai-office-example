@@ -216,3 +216,33 @@ def test_update_confirmation_does_not_mix_stale_or_unknown_source(web, version, 
     )
     assert response.status_code == 409
     assert "account.submit" not in calls
+
+
+def test_applied_filters_remove_one_condition_and_reset_page():
+    import html
+    import re
+    from urllib.parse import parse_qs, urlsplit
+
+    request = Request(
+        {
+            "type": "http",
+            "scheme": "http",
+            "server": ("testserver", 80),
+            "path": "/console/client-authorizations",
+            "query_string": b"scope=all&state=disabled&since=2026-11-01&page=4&limit=20&actor=ignored",
+            "headers": [],
+        }
+    )
+    rendered = TEMPLATES.get_template("_filters.html").render(
+        request=request,
+        filter_mode="authorizations",
+        me={"permissions": ["session.read.all"]},
+    )
+    assert "移除授权状态筛选：已停用" in rendered
+    assert "移除操作者筛选" not in rendered
+    match = re.search(r'href="([^"]+)" aria-label="移除授权状态筛选', rendered)
+    assert match
+    params = parse_qs(urlsplit(html.unescape(match[1])).query)
+    assert "state" not in params and "page" not in params
+    assert params["scope"] == ["all"] and params["limit"] == ["20"]
+    assert params["since"] == ["2026-11-01"]

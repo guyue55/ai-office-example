@@ -58,6 +58,14 @@ def ui_state():
             await asyncio.sleep(0.01)
         value = context("links.html")
         value["assoc"]["ids"] = ["role"] if state["selected"] else []
+        if state.get("bulk_samples"):
+            value["candidates"] = [
+                {"id": "role", "name": "已选角色", "permission_count": 2, "employee_count": 1},
+                {"id": "second", "name": "候选角色", "permission_count": 1, "employee_count": 0},
+            ]
+            value["assoc"]["ids"] = ["role", "kept"]
+            value["preserved_items"] = [{"id": "kept", "name": "跨页保留角色"}]
+
         if request.query_params.get("saved"):
             value["notice"] = "保存完成"
         return TEMPLATES.TemplateResponse(
@@ -70,6 +78,25 @@ def ui_state():
         state["selected"] = "id_role" in form
         state["writes"] += 1
         return RedirectResponse("/console/links/employees/person/roles?saved=1", 303)
+
+    @app.get("/console/accounts/link")
+    async def link_account(request: Request):
+        value = context("account_link.html")
+        value["search"] = request.query_params.get("q", "")
+        value["found"] = {
+            "notice": "合成账号结果",
+            "items": [
+                {
+                    "id": "remote-one",
+                    "name": "候选人员",
+                    "username": "candidate",
+                    "email": "",
+                    "enabled": True,
+                    "linked_employee_id": None,
+                },
+            ],
+        }
+        return TEMPLATES.TemplateResponse(request, "account_link.html", value)
 
     @app.get("/console/accounts/new")
     async def new_account(request: Request):
@@ -737,4 +764,41 @@ def test_dashboard_cards_open_details_without_stacking_drawer(ui_state):
         expect(fallback.locator("#my-permissions table")).to_be_visible()
     finally:
         plain.close()
+    assert state["writes"] == 0
+
+
+def test_grant_page_selection_preserves_other_page_and_resets(ui_state):
+    page, state = ui_state
+    state["bulk_samples"] = True
+    page.goto(page.url.replace("/console/employees", "/console/links/employees/person/roles"))
+    bulk = page.get_by_role("checkbox", name="选择本页全部选项", exact=True)
+    expect(bulk).to_be_visible()
+    expect(bulk).to_have_js_property("indeterminate", True)
+    outside = page.locator('[name="id_kept"]')
+    expect(outside).to_be_checked()
+    bulk.check()
+    expect(page.locator('[name="id_second"]')).to_be_checked()
+    expect(page.locator("[data-selection-count]")).to_contain_text("本页已选 2 / 2 项")
+    bulk.uncheck()
+    expect(outside).to_be_checked()
+    expect(page.locator("[data-selection-count]")).to_contain_text("其他页或筛选外已选 1 项")
+    page.get_by_role("button", name="撤销本次修改", exact=True).click()
+    expect(page.locator('[name="id_role"]')).to_be_checked()
+    expect(page.locator('[name="id_second"]')).not_to_be_checked()
+    expect(bulk).to_have_js_property("indeterminate", True)
+    expect(page.locator("#grant-status")).to_have_text("当前没有未保存的修改。")
+    assert state["writes"] == 0
+
+
+def test_account_candidate_expands_only_when_selected(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/accounts/link?q=candidate"))
+    editor = page.locator(".account-candidate-edit")
+    expect(editor.locator('input[name="name"]')).not_to_be_visible()
+    expect(page.get_by_text("候选人员 · candidate", exact=True)).to_be_visible()
+    editor.locator("summary").click()
+    expect(editor.locator('input[name="name"]')).to_have_value("候选人员")
+    expect(editor.locator('input[name="remote_id"]')).to_have_value("remote-one")
+    expect(editor.locator('input[name="lookup"]')).to_have_value("candidate")
+    expect(page.locator("dialog[open]")).to_have_count(0)
     assert state["writes"] == 0

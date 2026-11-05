@@ -1,0 +1,37 @@
+{# 仅显示当前页面支持且已经提交的条件，不将未提交表单值当作查询结果。 #}
+{% set labels = {'q':'关键词','action':'操作','status':'状态','state':'授权状态','actor':'操作者','client_id':'客户端','since':'开始日期','until':'结束日期','kind':'操作类型','archived':'归档记录','date_field':'日期类型'} %}
+{% set keys = {
+  'authorizations':['q','state','client_id','since','until','archived','date_field'],
+  'audit':['q','action','actor','since','until'],
+  'operations':['q','status','kind','since','until'],
+  'tasks':['q','status']
+}.get(filter_mode, []) %}
+{% set applied = namespace(items=[]) %}
+{% for key in keys %}
+  {% set value=request.query_params.get(key) %}
+  {% if value and not (key == 'archived' and value == 'false') and not (key == 'date_field' and value == 'created_at') %}
+    {% set display=value %}
+    {% if key == 'status' %}
+      {% set display=(account_statuses|default({})).get(value, (statuses|default({})).get(value,value)) %}
+    {% elif key == 'state' %}
+      {% set display={'active':'未停用','disabled':'已停用','revoked':'已撤销'}.get(value,value) %}
+    {% elif key == 'action' %}
+      {% set display=(audit_actions|default({})).get(value,value) %}
+    {% elif key == 'kind' %}
+      {% set display=(account_actions|default({})).get(value,value) %}
+    {% elif key == 'archived' and value == 'true' %}
+      {% set display='已归档' %}
+    {% elif key == 'date_field' and value == 'last_seen_at' %}
+      {% set display='最近访问' %}
+    {% endif %}
+    {% set applied.items=applied.items+[(key,labels[key],display)] %}
+  {% endif %}
+{% endfor %}
+{% if applied.items %}
+<nav class="applied-filters" aria-label="已应用筛选">
+<span class="muted small">已应用 {{ applied.items|length }} 项</span>
+{% for key,label,display in applied.items %}
+<a href="{{ request.url.remove_query_params([key, 'page']) }}" aria-label="移除{{ label }}筛选：{{ display }}"><span>{{ label }}：{{ display }}</span><span aria-hidden="true">×</span></a>
+{% endfor %}
+</nav>
+{% endif %}

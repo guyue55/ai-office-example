@@ -238,6 +238,7 @@
     "design-tokens.css",
     "_relation_summary.html",
     "_page_patterns.html",
-    "page-patterns.css"
+    "page-patterns.css",
+    "_applied_filters.html"
   ]
 }
