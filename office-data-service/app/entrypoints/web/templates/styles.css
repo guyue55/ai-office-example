@@ -280,6 +280,16 @@ main {
 .table-wrap {
   overflow:auto
 }
+.table-wrap > .management-table thead th {
+  position:sticky;
+  top:0;
+  z-index:1;
+  box-shadow:0 1px 0 var(--line)
+}
+@media(max-width:700px) {
+  /* 移动端管理表采用横向滚动，表头仍保持可见但不遮挡卡片式数据表。 */
+  .table-wrap > .management-table thead th { position:sticky; top:0 }
+}
 table {
   width:100%;
   border-collapse:collapse;

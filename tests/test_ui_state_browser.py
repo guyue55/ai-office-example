@@ -811,6 +811,17 @@ def test_long_table_dialog_keeps_close_visible_and_restores_focus(ui_state):
     assert state["writes"] == 0
 
 
+def test_management_table_header_stays_sticky_for_long_lists(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/employees"))
+    table = page.locator(".management-table").first
+    expect(table).to_be_visible()
+    header = table.locator("thead th").first
+    assert header.evaluate("el => getComputedStyle(el).position") == "sticky"
+    assert header.evaluate("el => getComputedStyle(el).zIndex") == "1"
+    assert state["writes"] == 0
+
+
 def test_grant_page_selection_preserves_other_page_and_resets(ui_state):
     page, state = ui_state
     state["bulk_samples"] = True

@@ -75,3 +75,9 @@
 - 摘要来自当前页对象的批量关系查询，以数据库窗口函数限制每对象三项；没有逐行查询、远程身份请求或按角色名称判断权限。输出模型新增可选列表字段并重新生成OpenAPI；不涉及迁移。
 - 访问完整助手页会调用open和save；原save用full||可见状态写入侧栏open=true，导致下一业务页自动展开。修复后完整页仅更新会话ID，保留先前侧栏open与width；业务页侧栏仍由用户开关控制。
 - 验证：隔离PG摘要测试1通过；页面目录与助手工作区浏览器3通过；共享提示与页面复核等20通过；类型检查125文件、架构检查、Ruff与契约一致性通过。新增目录断言进一步核对摘要和权限编码列。均不代表真实模型或真实账号写入已验收。
+
+## 管理表全局阅读复核
+
+- 研究：[Carbon Data Table](https://www.carbondesignsystem.com/building-blocks/core/components/data-table/guidelines)建议保持行与列语义可扫描；[Carbon Loading](https://www.carbondesignsystem.com/building-blocks/core/patterns/loading)与[Fluent Tooltip](https://fluent2.microsoft.design/components/web/react/core/tooltip/usage)分别强调状态反馈与辅助说明不能互相替代。本轮先处理低风险、高频的长表阅读问题。
+- 所有 `.management-table` 的表头在其滚动容器内保持 sticky，并保留边界阴影；桌面长列表、窄屏横向滚动和详情弹窗均复用同一规则。移动端的数据表卡片模式不受影响。
+- 新增浏览器断言检查管理表表头的最终计算样式，与页面目录、交互状态回归合计 38 项通过；使用合成页面上下文，未进行真实业务写入。
