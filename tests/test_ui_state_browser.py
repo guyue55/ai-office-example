@@ -781,6 +781,36 @@ def test_dashboard_cards_open_details_without_stacking_drawer(ui_state):
     assert state["writes"] == 0
 
 
+def test_long_table_dialog_keeps_close_visible_and_restores_focus(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/dashboard"))
+    trigger = page.locator('[data-overview-open="my-permissions"]')
+    for width, height in [(1440, 900), (390, 600), (844, 390)]:
+        page.set_viewport_size({"width": width, "height": height})
+        trigger.click()
+        dialog = page.locator("#record-dialog")
+        # 合成长表验证滚动容器，而非依赖当前账号恰好拥有大量权限。
+        page.locator("#record-dialog-content tbody").evaluate(
+            "body => { const row = body.firstElementChild; "
+            "while (body.children.length < 80) body.append(row.cloneNode(true)); }"
+        )
+        size = dialog.bounding_box()
+        assert size is not None
+        assert size["width"] <= width
+        assert size["height"] <= height * 0.85 + 1
+        if width == 1440:
+            assert size["width"] >= 900
+        content = page.locator("#record-dialog-content")
+        assert content.evaluate("el => el.scrollHeight > el.clientHeight")
+        content.evaluate("el => el.scrollTop = el.scrollHeight")
+        close = page.get_by_role("button", name="关闭详情", exact=True)
+        expect(close).to_be_in_viewport()
+        close.click()
+        expect(dialog).to_be_hidden()
+        expect(trigger).to_be_focused()
+    assert state["writes"] == 0
+
+
 def test_grant_page_selection_preserves_other_page_and_resets(ui_state):
     page, state = ui_state
     state["bulk_samples"] = True

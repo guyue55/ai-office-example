@@ -823,10 +823,21 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
   border-radius:12px;
   box-shadow:0 20px 80px #0e2c3440
 }
+/* 表格详情需要横向阅读空间；短表单保持紧凑，关闭后由原生 dialog 隐藏。 */
+.record-dialog:has(table) {
+  width:min(960px,calc(100vw - 32px))
+}
+.record-dialog[open] {
+  display:flex;
+  flex-direction:column;
+  max-height:85dvh;
+  overflow:hidden
+}
 .record-dialog::backdrop {
   background:#102b3459
 }
 .record-dialog .workspace-header {
+  flex-shrink:0;
   position:sticky;
   top:0;
   background:white;
@@ -840,7 +851,8 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 #record-dialog-content {
   padding:20px;
   overflow:auto;
-  max-height:65vh;
+  min-height:0;
+  overscroll-behavior:contain;
   overflow-wrap:anywhere
 }
 #record-dialog-content form {
