@@ -1,0 +1,41 @@
+/* 工作台设计变量：基础、外壳与组件共享；品牌仍由产品配置注入。 */
+:root {
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-8:32px;
+  --radius-control:8px;
+  --radius-surface:12px;
+  --surface:#fff;
+  --surface-subtle:#f8fafc;
+  --surface-hover:#f1f5f9;
+  --ink:#172b3a;
+  --muted:#526477;
+  --control-border:#7c8d99;
+  --line:#dde5ed;
+  --accent:#2563eb;
+  --accent-hover:var(--accent);
+  --focus-default:#2563eb;
+  --focus-ring:var(--focus-default);
+  --focus-halo:rgba(37,99,235,.12);
+  --soft:#eff5ff;
+  --bg:#f4f6fa;
+  --nav-surface:#152338;
+  --nav-hover:#253950;
+  --nav-text:#d5deeb;
+  --nav-muted:#a4b5cb;
+  --nav-width:232px;
+  --page-inset:32px;
+  --shadow-surface:0 1px 3px #172b3a08;
+}
+@supports (color:color-mix(in srgb,red,black)) {
+  :root {
+    --accent-hover:color-mix(in srgb,var(--accent) 82%,#000);
+    --soft:color-mix(in srgb,var(--accent) 7%,white);
+  }
+}
+@media(max-width:1000px) {:root {--nav-width:190px;--page-inset:24px}}
+@media(max-width:700px) {:root {--page-inset:16px}}

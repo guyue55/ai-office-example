@@ -187,7 +187,7 @@ def test_detail_location_is_rendered_before_javascript(web, route):  # noqa: F81
     assert response.status_code == 200
     assert '<a href="/console/employees" class="active" aria-current="page">' in response.text
     title = "授权详情" if "/access/" in route else "授权关联"
-    assert f'<strong id="shell-current-page">{title}</strong>' in response.text
+    assert f'<strong id="shell-current-page" aria-current="page">{title}</strong>' in response.text
 
 
 @pytest.mark.parametrize("version,account", [(3, {"email": "old@example.invalid"}), (2, None)])

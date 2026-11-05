@@ -1,0 +1,39 @@
+# 工作台体验重构与执行账本
+
+日期：2026-11-05。范围：现有24个页面与共享组件，保留Jinja、原生表单、应用层权限及审批。上一轮修复作为基线，不继承历史“全完成”结论。
+
+## 调研与设计决策
+
+| 对象 | 一手资料与开源实现 | 采用与取舍 |
+|---|---|---|
+| 基础与排版 | [Atlassian间距](https://atlassian.design/foundations/spacing)、[网格](https://atlassian.design/foundations/grid) | 使用有限间距尺度、页面与组件密度区分；中文系统字体 |
+| 外壳与导航 | [Tabler源码](https://github.com/tabler/tabler)、[Fluent UI](https://github.com/microsoft/fluentui) | 稳定导航、页头、表面层级；不复制Bootstrap/React依赖或另造组件状态 |
+| 列表与筛选 | [Carbon表格](https://www.carbondesignsystem.com/building-blocks/core/components/data-table/guidelines)、[Carbon源码](https://github.com/carbon-design-system/carbon)、[Shopify列表迁移](https://shopify.dev/docs/apps/build/app-home/migrate-from-polaris-react/resource-list) | 统一工具栏、可比较的列、行操作与局部滚动；不创造后端不支持的排序/导出 |
+| 表单与恢复 | [GOV.UK校验](https://design-system.service.gov.uk/patterns/validation/) | 保留输入、摘要定位、就地错误；沿用现有增强校验及无JS原生回退 |
+| 说明与浮层 | [WAI Tooltip](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/)、[Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) | 可聚焦说明、Esc、焦点恢复；tooltip模式本身仍为WAI草案，不能据此宣称完整合规 |
+| 助手 | [assistant-ui源码](https://github.com/assistant-ui/assistant-ui)、[GSAP响应动效](https://gsap.com/docs/v3/GSAP/gsap.matchMedia()/) | 阅读/输入/操作分区、宽窄视图共享会话；本轮无须新动画库 |
+
+以上为适配本项目后的设计判断，不是实际用户研究。Polaris当前迁移资料优先于已归档React示例；开源项目作为设计和结构参照，不直接复制未经核验的代码。
+
+## 实施顺序与完成门槛
+
+1. 基线：提交列表摘要与侧栏状态修复，保留独立PG及浏览器证据。
+2. 共享基础：独立设计变量文件；重构原样式引用，统一品牌、焦点、间距、圆角、表面；导航和位置栏可访问。
+3. 页面与组件：统一页头和动作换行、筛选工具栏、表格密度与焦点、表单分组、面板/助手表面；逐组巡视，不增加业务字段。
+4. 二次复核：全页面五宽度、无JS/减少动态、对比度/焦点、账号/表单/助手流程；检查失败及反例。
+5. 分批提交实现与证据，检查当前本地服务；未验证的真人、模型和发布明确保留。
+
+页面分组：概览；人员/角色/权限集/权限目录/审计/授权/操作记录；开户/关联/详情/安全/预览/回执；助手工作区/任务/详情；模型设置；登录恢复/错误/退出。共享组件优先于逐页补丁。
+
+## 状态与证据
+
+- 基线提交：4cb3ed8；上一轮列表摘要和侧栏缺陷已独立提交。
+- 后续阶段执行中。合成浏览器不替代真人登录、真实业务写入、付费模型、远程CI或发布。
+
+### 共享基础与组件实施
+
+- 新增design-tokens.css作为颜色、间距、表面、圆角、导航尺寸的来源；styles.css直接引用，移除原变量副本。品牌仍由template.toml生成的产品配置注入。
+- 外壳统一深蓝导航、品牌活动标记、页面基线和可滚动导航；当前位置改用具名导航与返回链接。页头动作按可用空间换行，窄屏保留原生菜单回退。
+- 表格、工具栏、卡片、表单、助手的常见间距及表面复用变量；行内焦点和滚动区增加可见反馈，保留局部横向滚动；修复旧青绿色行操作与品牌冲突。
+- 二次截图复核人员桌面列表、助手完整工作区和移动设置页，修正助手输入焦点叠层。截图是合成页面，不代表真实模型。
+- 首轮离线744通过、2失败：位置栏ARIA属性变化使旧字符串断言失配；更新后相关18项通过。最后仍须完整离线复验与正在执行的浏览器结果。
