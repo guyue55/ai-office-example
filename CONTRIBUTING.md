@@ -95,3 +95,14 @@ OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL
 ```
 
 该组合只用临时PG、隔离浏览器和合成模型，不连接在用实例。订阅、断线恢复不得增加模型调用或写入；流式文本验收使用事件握手，不用短sleep赌瞬态。构建和PG验收前核对磁盘；磁盘I/O或Docker故障应单列环境失败，恢复后重跑，不静默删掉断言。
+
+## 临时真实身份服务与开户闭环
+
+以下入口仅使用本轮创建的容器、随机本机端口和合成账号，不读取开发实例配置或本人凭证。需Docker和已下载的Keycloak 26.8.1镜像（quay.io/keycloak/keycloak:26.8.1）；测试使用--pull=never，缺失时报环境失败，不自动下载。初始化客户端只用于临时realm配置，产品管理客户端限定query-users／view-users／manage-users及对应scope mappings。
+
+```sh
+OFFICE_IDENTITY_CONTAINER_TESTS=1 uv run --extra agent --frozen pytest tests/test_identity_admin_isolated.py -q
+OFFICE_QUERY_PG_TESTS=1 OFFICE_IDENTITY_CONTAINER_TESTS=1 uv run --extra agent --frozen pytest tests/test_account_identity_postgres.py -q
+```
+
+第一项验证真实Keycloak管理接口及越权拒绝；第二项执行正式PG迁移和真实身份端口，覆盖预览零创建、提交去重、临时凭证准备及重复领取拒绝、最终启用、已有账号关联和撤权后启停不补权。授权主体仍为合成Principal，执行器由测试显式驱动；不证明浏览器OIDC登录、再次认证、首次改密、后台轮询或邮件投递完成。相关浏览器回归应独立运行，不能据分层通过声称同一真实端到端链路全部通过。临时容器和秘密在夹具收尾清理；失败不自动重放真实人员操作。
