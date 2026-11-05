@@ -9,5 +9,5 @@
 </div>
 <a class="button secondary" href="/console/permission-sets">到权限集组合授权</a>
 </header>{% include '_access_flow.html' %}
-<section class="card">{% include '_search.html' %}{{ permission_table(items, '没有符合条件的权限。请调整关键词或重置筛选。') }}{% include 'pagination.html' %}
+<section class="card"><p class="muted small">按名称、编码或用途检索。长说明可悬浮或聚焦查看；授权请前往权限集配置。</p>{% include '_search.html' %}{{ permission_table(items, '没有符合条件的权限。请调整关键词或重置筛选。') }}{% include 'pagination.html' %}
 </section>{% endblock %}

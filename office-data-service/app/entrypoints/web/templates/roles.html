@@ -18,6 +18,7 @@
 <thead>
 <tr>
 <th>角色名称</th>
+<th>类型</th>
 <th>权限集 / 权限</th>
 <th>关联人员</th>
 <th>操作</th>
@@ -26,8 +27,9 @@
 <tbody>{% for item in items %}
 <tr>
 <td>
-<a class="permission-name" href="/console/access/roles/{{ item.id }}">{{ item.name }}</a>{% if item.builtin_key %} <span class="badge neutral">内置{{ ' · 新员工默认' if item.builtin_key == 'employee' else '' }}</span>{% endif %}
+<a class="permission-name" href="/console/access/roles/{{ item.id }}">{{ item.name }}</a>
 </td>
+<td><span class="badge neutral">{{ '内置 · 新员工默认' if item.builtin_key == 'employee' else '内置' if item.builtin_key else '自定义' }}</span></td>
 <td>{{ item.permission_set_count|default(0) }} 个权限集 · {{ item.permission_count|default(0) }} 项权限{% if not item.permission_count|default(0) %}
 <div>
 <span class="badge neutral">尚无可用权限</span>
@@ -42,7 +44,7 @@
 </td>
 </tr>{% else %}
 <tr>
-<td colspan="4" class="empty">{% set empty_title = '暂无角色' %}{% set empty_description = '按工作职责建立角色；新建前请优先复用已有配置。' %}{% include '_list_empty.html' %}</td>
+<td colspan="5" class="empty">{% set empty_title = '暂无角色' %}{% set empty_description = '按工作职责建立角色；新建前请优先复用已有配置。' %}{% include '_list_empty.html' %}</td>
 </tr>{% endfor %}
 </tbody>
 </table>

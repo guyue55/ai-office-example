@@ -19,7 +19,7 @@
 {% for item in listing['items'] %}<tr><td><strong>{{ item.employee_name }}</strong>{% if item.current %}<span class="badge">当前登录</span>{% endif %}<div class="muted small">OAuth 浏览器授权</div><details><summary class="small">授权编号</summary><code>{{ item.id }}</code></details></td>
 <td>{% for client in item.clients %}<div>{{ client }}</div>{% endfor %}<div class="muted small">设备备注：{{ item.device_name or '未提供' }}<br>平台：{{ item.platform or '未提供' }}</div></td>
 <td class="small">登记 {{ item.created_at|business_time }}<br>最近访问 {{ item.last_seen_at|business_time }}<details><summary>更多时间</summary>身份认证 {{ item.authenticated_at|business_time }}<br>最近访问令牌到期 {{ item.token_expires_at|business_time }}<p class="muted">访问令牌到期不等于整个授权结束。</p>{% if item.ended_at %}结束 {{ item.ended_at|business_time }}{% endif %}</details></td>
-<td><span class="badge">{{ states[item.state] }}</span>{% if item.archived_at %}<div class="small">已归档</div>{% endif %}<div class="muted small">{{ cleanups[item.cleanup] }}</div></td>
+<td><span class="badge {{ 'off' if item.state in ['disabled','revoked'] else 'neutral' }}">{{ states[item.state] }}</span>{% if item.archived_at %}<div class="small">已归档</div>{% endif %}<div class="muted small">{{ cleanups[item.cleanup] }}</div></td>
 <td>{% if item.employee_id == me.id or 'session.manage.all' in me.permissions %}<div class="actions">
 {% if not item.archived_at %}
 {% if item.state == 'active' %}{{ authorization_action(item, 'disable', '停用授权', '确认停用此授权？旧凭证立即失效，同次浏览器登录的客户端会一起失效；当前登录被停用时会退出，使用时需要重新登录授权。') }}{% endif %}

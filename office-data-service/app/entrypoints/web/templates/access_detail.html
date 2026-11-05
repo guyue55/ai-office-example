@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% from '_permissions.html' import permission_table %}
+{% extends 'base.html' %}{% from '_permissions.html' import permission_table %}{% from '_page_patterns.html' import fact %}
 {% block title %}{{ detail.name }} · 授权详情{% endblock %}
 {% block content %}{% set relation = 'roles' if kind == 'employees' else 'permission-sets' if kind == 'roles' else 'permissions' %}
 <div class="breadcrumb">
@@ -14,6 +14,11 @@
 </div>
 <a class="button {{ 'secondary' if not can_manage else '' }}" href="/console/links/{{ kind }}/{{ detail.id }}/{{ relation }}">{{ '配置' if can_manage else '查看' }}{{ access_labels[relation] }}</a>
 </header>
+<dl class="overview-facts" aria-label="授权配置概览">
+{{ fact('直接关联', detail.links|length, '当前对象的配置关系') }}
+{{ fact('配置权限', detail.permissions|length, '去重后的能力，不等于当前有效访问') }}
+{{ fact('配置版本', detail.version, '保存时重新核验') }}
+</dl>
 {% if detail.active == false %}
 <div class="hint">此员工已停用，下列为保留的配置，不代表当前可访问任何业务功能。</div>{% endif %}
 {% if detail.builtin_key == 'employee' %}<div class="hint">新员工开通时默认关联此角色，可取消。这里修改权限集会影响已关联员工和之后新开通的员工；从员工处撤回角色后，登录或重新启用不会补回。</div>{% elif detail.builtin_key == 'access-admin' %}<div class="hint">此角色能管理人员与授权，包括调整自身权限；仅授予可信任的管理人员，不会自动分配。</div>{% endif %}

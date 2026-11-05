@@ -1,7 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% from '_page_patterns.html' import task_steps %}
 {% block title %}核对账号操作 · {{ product.short_name }}{% endblock %}
 {% block content %}
 <header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>核对账号操作</h2><p class="muted">请核对以下影响。提交时系统还会重新检查当前权限和数据版本。</p></div></header>
+{{ task_steps(['准备操作', '核对影响', '处理回执'], 2) }}
+
 <section class="card form-card"><ul>{% for effect in preview.effects %}<li>{{ effect }}</li>{% endfor %}</ul>
 {% set command = preview.request %}
 <dl class="record-facts account-preview-facts">

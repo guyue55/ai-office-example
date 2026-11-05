@@ -1,7 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% from '_page_patterns.html' import task_steps %}
 {% block title %}账号处理进度 · {{ product.short_name }}{% endblock %}
 {% block content %}
 <header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>账号处理进度</h2></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
+{{ task_steps(['准备操作', '核对影响', '处理回执'], 3) }}
+
 <section class="card" aria-live="polite">
 
 <span class="badge {{ 'on' if operation.status == 'succeeded' else 'neutral' }}">{{ account_statuses.get(operation.status, '需要核实') }}</span>

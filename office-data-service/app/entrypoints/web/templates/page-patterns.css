@@ -1,0 +1,26 @@
+/* 页面模式统一负责阶段、概览与任务分区，业务组件仍维护各自交互。 */
+.task-steps {display:flex;flex-wrap:wrap;gap:var(--space-4);list-style:none;padding:0;margin:0 0 var(--space-5)}
+.task-steps li {display:flex;align-items:center;gap:var(--space-2);font-size:13px;color:var(--muted)}
+.task-steps li > span {display:grid;place-items:center;width:26px;height:26px;border:1px solid var(--line);border-radius:50%;background:var(--surface)}
+.task-steps [aria-current=step] {font-weight:600;color:var(--accent)}
+.task-steps [aria-current=step] > span {background:var(--accent);border-color:var(--accent);color:white}
+.overview-facts {display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-4);margin:0 0 var(--space-5)}
+.overview-fact {padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-control);background:var(--surface)}
+.overview-fact dt {color:var(--muted);font-size:13px}
+.overview-fact dd {margin:var(--space-1) 0 0;overflow-wrap:anywhere}
+.overview-fact dd:not(.muted) {font-size:22px;font-weight:600}
+.permission-distribution {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:var(--space-4);list-style:none;padding:0}
+.permission-distribution li {display:grid;grid-template-columns:1fr auto;gap:var(--space-2)}
+.permission-distribution meter {grid-column:1/-1;width:100%;height:12px;accent-color:var(--accent)}
+.account-results {margin-top:var(--space-5);border-top:1px solid var(--line);padding-top:var(--space-5)}
+.account-results > article {box-shadow:none;background:var(--surface-subtle)}
+.security-section {border-left:3px solid #b76e00}
+.account-profile {display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,3fr);gap:var(--space-3);margin:0 0 var(--space-5)}
+.account-profile dt {color:var(--muted)}
+.account-profile dd {margin:0;overflow-wrap:anywhere}
+.page-toc {display:flex;gap:var(--space-3);flex-wrap:wrap;margin:0 0 var(--space-5);font-size:13px}
+.page-toc a {padding:var(--space-2) var(--space-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-control)}
+.page-section {scroll-margin-top:var(--space-5)}
+@media(max-width:700px) {.task-steps {gap:var(--space-3)}.task-steps li {font-size:12px}.account-profile {grid-template-columns:1fr;gap:var(--space-1)}.account-profile dd {margin-bottom:var(--space-3)}}
+
+.event-time {white-space:nowrap;font-variant-numeric:tabular-nums}

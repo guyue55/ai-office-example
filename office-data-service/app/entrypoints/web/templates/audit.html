@@ -16,7 +16,7 @@
     <tbody>
     {% for item in items %}
     <tr>
-      <td>{{ item.created_at|business_time if item.created_at }}</td>
+      <td class="event-time">{{ item.created_at|business_time if item.created_at }}</td>
       <td>{{ item.actor_name or item.actor_id }}</td>
       <td>{{ item.action_name or item.action }}</td>
       <td>{{ item.resource_name or item.resource_id }}</td>
