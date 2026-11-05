@@ -11,22 +11,23 @@
 <span class="badge on">账号已启用</span>
 </header>
 <div class="grid">
-<section class="card">
+<a class="card metric-card" href="/console/security">
 <span class="muted">当前账号</span>
 <strong class="stat">{{ me.name }}</strong>
 <span class="muted">每次操作都会检查当前授权</span>
-</section>
-<section class="card">
+<span class="metric-affordance" aria-hidden="true">↗</span><span class="sr-only">查看本人账号与安全</span>
+</a>
+<a class="card metric-card" href="#my-permissions" data-overview-open="my-permissions">
 <span class="muted">已获授权</span>
 <strong class="stat">{{ permission_details|length }} <span class="muted">项能力</span>
 </strong>
-<a href="#my-permissions">查看权限说明 ↓</a>
-</section>
-<section class="card">
+<span class="metric-affordance" aria-hidden="true">↗</span><span class="sr-only">查看我的权限</span>
+</a>
+<a class="card metric-card" href="#my-roles" data-overview-open="my-roles">
 <span class="muted">关联角色</span>
 <strong class="stat">{{ me.roles|default([], true)|length }} <span class="muted">个角色</span></strong>
-<a href="#my-roles">查看能力来源 ↓</a>
-</section>
+<span class="metric-affordance" aria-hidden="true">↗</span><span class="sr-only">查看我的角色</span>
+</a>
 </div>
 <section class="card">
 <div class="section-head"><div><h3>常用入口</h3><p class="muted">从当前账号可用的任务开始。</p></div></div>
@@ -43,7 +44,7 @@
 </section>
 {% if 'access.read' in me.permissions %}{% include '_access_flow.html' %}{% endif %}
 {% set my_roles = me.roles | default([], true) %}
-<section class="card" id="my-roles">
+<details class="card dashboard-detail" id="my-roles" data-overview-detail open><summary>我的角色</summary>
 <div class="section-head">
 <div>
 <h3>我的角色</h3>
@@ -71,17 +72,17 @@
 <span class="badge neutral">{{ '内置' if role.builtin_key else '自定义' }}</span>
 </td>{% if 'access.read' in me.permissions %}
 <td>
-<a href="/console/access/roles/{{ role.id }}">查看配置</a>
+<a data-keep-label data-workspace-full href="/console/access/roles/{{ role.id }}">查看配置</a>
 </td>{% endif %}
 </tr>{% endfor %}
 </tbody>
 </table>
 </div>{% else %}
 <div class="empty">尚未关联角色。当前账号没有业务能力；需要使用相关功能时，请联系管理员分配。</div>{% endif %}
-<p class="muted small dashboard-note">管理员调整角色配置后，这里的数量与下方权限会同步变化；此处只显示本人角色。</p>
-</section>
+<p class="muted small dashboard-note">管理员调整角色配置后，这里的数量与当前权限会同步变化；此处只显示本人角色。</p>
+</details>
 
-<section class="card" id="my-permissions">
+<details class="card dashboard-detail" id="my-permissions" data-overview-detail open><summary>我的权限</summary>
 <div class="section-head">
 <div>
 <h3>我的权限</h3>
@@ -98,5 +99,5 @@
 </div>
 {% endif %}
 {{ permission_table(permission_details) }}<p class="muted small dashboard-note">“确认项目数据”还需要相应的记录读取权限；权限调整后，后续操作使用最新配置。</p>
-</section>
+</details>
 {% endblock %}

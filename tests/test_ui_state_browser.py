@@ -87,6 +87,10 @@ def ui_state():
             status_code=state.get("panel_status", 503) if state.get("panel_fail") else 200,
         )
 
+    @app.get("/console/dashboard")
+    async def dashboard(request: Request):
+        return TEMPLATES.TemplateResponse(request, "dashboard.html", context("dashboard.html"))
+
     @app.get("/console/roles")
     async def roles(request: Request):
         return TEMPLATES.TemplateResponse(request, "roles.html", context("roles.html"))
@@ -687,4 +691,50 @@ def test_compact_dialog_shows_bounded_server_reason_and_recovers(ui_state):
     page.get_by_role("button", name="刷新配置", exact=True).click()
     expect(page.locator('#workspace-content input[name="username"]')).to_be_visible()
     expect(feedback).to_be_empty()
+    assert state["writes"] == 0
+
+
+def test_dashboard_cards_open_details_without_stacking_drawer(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/dashboard"))
+    permission = page.locator('[data-overview-open="my-permissions"]')
+    roles = page.locator('[data-overview-open="my-roles"]')
+    expect(page.locator("#my-permissions")).to_be_hidden()
+    expect(page.locator("#my-roles")).to_be_hidden()
+    permission.click()
+    dialog = page.locator("#record-dialog")
+    expect(dialog).to_be_visible()
+    expect(dialog.get_by_role("table")).to_be_visible()
+    expect(page.locator("dialog[open]")).to_have_count(1)
+    page.keyboard.press("Escape")
+    expect(permission).to_be_focused()
+    roles.click()
+    expect(dialog).to_be_visible()
+    link = dialog.get_by_role("link", name="查看配置", exact=True)
+    expect(link).to_be_visible()
+    expect(link).to_have_attribute("data-workspace-full", "")
+    page.wait_for_timeout(200)  # 观察增强重绘后，完整页面入口仍需可见。
+    expect(link).to_be_visible()
+    page.get_by_role("button", name="关闭详情", exact=True).click()
+    expect(roles).to_be_focused()
+    roles.click()
+    expect(dialog.get_by_role("table")).to_be_visible()
+    expect(page.locator("#workspace")).not_to_be_visible()
+    page.route(
+        "**/console/access/roles/*",
+        lambda route: route.fulfill(
+            status=200, content_type="text/html", body="<main>角色配置完整页面</main>"
+        ),
+    )
+    dialog.get_by_role("link", name="查看配置", exact=True).click()
+    expect(page).to_have_url(re.compile(r"/console/access/roles/"))
+    expect(page.locator("dialog[open]")).to_have_count(0)
+    plain = page.context.browser.new_context(java_script_enabled=False)
+    try:
+        fallback = plain.new_page()
+        fallback.goto(page.url.split("/console/")[0] + "/console/dashboard")
+        expect(fallback.locator("#my-roles table")).to_be_visible()
+        expect(fallback.locator("#my-permissions table")).to_be_visible()
+    finally:
+        plain.close()
     assert state["writes"] == 0

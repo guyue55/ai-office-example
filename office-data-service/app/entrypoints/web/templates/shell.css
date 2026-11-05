@@ -112,3 +112,11 @@ tbody tr:focus-within {background:var(--surface-hover)}
 .dashboard-links > a > span {color:var(--muted);font-size:13px;line-height:1.7}
 .dashboard-description {margin:var(--space-1) 0 0}
 .dashboard-note {margin:var(--space-4) 0 0}
+
+/* 概览卡整块进入按需详情；详情复用共享弹窗，无JS时保留原生展开阅读。 */
+.metric-card {position:relative;display:block;color:var(--ink);padding-right:48px}
+.metric-card:hover {text-decoration:none;border-color:var(--accent);background:var(--soft)}
+.metric-card:focus-visible {outline:2px solid var(--focus-ring);outline-offset:3px}
+.metric-affordance {position:absolute;right:20px;top:20px;color:var(--muted);font-size:20px}
+.ui-enhanced [data-overview-detail] {display:none}
+#record-dialog-content > .section-head {margin-bottom:var(--space-5)}
