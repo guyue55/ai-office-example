@@ -222,6 +222,34 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 expect(page.locator('[name="default_role"]')).to_have_count(0)
                 assert len(calls) == 4
                 expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                # 错误恢复后的原生重置仍应回到服务端恢复的角色，搜索不能改写重置基线。
+                page.route(
+                    "**/console/accounts/role-options?*",
+                    lambda route: route.fulfill(
+                        json={
+                            "items": [{"id": "new-role", "name": "新增查阅角色"}],
+                            "has_more": False,
+                        }
+                    ),
+                )
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                page.locator('[name="role_id"]').select_option("")
+                page.locator('[name="role_id"]').evaluate("node => node.form.reset()")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
+                # 原角色不在搜索结果且已切换当前选择时，也保留独立的重置基线。
+                page.route(
+                    "**/console/accounts/role-options?*",
+                    lambda route: route.fulfill(json={"items": [], "has_more": False}),
+                )
+                page.locator('[name="role_id"]').select_option("")
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                expect(page.locator('[name="role_id"]')).to_have_value("")
+                page.locator('[name="role_id"]').evaluate("node => node.form.reset()")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
                 # 合成入口复用真实工作区拦截与加载，不依赖实例开户配置。
                 page.goto(base + "/console/employees")
                 page.evaluate(
@@ -236,6 +264,9 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                     "角色选项已更新"
                 )
                 expect(page.locator('#workspace [name="role_id"]')).to_have_value("new-role")
+                page.locator('#workspace [name="role_id"]').evaluate("node => node.form.reset()")
+                expect(page.locator('#workspace [name="role_id"]')).to_have_value("")
+                assert len(calls) == 4
                 assert not errors
             finally:
                 browser.close()

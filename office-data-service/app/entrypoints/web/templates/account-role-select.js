@@ -5,6 +5,8 @@
     if (initialized.has(root)) return;
     initialized.add(root);
     const select = root.querySelector('[data-role-select]');
+    // 当前选择与原生重置基线独立；搜索不能改变服务端恢复的初始角色。
+    const initialOption = (Array.from(select.options).find(option => option.defaultSelected) || select.options[0]).cloneNode(true);
     const refresh = root.querySelector('[data-role-refresh]');
     const search = root.querySelector('[data-role-search-button]');
     const query = root.querySelector('[data-role-query]');
@@ -30,6 +32,8 @@
           if (role.builtin_key !== 'employee') options.push(new Option(role.name + ' · ' + (role.permission_count || 0) + ' 项权限', role.id));
         });
         if (selected?.value && !options.some(option => option.value === selected.value)) options.push(selected);
+        if (!options.some(option => option.value === initialOption.value)) options.push(initialOption.cloneNode(true));
+        options.forEach(option => { option.defaultSelected = option.value === initialOption.value; });
         const value = select.value;
         select.replaceChildren(...options);
         select.value = value;
