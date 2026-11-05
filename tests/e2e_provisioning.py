@@ -21,9 +21,8 @@ def main():
         page.on("pageerror", lambda error: errors.append(str(error)))
         login(page, "operator", (ROOT / "runtime/secrets/operator_password").read_text().strip())
         for default in (True, False):
-            page.goto(BASE + "/console/employees")
-            page.get_by_text("手动绑定标识", exact=True).click()
-            dialog = page.locator("#workspace")
+            page.goto(BASE + "/console/employees/external")
+            dialog = page.locator("main")
             expect(dialog).to_be_visible()
             name = "浏览器开通验证-" + uuid4().hex[:10]
             dialog.locator("input[name=name]").fill(name)
@@ -37,8 +36,9 @@ def main():
                 path=str(proof / ("default-form.png" if default else "optout-form.png")),
                 animations="disabled",
             )
-            dialog.get_by_role("button", name="绑定并开通", exact=True).click()
-            expect(dialog).not_to_be_visible()
+            dialog.get_by_role("button", name="下一步：核对开通", exact=True).click()
+            expect(page.get_by_role("heading", name="核对外部身份开通")).to_be_visible()
+            page.get_by_role("button", name="确认并开通", exact=True).click()
             expect(page).to_have_url(BASE + "/console/employees")
             search = page.get_by_role("search")
             search.locator("input[name=q]").fill(name)
@@ -46,6 +46,7 @@ def main():
             row = page.locator("tr").filter(has_text=name)
             expect(row).to_have_count(1)
             expect(row).to_contain_text("已关联 1 个角色" if default else "未配置角色")
+            dialog = page.locator("#workspace")
             row.get_by_role("link", name="查看授权详情", exact=True).click()
             expect(dialog).to_be_visible()
             expect(dialog).to_contain_text(name)

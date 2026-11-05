@@ -22,6 +22,7 @@ from app.entrypoints.web.assistant import OPERATIONS, OUTCOMES, STATUSES, regist
 from app.entrypoints.web.assistant_ui import register_assistant_ui
 from app.entrypoints.web.authentication import WebAuthentication, bind_identity
 from app.entrypoints.web.client_sessions import register_client_sessions
+from app.entrypoints.web.identity_access import register_identity_access
 from app.entrypoints.web.login_gate import LoginGate
 from app.entrypoints.web.model_settings import register_model_settings
 from app.entrypoints.web.responses import (
@@ -350,7 +351,7 @@ def web_router(application):
         )
         identity = await operate(request, "me", {})
         pending = (
-            await operate(request, "access.identity.pending", {})
+            await operate(request, "access.identity.pending", {"limit": 1})
             if "access.manage" in identity["permissions"]
             else None
         )
@@ -478,32 +479,6 @@ def web_router(application):
             f"/console/links/{kind}/{quote(identifier)}/{relation}", status_code=303
         )
 
-    def provision_notice(result):
-        role = result.get("assigned_role")
-        if role:
-            return f"已开通并关联「{role['name']}」，按该角色当前配置权限生效。可在人员列表补充或撤回角色。"
-        return "身份已绑定，未授予业务角色。需要时可在人员列表授权。"
-
-    @router.post("/console/employees/new")
-    async def employee_new(request: Request):
-        form = dict(await request.form())
-        require_csrf(request, form)
-        result = await operate(
-            request,
-            "access.create",
-            {
-                "kind": "employees",
-                "body": {
-                    "name": str(form.get("name", "")),
-                    "issuer": settings.issuer,
-                    "subject": str(form.get("subject", "")),
-                    "assign_default_role": form.get("assign_default_role") == "on",
-                },
-            },
-        )
-        notify(request, provision_notice(result))
-        return RedirectResponse("/console/employees", status_code=303)
-
     @router.post("/console/roles/new")
     async def role_new(request: Request):
         form = dict(await request.form())
@@ -551,22 +526,6 @@ def web_router(application):
         )
         return RedirectResponse("/console/employees", status_code=303)
 
-    @router.post("/console/employees/claim")
-    async def employee_claim(request: Request):
-        form = dict(await request.form())
-        require_csrf(request, form)
-        result = await operate(
-            request,
-            "access.identity.claim",
-            {
-                "pending_id": str(form.get("pending_id", "")),
-                "name": str(form.get("name", "")),
-                "assign_default_role": form.get("assign_default_role") == "on",
-            },
-        )
-        notify(request, provision_notice(result))
-        return RedirectResponse("/console/employees", status_code=303)
-
     @router.post("/auth/logout")
     async def logout(request: Request):
         require_csrf(request, dict(await request.form()))
@@ -603,6 +562,7 @@ def web_router(application):
             },
         )
 
+    register_identity_access(router, settings, operate, render, require_csrf, notify)
     register_model_settings(router, operate, render, require_csrf, notify)
     register_assistant_ui(router, operate, render, require_csrf)
     register_assistant(router, operate, render, require_csrf, form_version, notify)

@@ -355,9 +355,11 @@ def build_mcp(application):
         )
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=True))
-    async def pending_identities() -> PendingIdentityPage:
-        """有管理权限时查询待认领登录，最多50项；不是全量分页接口。认领须预览确认。"""
-        return await call("access.identity.pending")
+    async def pending_identities(
+        page: int = 1, limit: int = 50, q: str = ""
+    ) -> PendingIdentityPage:
+        """有管理权限时分页搜索未开通访问记录；总数为当前筛选的导航参考。开通须预览确认。"""
+        return await call("access.identity.pending", {"page": page, "limit": limit, "q": q})
 
     @server.tool(annotations=ToolAnnotations(read_only_hint=True))
     async def preview_data_change(change: DataChange) -> DataPreview:

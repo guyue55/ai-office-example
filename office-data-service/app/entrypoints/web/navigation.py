@@ -16,6 +16,7 @@ SECTIONS = {
 
 TEMPLATE_TITLES = {
     "account_preview.html": "核对账号操作",
+    "identity_preview.html": "核对外部身份开通",
     "account_credential.html": "临时密码已准备",
     "account_security.html": "账号与安全",
     "error.html": "操作未成功",
@@ -56,6 +57,10 @@ def page_location(path: str, template: str = "") -> dict[str, str]:
             else "任务记录"
             if len(parts) == 2
             else "任务详情"
+        )
+    elif section == "employees" and len(parts) > 2:
+        title = {"pending": "未开通访问记录", "external": "外部身份接入"}.get(
+            parts[2], "核对外部身份开通"
         )
     elif section in SECTIONS:
         title = SECTIONS[section]

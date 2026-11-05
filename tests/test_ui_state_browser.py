@@ -12,7 +12,7 @@ import pytest
 import uvicorn
 from app.entrypoints.web.responses import TEMPLATES
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from playwright.sync_api import expect, sync_playwright
 from ui_catalog import context
 
@@ -29,20 +29,19 @@ def ui_state():
     @app.get("/console/employees")
     async def listing(request: Request):
         value = context("employees.html")
-        value["pending"] = {
-            "items": [
-                {
-                    "id": "pending",
-                    "display_name": "合成待认领人员",
-                    "subject": "synthetic",
-                    "first_seen_at": None,
-                    "last_seen_at": None,
-                }
-            ]
-        }
+        value["pending"] = {"items": [], "pagination": {"total": 1}}
         if request.query_params.get("saved"):
             value["notice"] = "保存完成"
-        return TEMPLATES.TemplateResponse(request, "employees.html", value)
+        response = TEMPLATES.TemplateResponse(request, "employees.html", value)
+        # 通用草稿协议使用独立合成表单，避免依赖已迁出的业务队列。
+        editor = '<form method="post" action="/fixture/draft"><label>独立草稿<input class="draft-name" name="draft" value=""></label></form>'
+        return HTMLResponse(response.body.decode().replace("</main>", editor + "</main>"))
+
+    @app.get("/console/employees/external")
+    async def external(request: Request):
+        return TEMPLATES.TemplateResponse(
+            request, "external_identity.html", context("external_identity.html")
+        )
 
     @app.post("/console/employees/{identifier}/update")
     async def update(identifier: str):
@@ -275,32 +274,30 @@ def test_save_preserves_shell_and_assistant_binding(ui_state):
 
 def test_other_form_draft_checked_before_write(ui_state):
     page, state = ui_state
-    page.locator(".pending-queue > summary").click()
-    page.locator(".claim-name").fill("未保存的姓名")
+    page.locator(".draft-name").fill("未保存的姓名")
     page.locator("form[data-confirm-message] button[type=submit]").click()
     expect(page.locator("#confirm-title")).to_have_text("放弃未保存的修改？")
     page.locator("[data-confirm-cancel]").click()
     assert state["writes"] == 0
-    expect(page.locator(".claim-name")).to_have_value("未保存的姓名")
+    expect(page.locator(".draft-name")).to_have_value("未保存的姓名")
     page.locator("form[data-confirm-message] button[type=submit]").click()
     page.locator("[data-confirm-accept]").click()
     expect(page.locator("#confirm-description")).to_contain_text("确认停用")
     page.locator("[data-confirm-accept]").click()
-    expect(page.locator(".claim-name")).to_have_value("")
+    expect(page.locator(".draft-name")).to_have_value("")
     assert state["writes"] == 1
 
 
 def test_new_draft_during_write_defers_refresh(ui_state):
     page, state = ui_state
     state["delay"] = True
-    page.locator(".pending-queue > summary").click()
     page.locator("form[data-confirm-message] button[type=submit]").click()
     page.locator("[data-confirm-accept]").click()
     expect(page.locator("form[data-confirm-message]")).to_have_attribute("aria-busy", "true")
-    page.locator(".claim-name").fill("请求等待期间的新草稿")
+    page.locator(".draft-name").fill("请求等待期间的新草稿")
     state["release"] = True
     expect(page.locator("#ui-notifications")).to_contain_text("列表未自动刷新")
-    expect(page.locator(".claim-name")).to_have_value("请求等待期间的新草稿")
+    expect(page.locator(".draft-name")).to_have_value("请求等待期间的新草稿")
     assert state["writes"] == 1
 
 
@@ -540,8 +537,7 @@ def test_assistant_business_refresh_has_one_confirmation_per_draft(ui_state, ass
     )
     page.reload()
     expect(page.get_by_role("button", name="刷新业务页面", exact=True)).to_be_visible()
-    page.locator(".pending-queue > summary").click()
-    page.locator(".claim-name").fill("未保存的人员资料")
+    page.locator(".draft-name").fill("未保存的人员资料")
     if assistant_draft:
         page.locator("#assistant-input").fill("未发送的助手草稿")
     dialogs = []
@@ -555,7 +551,7 @@ def test_assistant_business_refresh_has_one_confirmation_per_draft(ui_state, ass
         page.locator("[data-confirm-accept]").click()
     page.wait_for_function("window.refreshProbe===undefined", timeout=3000)
     assert dialogs == []
-    expect(page.locator(".claim-name")).to_have_value("")
+    expect(page.locator(".draft-name")).to_have_value("")
 
 
 @pytest.mark.parametrize("target", ["navigation", "filter"])
@@ -836,20 +832,18 @@ def test_help_and_manual_binding_have_explicit_entry_and_focus(ui_state):
     expect(page.locator("dialog[open]")).to_have_count(1)
     page.keyboard.press("Escape")
     expect(help_link).to_be_focused()
-    bind = page.get_by_role("link", name="手动绑定标识", exact=True)
-    expect(page.locator("#employee-bind")).to_be_hidden()
-    bind.click()
-    expect(page.locator("#workspace.is-compact")).to_be_visible()
-    expect(page.locator('#workspace input[name="subject"]')).to_be_visible()
-    expect(page.locator('#workspace input[name="csrf"]')).to_have_count(1)
-    page.get_by_role("button", name="关闭操作面板", exact=True).click()
-    expect(bind).to_be_focused()
+    page.get_by_role("link", name="外部身份接入", exact=True).click()
+    expect(page).to_have_url(re.compile(r"/console/employees/external$"))
+    expect(page.locator('input[name="subject"]')).to_be_visible()
+    expect(
+        page.locator('main form[action="/console/employees/new"] input[name="csrf"]')
+    ).to_have_count(1)
+    expect(page.locator("main")).to_contain_text("不创建登录账号或接管凭证")
     assert state["writes"] == 0
     plain = page.context.browser.new_context(java_script_enabled=False)
     try:
         fallback = plain.new_page()
         fallback.goto(page.url)
-        expect(fallback.locator("#employee-bind input[name='subject']")).to_be_visible()
-        expect(fallback.locator("#access-guide .flow")).to_be_visible()
+        expect(fallback.locator("input[name='subject']")).to_be_visible()
     finally:
         plain.close()

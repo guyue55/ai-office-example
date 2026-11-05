@@ -93,9 +93,8 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(base + "/console/employees")
-                queue = page.locator(".pending-queue")
-                expect(queue).not_to_have_attribute("open", "")
-                expect(queue.locator("summary")).to_contain_text("1 人")
+                expect(page.locator(".pending-queue")).to_have_count(0)
+                expect(page.get_by_role("link", name="核对并处理")).to_be_visible()
                 expect(page.locator(".flow-guide")).to_be_hidden()
                 expect(page.locator("a.permission-name")).to_have_count(10)
                 expect(page.locator("a.permission-name").first).to_be_in_viewport()
@@ -109,7 +108,6 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 assert contrast(muted, color("body", "backgroundColor")) >= 4.5
                 assert contrast(muted, "rgb(255, 255, 255)") >= 4.5
                 assert contrast(color(".trace", "color"), color("body", "backgroundColor")) >= 4.5
-                assert contrast(color(".code", "color"), "rgb(255, 255, 255)") >= 4.5
                 field = page.locator("input[type=search]").first
                 assert (
                     contrast(
@@ -150,9 +148,17 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 expect(page.locator("#workspace #assistant-launch")).to_have_count(0)
                 expect(page.locator("#workspace .shell-context")).to_have_count(0)
                 page.get_by_role("button", name="关闭操作面板", exact=True).click()
-                queue.locator("summary").click()
-                expect(queue.get_by_role("button", name="认领并开通", exact=True)).to_be_visible()
-                queue.locator("summary").click()
+                page.get_by_role("link", name="核对并处理").click()
+                expect(
+                    page.get_by_role("heading", name="未开通访问记录", exact=True)
+                ).to_be_visible()
+                assert contrast(color(".code", "color"), "rgb(255, 255, 255)") >= 4.5
+                page.get_by_text("核对并开通", exact=True).click()
+                expect(
+                    page.get_by_role("button", name="下一步：核对开通", exact=True)
+                ).to_be_visible()
+                page.get_by_role("button", name="关闭详情", exact=True).click()
+                page.get_by_role("link", name="返回人员管理", exact=True).click()
                 page.get_by_role("link", name="授权配置帮助", exact=True).click()
                 expect(page.locator("#record-dialog .flow")).to_be_visible()
                 page.get_by_role("button", name="关闭详情", exact=True).click()

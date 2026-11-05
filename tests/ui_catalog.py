@@ -27,6 +27,9 @@ PAGE_PATHS = {
     "client_authorizations.html": "/console/client-authorizations",
     "dashboard.html": "/console/dashboard",
     "employees.html": "/console/employees",
+    "pending_identities.html": "/console/employees/pending",
+    "external_identity.html": "/console/employees/external",
+    "identity_preview.html": "/console/employees/identity-confirm",
     "error.html": "/console/roles",
     "links.html": "/console/links/employees/person/roles",
     "permission_sets.html": "/console/permission-sets",
@@ -124,7 +127,8 @@ def context(template):
         "listing": listing,
         "items": [person],
         "candidates": [role],
-        "pending": {"items": []},
+        "pending": {"items": [], "pagination": {**pagination, "total": 0}},
+        "issuer": "https://identity.example.test/realms/office",
         "kind": "employees",
         "relation": "roles",
         "identifier": "person",
@@ -265,4 +269,30 @@ def context(template):
             budget_fields=ModelLimits.model_json_schema()["properties"],
             draft={},
         )
+    if template == "pending_identities.html":
+        value["items"] = [
+            {
+                "id": "pending",
+                "display_name": "合成访问者",
+                "subject": "synthetic-subject-" * 5,
+                "first_seen_at": now,
+                "last_seen_at": now,
+            }
+        ]
+    if template == "identity_preview.html":
+        value["preview"] = {
+            "change": {"operation": "access.identity.claim"},
+            "before": {
+                "display_name": "合成访问者",
+                "issuer": value["issuer"],
+                "subject": "synthetic-subject-" * 5,
+            },
+            "after": {
+                "name": "合成人员",
+                "assigned_role": {"name": "默认员工"},
+                "permissions": permissions[:5],
+            },
+            "confirmation_digest": "a" * 64,
+        }
+        value["change_json"] = "{}"
     return value

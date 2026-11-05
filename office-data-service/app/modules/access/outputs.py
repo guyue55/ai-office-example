@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.common.outputs import AccessPage, Output, Versioned
+from app.common.outputs import AccessPage, Output, Pagination, Versioned
 from app.modules.access.change_contracts import Change
 
 
@@ -105,6 +105,7 @@ class PendingIdentityOutput(Output):
 
 class PendingIdentityPage(Output):
     items: list[PendingIdentityOutput]
+    pagination: Pagination
 
 
 class AccessListing(

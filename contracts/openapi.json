@@ -8750,6 +8750,48 @@
         ],
         "summary": "Pending Identities",
         "operationId": "pending_identities_api_v2_pending_identities_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "default": "",
+              "title": "Q"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -8762,161 +8804,156 @@
             }
           },
           "400": {
-            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Bad Request"
           },
           "401": {
-            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Forbidden"
           },
           "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Not Found"
           },
           "405": {
-            "description": "Method Not Allowed",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Method Not Allowed"
           },
           "408": {
-            "description": "Request Timeout",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Request Timeout"
           },
           "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Conflict"
           },
           "413": {
-            "description": "Content Too Large",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Content Too Large"
           },
           "415": {
-            "description": "Unsupported Media Type",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Unsupported Media Type"
           },
           "422": {
-            "description": "Unprocessable Content",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Unprocessable Content"
           },
           "500": {
-            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
-            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Service Unavailable"
           },
           "5XX": {
-            "description": "Server Error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Server Error"
           },
           "429": {
-            "description": "Too Many Requests",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Too Many Requests"
           },
           "4XX": {
-            "description": "Client Error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Failure"
                 }
               }
-            }
+            },
+            "description": "Client Error"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "x-business-codes": [
           400001,
           400002,
@@ -19108,12 +19145,16 @@
             },
             "type": "array",
             "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "items"
+          "items",
+          "pagination"
         ],
         "title": "PendingIdentityPage"
       },

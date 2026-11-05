@@ -325,7 +325,7 @@ class Management:
         (await self.access.changed(obj.id, {"kind": "employees", "operation": "update"}))
         return {"id": obj.id, "version": obj.version}
 
-    async def pending_identities(self):
+    async def pending_identities(self, page: int = 1, limit: int = 50, q: str = ""):
         self.access.need("access.manage")
         linked = (
             select(IdentityLink.id)
@@ -335,18 +335,21 @@ class Management:
             )
             .exists()
         )
-        rows = (
-            await self.db.scalars(
-                select(PendingIdentity)
-                .where(
-                    PendingIdentity.claimed_by.is_(None),
-                    PendingIdentity.issuer == self.issuer,
-                    ~linked,
+        query = select(PendingIdentity).where(
+            PendingIdentity.claimed_by.is_(None),
+            PendingIdentity.issuer == self.issuer,
+            ~linked,
+        )
+        if q:
+            query = query.where(
+                or_(
+                    PendingIdentity.display_name.icontains(q, autoescape=True),
+                    PendingIdentity.subject.icontains(q, autoescape=True),
                 )
-                .order_by(PendingIdentity.first_seen_at)
-                .limit(50)
             )
-        ).all()
+        rows, pagination = await numbered_rows(
+            self.db, query.order_by(PendingIdentity.first_seen_at, PendingIdentity.id), page, limit
+        )
         return {
             "items": [
                 {
@@ -357,7 +360,8 @@ class Management:
                     "last_seen_at": row.last_seen_at,
                 }
                 for row in rows
-            ]
+            ],
+            "pagination": pagination,
         }
 
     async def claim_identity(self, pending_id: str, name: str, assign_default_role: bool = True):

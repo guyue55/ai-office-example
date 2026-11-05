@@ -96,3 +96,37 @@ def test_read_only_preview_timeout_does_not_claim_unknown_write():
         assert not caught.value.outcome_unknown
         assert caught.value.recovery == "retry_read"
         assert len(calls) == 1
+
+
+def test_pending_mcp_schema_and_forwarding():
+    app = SimpleNamespace(
+        settings=SimpleNamespace(
+            issuer="https://identity.invalid", audience="https://service.invalid/mcp"
+        ),
+        verifier=SimpleNamespace(),
+        call=AsyncMock(),
+    )
+    server, _ = build_mcp(app)
+
+    async def run():
+        tools = {tool.name: tool for tool in await server.list_tools()}
+        fields = tools["pending_identities"].input_schema["properties"]
+        assert {"page", "limit", "q"} <= fields.keys()
+        with pytest.raises(ToolError):
+            await server.call_tool("pending_identities", {"page": "2"})
+        app.call.assert_not_awaited()
+
+    asyncio.run(run())
+
+
+def test_pending_sdk_forwards_numbered_query():
+    from unittest.mock import Mock
+
+    from office_client import OfficeClient
+
+    with OfficeClient("http://127.0.0.1:8800", store=SimpleNamespace()) as client:
+        client.request = Mock(return_value={"items": []})
+        client.pending_identities(page=3, limit=20, q="合成")
+        client.request.assert_called_once_with(
+            "GET", "/api/v2/pending-identities", params={"page": 3, "limit": 20, "q": "合成"}
+        )

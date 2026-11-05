@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}核对外部身份开通 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">人员与授权</p><h1>核对外部身份开通</h1><p class="muted">尚未写入。确认后建立业务人员与身份绑定；登录凭证仍由外部身份系统维护。</p></div></header>
+<section class="card form-card"><h2>目标与授权</h2><dl class="record-facts account-preview-facts"><dt>业务姓名</dt><dd>{{ preview.after.name }}</dd>
+{% if preview.before.display_name is defined %}<dt>登录显示名</dt><dd>{{ preview.before.display_name }}</dd>{% endif %}
+<dt>身份来源</dt><dd class="code">{{ preview.before.issuer if preview.before.issuer is defined else preview.after.issuer }}</dd><dt>登录标识</dt><dd class="code">{{ preview.before.subject if preview.before.subject is defined else preview.after.subject }}</dd><dt>关联角色</dt><dd>{{ preview.after.assigned_role.name if preview.after.assigned_role else '不关联角色，仅绑定身份' }}</dd></dl>
+{% if preview.after.permissions %}<h3>该角色当前包含的权限</h3><ul>{% for permission in preview.after.permissions %}<li>{{ permission.name }} <span class="code small muted">{{ permission.code }}</span></li>{% endfor %}</ul>{% else %}<p class="hint">本次不授予业务权限。以后可在人员管理另行配置角色。</p>{% endif %}
+<form method="post" data-native-submit action="/console/employees/identity-confirm"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="change_json" value="{{ change_json }}"><input type="hidden" name="digest" value="{{ preview.confirmation_digest }}"><div class="actions"><button type="submit">确认并开通</button><a href="{{ '/console/employees/pending' if preview.change.operation == 'access.identity.claim' else '/console/employees/external' }}">取消</a></div></form></section>
+{% endblock %}

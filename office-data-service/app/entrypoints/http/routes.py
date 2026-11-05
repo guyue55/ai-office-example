@@ -19,7 +19,14 @@ from app.modules.access.account_schemas import (
 )
 from app.modules.access.authentication import Principal
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
-from app.modules.access.schemas import EmployeeUpdate, GrantUpdate, Links, Named, NewEmployee
+from app.modules.access.schemas import (
+    EmployeeUpdate,
+    GrantUpdate,
+    Links,
+    Named,
+    NewEmployee,
+    PendingList,
+)
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
 from app.modules.agent.model_configuration import (
     ModelApply,
@@ -57,6 +64,12 @@ class SessionQuery(SessionList):
     model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
     limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 20
     page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] | None = None
+
+
+class PendingQuery(PendingList):
+    model_config = ConfigDict(extra="forbid", strict=False, str_strip_whitespace=True)
+    limit: Annotated[int, Field(ge=1, le=100, strict=False)] = 50
+    page: Annotated[int, Field(ge=1, le=2147483647, strict=False)] = 1
 
 
 class AgentQuery(RunList):
@@ -110,6 +123,7 @@ def router(application, *, registry, prefix="/api/v2"):
             "agent.conversation.list": set(ConversationList.model_fields),
             "agent.conversation.get": {"before", "limit"},
             "session.list": set(SessionList.model_fields),
+            "access.identity.pending": set(PendingList.model_fields),
             "access.list": {"after", "limit", "q", "page", "actor", "action", "since", "until"},
             "account.search": {"q"},
             "account.history": {
@@ -448,8 +462,10 @@ def router(application, *, registry, prefix="/api/v2"):
         )
 
     @access.get("/pending-identities", response_model=OPERATION_OUTPUTS["access.identity.pending"])
-    async def pending_identities(request: Request, *, principal: Actor):
-        return await invoke(request, principal, "access.identity.pending")
+    async def pending_identities(
+        request: Request, query: Annotated[PendingQuery, Query()], *, principal: Actor
+    ):
+        return await invoke(request, principal, "access.identity.pending", query.model_dump())
 
     @access.post(
         "/access-changes/preview", response_model=OPERATION_OUTPUTS["access.change.preview"]

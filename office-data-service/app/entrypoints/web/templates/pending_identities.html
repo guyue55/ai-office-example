@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}未开通访问记录 · {{ product.short_name }}{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="eyebrow">人员与授权</p><h1>未开通访问记录</h1><p class="muted">已通过统一身份认证，但尚未绑定本站业务人员的访问留痕。记录不代表入职申请或授权请求。</p></div><a class="button secondary" href="/console/employees">返回人员管理</a></header>
+<p class="hint">请先核实本人身份和开通资格。此处开通后，登录凭证仍由外部身份系统维护；如需本系统维护账号，请从人员管理「关联已有账号」。时间均为北京时间。</p>
+<section class="card">
+{% set search_placeholder = '搜索显示名或完整登录标识' %}{% include '_search.html' %}
+{% include '_table_scroll_hint.html' %}
+<div class="table-wrap" role="region" aria-label="未开通访问记录表格" tabindex="0"><table class="management-table"><thead><tr><th>登录显示名</th><th>登录标识</th><th>首次访问</th><th>最近访问</th><th>操作</th></tr></thead><tbody>
+{% for row in items %}<tr><td>{{ row.display_name or '未提供' }}</td><td><span class="code small" tabindex="0" data-tooltip="{{ row.subject }}">{{ row.subject[:16] }}{% if row.subject|length > 16 %}…{% endif %}</span></td><td>{{ row.first_seen_at|business_time }}</td><td>{{ row.last_seen_at|business_time }}</td><td>
+<details class="inline-edit" data-form-dialog><summary data-keep-label>核对并开通</summary>
+<p class="muted">请核对登录标识；下一步展示实际角色与权限，确认后才开通。</p><p class="code">{{ row.subject }}</p>
+<form class="form-stack" data-native-submit method="post" action="/console/employees/claim"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="pending_id" value="{{ row.id }}">
+<label for="claim-{{ row.id }}">业务姓名</label><input id="claim-{{ row.id }}" class="claim-name" type="text" name="name" required maxlength="100" value="{{ row.display_name[:100] }}" autocomplete="off">
+<label><input type="checkbox" name="assign_default_role" checked>关联默认员工角色（下一步核对权限）</label><button type="submit">下一步：核对开通</button></form></details>
+</td></tr>{% else %}<tr><td colspan="5" class="empty">{% set empty_title = '暂无未开通访问记录' %}{% set empty_description = '这里只记录尚未绑定的身份；已开通或已停用人员不会重复出现。' %}{% include '_list_empty.html' %}</td></tr>{% endfor %}
+</tbody></table></div>{% include 'pagination.html' %}</section>
+{% endblock %}

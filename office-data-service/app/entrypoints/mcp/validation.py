@@ -20,7 +20,7 @@ from app.modules.access.account_schemas import (
     AccountSubmitInput,
 )
 from app.modules.access.change_contracts import ApplyChangeInput, PreviewChangeInput
-from app.modules.access.schemas import AccessDetailInput, AccessList, AssociationsInput
+from app.modules.access.schemas import AccessDetailInput, AccessList, AssociationsInput, PendingList
 from app.modules.access.session_schemas import SessionChange, SessionList, SessionRegister
 from app.modules.data.change_contracts import DataApplyInput, DataPreviewInput
 from app.modules.data.schemas import ConfirmInput, CorrectionInput, RecordInput, RecordList
@@ -82,7 +82,7 @@ TOOL_INPUTS: dict[str, type[BaseModel]] = {
     "aggregate_data": AggregateRequest,
     "preview_data_change": DataPreviewInput,
     "apply_data_change": DataApplyInput,
-    "pending_identities": EmptyInput,
+    "pending_identities": PendingList,
     "export_confirmed_records": ExportArguments,
     "list_client_authorizations": SessionList,
     "describe_client_device": SessionRegister,

@@ -106,12 +106,12 @@ role_ids=null表示使用当前普通员工角色；[]表示不授予业务角�
 管理中的账号请走本链路启停，避免只修改业务状态造成登录与业务不同步。本人改密使用控制台“账号与安全”，不让模型向员工索要旧密码或新密码。真实客户SMTP未配置时仅提供临时密码路径，不自动开邮件/通知通道。
 
 
-## 待认领身份
+## 未开通访问记录（待认领身份）
 
-先用`pending-identities`或MCP `pending_identities`核对待认领对象（最多50项；不声称完整全集）。已有登录但尚未绑定业务人员的身份，按以下JSON走既有access-preview/apply：
+先用 `pending-identities --page 1 --limit 50 --q <关键词>` 或 MCP `pending_identities(page=1, limit=50, q="关键词")` 核对对象，按返回 pagination 继续分页（每页最多100项）。这是未开通身份的访问留痕，不代表入职申请或授权请求；登录不会自动创建业务人员或授予角色。已有账号已完成关联的不需要重复认领。已有登录但尚未绑定业务人员的身份，按以下JSON走既有access-preview/apply：
 
 ```json
 {"operation":"access.identity.claim","payload":{"pending_id":"<核实的待认领编号>","name":"<业务姓名>","assign_default_role":true}}
 ```
 
-预览包含默认角色及实际权限；确认后提交。并发认领、跨实例身份、权限变化会拒绝，不改用手工编造subject接管账号。
+预览包含实际身份来源、登录标识、默认角色及实际权限；确认后提交。这条路径不接管凭证维护；需由本系统维护账号时应使用账号搜索关联链路。并发认领、跨实例身份、权限变化会拒绝，不改用手工编造subject接管账号。

@@ -200,6 +200,33 @@
       "tests": [
         "test_web_instance_isolation.py"
       ]
+    },
+    {
+      "template": "pending_identities.html",
+      "coverage": "外部身份开通与访问记录",
+      "tests": [
+        "test_web_console.py",
+        "test_ui_catalog_browser.py",
+        "test_identity_onboarding_browser.py"
+      ]
+    },
+    {
+      "template": "external_identity.html",
+      "coverage": "外部身份开通与访问记录",
+      "tests": [
+        "test_web_console.py",
+        "test_ui_catalog_browser.py",
+        "test_identity_onboarding_browser.py"
+      ]
+    },
+    {
+      "template": "identity_preview.html",
+      "coverage": "外部身份开通与访问记录",
+      "tests": [
+        "test_web_console.py",
+        "test_ui_catalog_browser.py",
+        "test_identity_onboarding_browser.py"
+      ]
     }
   ],
   "components": [

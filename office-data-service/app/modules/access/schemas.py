@@ -7,10 +7,10 @@ from pydantic import BaseModel, Field, model_validator
 from app.common.errors import DomainError
 from app.common.inputs import (
     DateRangeInput,
-    EmptyInput,
     IdentifierInput,
     Input,
     NumberedListInput,
+    PageLimit,
     Revision,
 )
 
@@ -39,8 +39,12 @@ class PendingClaim(Input):
     name: str = Field(min_length=1, max_length=100)
 
 
-class PendingList(EmptyInput):
-    """待认领登录仅按时间顺序展示，无需分页参数。"""
+class PendingList(Input):
+    """未知身份访问记录：首屏数量不代表全部。"""
+
+    page: int = Field(default=1, ge=1, le=2147483647)
+    limit: PageLimit = 50
+    q: str = Field(default="", max_length=100)
 
 
 class Links(Input):
