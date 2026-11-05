@@ -12,8 +12,7 @@ from app.infrastructure.models import Employee, IdentityLink, PendingIdentity
 from sqlalchemy import func, select
 
 
-@pytest.mark.parametrize("assign_default", [True, False])
-def test_claim_chain_with_one_connection_and_concurrent_first_visits(live, assign_default):
+def test_claim_chain_with_one_connection_and_concurrent_first_visits(live):
     base = live["settings"]
     settings = base.model_copy(
         update={
@@ -96,7 +95,7 @@ def test_claim_chain_with_one_connection_and_concurrent_first_visits(live, assig
                         {
                             "pending_id": pending_id,
                             "name": "复审认领-" + newcomer.subject,
-                            "assign_default_role": assign_default,
+                            "assign_default_role": True,
                         },
                         str(uuid4()),
                     )
@@ -110,16 +109,9 @@ def test_claim_chain_with_one_connection_and_concurrent_first_visits(live, assig
             employee_id = successful[0]["id"]
             identity = await application.call(newcomer, "me", {}, str(uuid4()))
             assert identity["id"] == employee_id
-            assert set(identity["permissions"]) == (
-                set(live["permissions"]) if assign_default else set()
-            )
+            assert set(identity["permissions"]) == set(live["permissions"])
             # 普通员工可查项目，但不能管理授权或读取他人数据。
-            if assign_default:
-                await application.call(newcomer, "project.list", {}, str(uuid4()))
-            else:
-                with pytest.raises(DomainError) as denied:
-                    await application.call(newcomer, "project.list", {}, str(uuid4()))
-                assert denied.value.code == "permission_denied"
+            await application.call(newcomer, "project.list", {}, str(uuid4()))
             with pytest.raises(DomainError) as denied:
                 await application.call(newcomer, "access.list", {"kind": "employees"}, str(uuid4()))
             assert denied.value.code == "permission_denied"

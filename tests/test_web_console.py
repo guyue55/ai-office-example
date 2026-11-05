@@ -600,33 +600,6 @@ def test_callback_wait_does_not_block_other_requests(web, monkeypatch):
     asyncio.run(run())
 
 
-def test_pending_card_renders_real_datetime_and_escaped_name(web):
-    response = web.client.get("/console/employees")
-    assert response.status_code == 200
-    assert "1 条未开通访问记录" in response.text
-    assert 'action="/console/employees/claim"' not in response.text
-    response = web.client.get("/console/employees/pending")
-    assert "新同事" in response.text
-    assert "2026-10-18 17:00" in response.text
-    assert 'action="/console/employees/claim"' in response.text
-
-
-def test_claim_requires_csrf_and_returns_to_employee_list(web):
-    form = {"pending_id": "pending-1", "name": "新同事"}
-    response = web.client.post("/console/employees/claim", data=form)
-    assert response.status_code == 403
-    assert all(
-        call.args[1] != "access.identity.claim" for call in web.application.call.call_args_list
-    )
-    response = web.client.post("/console/employees/claim", data={**form, "csrf": "form-csrf"})
-    assert response.status_code == 200
-    assert "尚未写入" in response.text
-    assert all(
-        call.args[1] not in {"access.identity.claim", "access.change.apply"}
-        for call in web.application.call.call_args_list
-    )
-
-
 def test_audit_renders_readable_data_and_beijing_time(web):
     original = web.application.call.side_effect
 
@@ -695,23 +668,6 @@ def test_employee_rename_keeps_state_and_version_contract(web):
         if call.args[1] == "access.employee.update"
     )
     assert call.args[2]["body"] == {"version": 2, "name": "新姓名", "active": True}
-
-
-@pytest.mark.parametrize("assign_default", [True, False])
-def test_employee_binding_forwards_explicit_default_choice(web, assign_default):
-    form = {"csrf": "form-csrf", "name": "开通测试", "subject": "real-subject"}
-    if assign_default:
-        form["assign_default_role"] = "on"
-    response = web.client.post("/console/employees/new", data=form)
-    assert response.status_code == 200
-    assert "尚未写入" in response.text
-    creation = next(
-        call
-        for call in web.application.call.call_args_list
-        if call.args[1] == "access.change.preview"
-    )
-    assert creation.args[2]["change"]["payload"]["body"]["assign_default_role"] is assign_default
-    assert all(call.args[1] != "access.create" for call in web.application.call.call_args_list)
 
 
 def test_revoked_session_does_not_reenter_old_sso(web):
@@ -815,89 +771,35 @@ def test_list_empty_state_distinguishes_filters(web, path, title):
     assert f"/console/{path}?limit=20" in filtered.text
 
 
-def test_external_entry_is_separate_and_requires_management(web):
+def test_personnel_does_not_read_or_advertise_external_onboarding(web):
     response = web.client.get("/console/employees")
-    assert 'href="/console/employees/external"' in response.text
-    assert 'name="subject"' not in response.text
-    response = web.client.get("/console/employees/external")
     assert response.status_code == 200
-    assert "https://identity.invalid" in response.text
-    assert "不创建登录账号或接管凭证" in response.text
-    original = web.application.call.side_effect
-
-    async def readonly(principal, name, payload, trace):
-        if name == "me":
-            return {"name": "普通员工", "permissions": ["access.read"]}
-        return await original(principal, name, payload, trace)
-
-    web.application.call.side_effect = readonly
-    assert web.client.get("/console/employees/external").status_code == 403
-    response = web.client.get("/console/employees")
-    assert 'href="/console/employees/external"' not in response.text
-    assert 'href="/console/employees/pending"' not in response.text
-
-
-@pytest.mark.parametrize("query", ["page=0", "limit=101", "q=a&q=b", "after=x", "page=true"])
-def test_pending_page_rejects_invalid_filters(web, query):
-    response = web.client.get("/console/employees/pending?" + query)
-    assert response.status_code == 422
-    # 格式错误由传输入口拒绝；数值上限仍由应用层模型统一校验。
-    pending_calls = [
-        call
-        for call in web.application.call.call_args_list
-        if call.args[1] == "access.identity.pending"
-    ]
-    assert bool(pending_calls) == (query == "limit=101")
-
-
-def test_pending_search_and_pagination_forwarded(web):
-    response = web.client.get("/console/employees/pending?page=2&limit=20&q=synthetic")
-    assert response.status_code == 200
-    call = next(
-        call
-        for call in web.application.call.call_args_list
-        if call.args[1] == "access.identity.pending"
+    for value in (
+        "未开通访问记录",
+        "/console/employees/pending",
+        "/console/employees/external",
+        'name="subject"',
+    ):
+        assert value not in response.text
+    assert all(
+        call.args[1] != "access.identity.pending" for call in web.application.call.call_args_list
     )
-    assert call.args[2] == {"page": 2, "limit": 20, "q": "synthetic"}
 
 
 @pytest.mark.parametrize(
-    "change",
+    "method,path",
     [
-        "null",
-        "[]",
-        "{}",
-        '{"operation":"access.employee.update"}',
-        '{"operation":"access.create","payload":{"kind":"roles"}}',
+        ("get", "/console/employees/pending"),
+        ("get", "/console/employees/external"),
+        ("post", "/console/employees/new"),
+        ("post", "/console/employees/claim"),
+        ("post", "/console/employees/identity-confirm"),
     ],
 )
-def test_identity_confirmation_cannot_execute_other_operations(web, change):
-    response = web.client.post(
-        "/console/employees/identity-confirm",
-        data={"csrf": "form-csrf", "change_json": change, "digest": "a" * 64},
-    )
-    assert response.status_code == 422
+def test_removed_identity_web_routes_cannot_write(web, method, path):
+    response = getattr(web.client, method)(path)
+    assert response.status_code == 404
     assert all(
-        call.args[1] != "access.change.apply" for call in web.application.call.call_args_list
-    )
-
-
-def test_identity_confirmation_forwards_original_change_and_requires_csrf(web):
-    import json
-
-    change = {
-        "operation": "access.identity.claim",
-        "payload": {"pending_id": "pending-1", "name": "合成人员", "assign_default_role": False},
-    }
-    form = {"change_json": json.dumps(change), "digest": "a" * 64}
-    assert web.client.post("/console/employees/identity-confirm", data=form).status_code == 403
-    response = web.client.post(
-        "/console/employees/identity-confirm", data={**form, "csrf": "form-csrf"}
-    )
-    assert response.status_code == 303
-    call = next(
-        call
+        call.args[1] not in {"access.create", "access.identity.claim", "access.change.apply"}
         for call in web.application.call.call_args_list
-        if call.args[1] == "access.change.apply"
     )
-    assert call.args[2] == {"change": change, "confirmation_digest": "a" * 64}

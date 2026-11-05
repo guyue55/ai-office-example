@@ -12,7 +12,7 @@ from app.infrastructure.models import Audit, Employee, EmployeeRole, IdentityLin
 from sqlalchemy import func, select
 
 
-def test_builtin_creation_optout_revocation_and_atomicity(live):
+def test_builtin_creation_required_role_revocation_and_atomicity(live):
     settings = live["settings"]
     operator_id = live["operator"].request("GET", "/api/v2/me")["id"]
 
@@ -62,21 +62,11 @@ def test_builtin_creation_optout_revocation_and_atomicity(live):
             with pytest.raises(DomainError) as caught:
                 await call("access.list", {"kind": "roles"}, user)
             assert caught.value.code == "permission_denied"
-            # 取消默认授权，预览与执行均不携带隐式关联。
-            optout_body = {**body, "subject": uuid4().hex, "assign_default_role": False}
-            optout_change = {
-                "operation": "access.create",
-                "payload": {"kind": "employees", "body": optout_body},
-            }
-            optout_preview = await call("access.change.preview", {"change": optout_change})
-            assert not optout_preview["added"] and "assigned_role" not in optout_preview["after"]
-            optout = await call("access.create", optout_change["payload"])
-            assert optout["assigned_role"] is None
-            optout_user = SimpleNamespace(
-                issuer=settings.issuer, subject=optout_body["subject"], claims={}
-            )
-            assert (await call("me", {}, optout_user))["permissions"] == []
-            assert (await call("me", {}, optout_user))["roles"] == []
+            # 旧客户端不能通过显式false绕过开通默认角色。
+            optout = {**body, "subject": uuid4().hex, "assign_default_role": False}
+            with pytest.raises(DomainError) as rejected:
+                await call("access.create", {"kind": "employees", "body": optout})
+            assert rejected.value.status == 422
             # 实际撤权后，重新启用以及重新构造应用均不会补回。
             await call(
                 "access.links.replace",

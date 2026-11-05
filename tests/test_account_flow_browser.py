@@ -124,7 +124,7 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(base + "/console/accounts/new")
-                expect(page.locator('[name="default_role"]')).to_be_checked()
+                expect(page.locator('[name="default_role"]')).to_have_count(0)
                 page.locator('[name="name"]').fill("隔离测试人员")
                 page.locator('[name="username"]').fill("无效 账号")
                 page.get_by_role("button", name="核对开通信息").click()
@@ -144,7 +144,7 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 assert calls[1][1]["request"] == calls[0][1]["request"]
                 # 关联已有账号仍先预览；不按显示姓名自动绑定。
                 page.goto(base + "/console/accounts/link?q=existing")
-                expect(page.locator('[name="default_role"]')).to_be_checked()
+                expect(page.locator('[name="default_role"]')).to_have_count(0)
                 assert len(calls) == 2
                 expect(page.get_by_role("button", name="核对关联", exact=True)).not_to_be_visible()
                 page.locator(".account-candidate-edit > summary").click()
@@ -172,16 +172,15 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 assert len(grants) == 1
                 assert set(grants[0]["body"]["ids"]) == {"outside", "new-role"}
                 assert grants[0]["body"]["version"] == 2
-                # 服务端拒绝预览也留在原表单，取消的默认授权选择不能被补回。
+                # 服务端拒绝预览也留在原表单，固定基础授权说明仍保留。
                 page.goto(base + "/console/accounts/new")
                 page.locator('[name="name"]').fill("保留已填姓名")
                 page.locator('[name="username"]').fill("taken01")
-                page.locator('[name="default_role"]').uncheck()
                 page.get_by_role("button", name="核对开通信息").click()
                 expect(page.locator("[data-server-form-error]")).to_be_focused()
                 expect(page.locator('[name="name"]')).to_have_value("保留已填姓名")
                 expect(page.locator('[name="username"]')).to_have_value("taken01")
-                expect(page.locator('[name="default_role"]')).not_to_be_checked()
+                expect(page.locator('[name="default_role"]')).to_have_count(0)
                 assert len(calls) == 4
                 assert not errors
             finally:

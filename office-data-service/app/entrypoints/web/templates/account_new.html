@@ -15,7 +15,7 @@
 <label>工作邮箱（可选）<input name="email" value="{{ values.get('email','') }}" type="email" maxlength="254" autocomplete="off"></label>
 </fieldset>
 <fieldset class="form-section"><legend>初始权限与交付</legend>
-<label class="check-option"><input type="checkbox" name="default_role" {% if values.get('default_role',true) %}checked{% endif %}>授予普通员工角色</label><p class="muted">包含项目字段查阅、上报、本人数据查看和维护；取消后只开户，不授予业务角色。</p>
+<p class="hint">首次开通将关联内置普通员工角色，确认页会列出实际角色。开通后可在授权管理中调整。</p>
 <label>首次使用方式<select name="mode"><option value="temporary">临时密码（首次登录必须修改）</option>{% if capability.email_enabled %}<option value="email" {% if values.get('mode') == 'email' %}selected{% endif %}>邮件设置密码</option>{% endif %}</select></label>
 {% if not capability.email_enabled %}<p class="muted">本实例未启用设密邮件。账号准备完成后，管理员在安全页面生成临时密码并点对点交付。</p>{% endif %}
 </fieldset>

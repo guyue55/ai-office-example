@@ -83,42 +83,41 @@ def test_pending_pagination_and_confirmed_external_binding(request):
             assert (await call("access.identity.pending", {"q": "no-match"}))["pagination"][
                 "total"
             ] == 0
-            for role_choice in (True, False):
-                change = {
-                    "operation": "access.identity.claim",
-                    "payload": {
-                        "pending_id": ids[int(role_choice)],
-                        "name": "核对后开通",
-                        "assign_default_role": role_choice,
-                    },
-                }
-                preview = await call("access.change.preview", {"change": change})
-                assert preview["before"]["issuer"] == settings.issuer
-                assert preview["before"]["subject"] == f"test-{int(role_choice)}"
-                assert bool(preview["after"].get("assigned_role")) is role_choice
-                async with factory() as db:
-                    assert (await db.get(PendingIdentity, ids[int(role_choice)])).claimed_by is None
-                with pytest.raises(DomainError) as rejected:
-                    await call(
-                        "access.change.apply", {"change": change, "confirmation_digest": "0" * 64}
-                    )
-                assert rejected.value.status == 409
-                result = await call(
+            change = {
+                "operation": "access.identity.claim",
+                "payload": {
+                    "pending_id": ids[0],
+                    "name": "核对后开通",
+                    "assign_default_role": True,
+                },
+            }
+            preview = await call("access.change.preview", {"change": change})
+            assert preview["before"]["issuer"] == settings.issuer
+            assert preview["before"]["subject"] == "test-0"
+            assert preview["after"]["assigned_role"]
+            async with factory() as db:
+                assert (await db.get(PendingIdentity, ids[0])).claimed_by is None
+            with pytest.raises(DomainError) as rejected:
+                await call(
+                    "access.change.apply", {"change": change, "confirmation_digest": "0" * 64}
+                )
+            assert rejected.value.status == 409
+            result = await call(
+                "access.change.apply",
+                {"change": change, "confirmation_digest": preview["confirmation_digest"]},
+            )
+            assert result["assigned_role"]
+            async with factory() as db:
+                link = await db.scalar(
+                    select(IdentityLink).where(IdentityLink.employee_id == result["id"])
+                )
+                assert link.managed is False
+            with pytest.raises(DomainError):
+                await call(
                     "access.change.apply",
                     {"change": change, "confirmation_digest": preview["confirmation_digest"]},
                 )
-                assert bool(result.get("assigned_role")) is role_choice
-                async with factory() as db:
-                    link = await db.scalar(
-                        select(IdentityLink).where(IdentityLink.employee_id == result["id"])
-                    )
-                    assert link.managed is False
-                with pytest.raises(DomainError):
-                    await call(
-                        "access.change.apply",
-                        {"change": change, "confirmation_digest": preview["confirmation_digest"]},
-                    )
-            assert (await call("access.identity.pending", {}))["pagination"]["total"] == 61
+            assert (await call("access.identity.pending", {}))["pagination"]["total"] == 62
             with pytest.raises(DomainError) as denied:
                 await call("access.identity.pending", {}, principal(settings, "test-0"))
             assert denied.value.status == 403
@@ -132,7 +131,7 @@ def test_pending_pagination_and_confirmed_external_binding(request):
                         "issuer": settings.issuer,
                         "subject": subject,
                         "name": "手填合成人员",
-                        "assign_default_role": False,
+                        "assign_default_role": True,
                     },
                 },
             }
@@ -146,6 +145,170 @@ def test_pending_pagination_and_confirmed_external_binding(request):
                     select(IdentityLink).where(IdentityLink.employee_id == result["id"])
                 )
                 assert link.managed is False
+        finally:
+            await factory.kw["bind"].dispose()
+
+    asyncio.run(scenario())
+
+
+def test_account_onboarding_roles_execution_and_revocation(request, tmp_path):
+    """真实迁移库＋合成身份端口：默认开通、空角色拒绝、撤权不补回。"""
+    from app.infrastructure.config import IdentityManagement
+    from app.infrastructure.models import EmployeeRole, Role
+    from app.modules.access.identity_ports import LoginAccount
+    from test_account_recovery_live import IdentityBoundary
+
+    settings = request.getfixturevalue("isolated_query_db")
+
+    async def scenario():
+        factory = async_sessions(settings)
+        application = Application(settings, factory, None)
+        accounts = application.account_service()
+        boundary = IdentityBoundary()
+        boundary.fail_create = False
+        accounts.provider = accounts.runner.provider = boundary
+        # 仅供执行器读取公开策略；替身端口不会读取秘密或发送HTTP。
+        accounts.runner.settings = settings.model_copy(
+            update={
+                "identity_management": IdentityManagement(
+                    client_id="synthetic", client_secret_file=tmp_path / "never-created"
+                )
+            }
+        )
+        admin = principal(settings, "operator")
+
+        async def call(operation, payload, who=admin):
+            return await application.call(who, operation, payload, uuid4().hex)
+
+        async def submit(command):
+            preview = await call("account.preview", {"request": command})
+            result = await call(
+                "account.submit",
+                {
+                    "request": preview["request"],
+                    "confirmation_digest": preview["confirmation_digest"],
+                    "idempotency_key": uuid4().hex,
+                },
+            )
+            return preview, result
+
+        try:
+            async with factory.begin() as db:
+                builtin = await db.scalar(select(Role).where(Role.builtin_key == "employee"))
+                default_id = builtin.id
+                custom = Role(name="专用查阅角色")
+                db.add(custom)
+                await db.flush()
+                custom_id = custom.id
+            # 缺省及null解析为同一默认角色；显式其他角色保持原选择，不叠加权限。
+            create = {
+                "kind": "create",
+                "name": "合成新员工",
+                "username": "local-" + uuid4().hex[:12],
+            }
+            preview, created = await submit(create)
+            assert preview["request"]["role_ids"] == [default_id]
+            assert await accounts.runner.claim(created["id"]) == created["id"]
+            await accounts.runner.step(created["id"])
+            result = await call("account.operation", {"identifier": created["id"]})
+            assert result["status"] == "awaiting_user"  # 尚未准备凭证，不能宣称开户全部完成。
+            async with factory() as db:
+                ids = (
+                    await db.scalars(
+                        select(EmployeeRole.role_id).where(
+                            EmployeeRole.employee_id == result["employee_id"]
+                        )
+                    )
+                ).all()
+                assert ids == [default_id]
+            for role_ids in (None, [custom_id]):
+                remote_id = uuid4().hex
+                boundary.accounts[remote_id] = LoginAccount(
+                    remote_id, "linked-" + remote_id[:8], "合成既有账号", "", True, (), None
+                )
+                preview, linked = await submit(
+                    {
+                        "kind": "link",
+                        "name": "合成关联员工",
+                        "remote_id": remote_id,
+                        "role_ids": role_ids,
+                    }
+                )
+                expected = [default_id] if role_ids is None else [custom_id]
+                assert preview["request"]["role_ids"] == expected
+                assert await accounts.runner.claim(linked["id"]) == linked["id"]
+                await accounts.runner.step(linked["id"])
+                result = await call("account.operation", {"identifier": linked["id"]})
+                assert result["status"] == "succeeded"
+                person = principal(settings, remote_id)
+                assert [r["id"] for r in (await call("me", {}, person))["roles"]] == expected
+                await call(
+                    "access.links.replace",
+                    {
+                        "kind": "employees",
+                        "identifier": result["employee_id"],
+                        "relation": "roles",
+                        "body": {"version": 1, "ids": []},
+                    },
+                )
+                for kind in ("disable", "enable"):
+                    detail = await call(
+                        "access.detail", {"kind": "employees", "identifier": result["employee_id"]}
+                    )
+                    _, operation = await submit(
+                        {
+                            "kind": kind,
+                            "identifier": result["employee_id"],
+                            "version": detail["version"],
+                        }
+                    )
+                    assert await accounts.runner.claim(operation["id"]) == operation["id"]
+                    await accounts.runner.step(operation["id"])
+                    completed = await call("account.operation", {"identifier": operation["id"]})
+                    assert completed["status"] == "succeeded"
+                # 重建应用模拟重启，新的登录仍不能补回撤销的角色。
+                fresh = Application(settings, factory, None)
+                with pytest.raises(DomainError) as revoked:
+                    await fresh.call(person, "me", {}, uuid4().hex)
+                assert revoked.value.status == 401
+                async with factory() as db:
+                    employee = await db.get(Employee, result["employee_id"])
+                    # 合成新令牌模拟本人重新登录；不复用已撤销的令牌。
+                    person.claims["iat"] = employee.tokens_after + 1
+                me = await fresh.call(person, "me", {}, uuid4().hex)
+                assert me["roles"] == [] and me["permissions"] == []
+            for command in (create, {"kind": "link", "name": "无角色", "remote_id": "unlinked"}):
+                with pytest.raises(DomainError) as rejected:
+                    await call("account.preview", {"request": {**command, "role_ids": []}})
+                assert rejected.value.status == 422
+            # 默认角色丢失时阻止开通，不能静默降级为零角色。
+            async with factory.begin() as db:
+                builtin = await db.get(Role, default_id)
+                builtin.builtin_key = None
+            try:
+                with pytest.raises(DomainError) as rejected:
+                    await call("account.preview", {"request": create})
+                assert rejected.value.status == 409
+            finally:
+                async with factory.begin() as db:
+                    builtin = await db.get(Role, default_id)
+                    builtin.builtin_key = "employee"
+            # 预览后角色版本变化：旧摘要不得提交，未进入外部创建阶段。
+            preview = await call("account.preview", {"request": create})
+            async with factory.begin() as db:
+                builtin = await db.get(Role, default_id)
+                builtin.version += 1
+            with pytest.raises(DomainError) as rejected:
+                await call(
+                    "account.submit",
+                    {
+                        "request": preview["request"],
+                        "confirmation_digest": preview["confirmation_digest"],
+                        "idempotency_key": uuid4().hex,
+                    },
+                )
+            assert rejected.value.status == 409
+            assert boundary.creates == 1
         finally:
             await factory.kw["bind"].dispose()
 

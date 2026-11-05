@@ -682,9 +682,6 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 .flow-guide {margin:0 0 16px;font-size:13px;color:var(--muted)}
 .flow-guide > summary {cursor:pointer;width:fit-content;color:var(--ink);padding:4px 0}
 .flow-guide .flow {margin:8px 0 0}
-.pending-queue .pending-hint {font-size:12px;color:var(--muted);font-weight:400;margin-left:8px}
-.pending-queue > summary { font-size:15px; font-weight:600; cursor:pointer; }
-.pending-queue[open] > summary { margin-bottom:16px; }
 [hidden] { display:none !important; }
 
 .workspace.is-compact #workspace-content { flex:0 1 auto; }

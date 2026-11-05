@@ -37,12 +37,6 @@ def ui_state():
         editor = '<form method="post" action="/fixture/draft"><label>独立草稿<input class="draft-name" name="draft" value=""></label></form>'
         return HTMLResponse(response.body.decode().replace("</main>", editor + "</main>"))
 
-    @app.get("/console/employees/external")
-    async def external(request: Request):
-        return TEMPLATES.TemplateResponse(
-            request, "external_identity.html", context("external_identity.html")
-        )
-
     @app.post("/console/employees/{identifier}/update")
     async def update(identifier: str):
         state["writes"] += 1
@@ -824,7 +818,7 @@ def test_account_candidate_expands_only_when_selected(ui_state):
     assert state["writes"] == 0
 
 
-def test_help_and_manual_binding_have_explicit_entry_and_focus(ui_state):
+def test_help_has_explicit_entry_and_focus(ui_state):
     page, state = ui_state
     help_link = page.get_by_role("link", name="授权配置帮助", exact=True)
     help_link.click()
@@ -832,18 +826,6 @@ def test_help_and_manual_binding_have_explicit_entry_and_focus(ui_state):
     expect(page.locator("dialog[open]")).to_have_count(1)
     page.keyboard.press("Escape")
     expect(help_link).to_be_focused()
-    page.get_by_role("link", name="外部身份接入", exact=True).click()
-    expect(page).to_have_url(re.compile(r"/console/employees/external$"))
-    expect(page.locator('input[name="subject"]')).to_be_visible()
-    expect(
-        page.locator('main form[action="/console/employees/new"] input[name="csrf"]')
-    ).to_have_count(1)
-    expect(page.locator("main")).to_contain_text("不创建登录账号或接管凭证")
+    expect(page.get_by_role("link", name="外部身份接入", exact=True)).to_have_count(0)
+    expect(page.locator('input[name="subject"]')).to_have_count(0)
     assert state["writes"] == 0
-    plain = page.context.browser.new_context(java_script_enabled=False)
-    try:
-        fallback = plain.new_page()
-        fallback.goto(page.url)
-        expect(fallback.locator("input[name='subject']")).to_be_visible()
-    finally:
-        plain.close()

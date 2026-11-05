@@ -14,9 +14,7 @@
 </div>
 </header>
 {% include '_access_flow.html' %}
-{% if can_manage and pending and pending.pagination.total %}
-<aside class="hint" aria-label="未开通访问提醒"><strong>{{ pending.pagination.total }} 条未开通访问记录</strong> · 有统一身份账号访问过本站，尚未开通业务人员。<a href="/console/employees/pending">核对并处理</a></aside>
-{% endif %}
+
 <section class="card">{% include '_search.html' %}
 {% include '_table_scroll_hint.html' %}
 <div class="table-wrap" role="region" aria-label="人员列表表格" tabindex="0">
@@ -77,5 +75,5 @@
 </table>
 </div>{% include 'pagination.html' %}
 </section>
-{% if can_manage %}<p class="muted small">{% if not accounts_enabled %}尚未配置账号管理连接；由外部身份系统维护的账号可通过{% else %}账号由外部身份系统维护？使用{% endif %}<a href="/console/employees/external">外部身份接入</a>。该入口不创建账号或修改凭证。</p>{% endif %}
+
 {% endblock %}

@@ -316,3 +316,5 @@ uv sync --frozen
 
 - 登录认证与业务人员开通分开：不得将首次登录默认授予角色、已开户人员再认领或非受管绑定自动接管凭证作为UI优化。外部身份仍以受信issuer／subject核对；列表总数来自服务端分页，不以首屏条数代替。方案及边界见docs/IDENTITY_ONBOARDING_REVIEW.md。
 - 共享弹窗中的预览POST须使用现有原生预览提交通路（data-native-submit），不能套用要求写入回执的异步保存处理器；浏览器覆盖预览、取消零写入和最终确认。单一主要流程动作可用data-keep-label保留文字，不一律压成更多图标；按实际对话框名称验收。
+
+- 员工日常开通仅保留新建与搜索关联；不因后台能力存在就恢复手动绑定／待认领Web入口。首次开通role_ids缺省或null使用内置employee角色，显式非空列表保持选择，空列表422；外部绑定／认领assign_default_role仅允许true。角色权限可调整，登录、启用和重启不补回撤权，不回填存量人员。兼容与运维边界见docs/IDENTITY_ONBOARDING_REVIEW.md。

@@ -80,7 +80,7 @@ def register_accounts(
                     "name": str(form.get("name", "")),
                     "username": str(form.get("username", "")),
                     "email": str(form.get("email", "")),
-                    "role_ids": None if form.get("default_role") == "on" else [],
+                    "role_ids": None,
                     "mode": str(form.get("mode", "temporary")),
                 },
                 str(form.get("key", "")),
@@ -97,7 +97,6 @@ def register_accounts(
                 key: str(form.get(key, ""))[:limit]
                 for key, limit in (("name", 100), ("username", 64), ("email", 254), ("mode", 20))
             }
-            values["default_role"] = form.get("default_role") == "on"
             response = await render(
                 request,
                 "account_new.html",
@@ -142,7 +141,7 @@ def register_accounts(
                 "kind": "link",
                 "remote_id": str(form.get("remote_id", "")),
                 "name": str(form.get("name", "")),
-                "role_ids": None if form.get("default_role") == "on" else [],
+                "role_ids": None,
             },
             target=target,
         )

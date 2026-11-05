@@ -15622,7 +15622,8 @@
                   "minLength": 1
                 },
                 "type": "array",
-                "maxItems": 100
+                "maxItems": 100,
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -15821,7 +15822,8 @@
                   "minLength": 1
                 },
                 "type": "array",
-                "maxItems": 100
+                "maxItems": 100,
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -18896,6 +18898,7 @@
           },
           "assign_default_role": {
             "type": "boolean",
+            "const": true,
             "title": "Assign Default Role",
             "default": true
           },
@@ -19076,6 +19079,7 @@
         "properties": {
           "assign_default_role": {
             "type": "boolean",
+            "const": true,
             "title": "Assign Default Role",
             "default": true
           },

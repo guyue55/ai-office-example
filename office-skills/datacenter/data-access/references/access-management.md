@@ -56,13 +56,13 @@ kind 为 employees／roles／permission-sets，列表另支持 permissions／aud
 {"operation":"access.employee.update","payload":{"identifier":"<员工ID>","body":{"version":2,"name":"<核实的姓名>","active":false}}}
 ```
 
-绑定已有登录账号：从可信身份系统取得用户 ID，issuer 从本实例 capabilities.identity_issuer 取得。**不创建登录账号、不修改密码、不将姓名当 subject**；没开通的账号先交由身份管理员处理。不可虚构 subject。
+特殊外部身份接入（运维路径，普通开通优先使用下文账号管理的新建／搜索关联）：从可信身份系统取得用户 ID，issuer 从本实例 capabilities.identity_issuer 取得。**不创建登录账号、不修改密码、不将姓名当 subject**；没开通的账号先交由身份管理员处理。不可虚构 subject。
 
 ```json
 {"operation":"access.create","payload":{"kind":"employees","body":{"name":"<显示姓名>","issuer":"<本实例身份来源>","subject":"<身份系统用户ID>","assign_default_role":true}}}
 ```
 
-管理变更需要 access.read 和 access.manage；角色／权限集按权限组合，不能按“老板／财务”字样推断授权。创建角色／权限集不自动授予任何人。开通新员工默认关联内置普通员工角色，预览包含 assigned_role 及其当前实际权限；不想授予角色时显式传 assign_default_role=false。输出 assigned_role 只说明本次开通关联，成功后仍需回读确认实际权限。存量账号不会补权，登录、重新启用和重启也不会补回已撤回角色。内置人员与授权管理员必须显式授予，可管理自身及他人权限，属于高信任职责。新建权限集→选权限→创建或复用角色→关联权限集→员工关联角色，逐步预览、确认和回读，不把整条链路称作原子事务。
+管理变更需要 access.read 和 access.manage；角色／权限集按权限组合，不能按“老板／财务”字样推断授权。创建角色／权限集不自动授予任何人。开通新员工默认关联内置普通员工角色，预览包含 assigned_role 及其当前实际权限；首次开通不支持不授予角色；assign_default_role 只能为 true，false 返回422。输出 assigned_role 只说明本次开通关联，成功后仍需回读确认实际权限。存量账号不会补权，登录、重新启用和重启也不会补回已撤回角色。内置人员与授权管理员必须显式授予，可管理自身及他人权限，属于高信任职责。新建权限集→选权限→创建或复用角色→关联权限集→员工关联角色，逐步预览、确认和回读，不把整条链路称作原子事务。
 
 ## 示例提示词
 
@@ -99,14 +99,14 @@ CLI 对应：`account-search <关键词>`、`employee-account <员工ID>`、`acc
 {"kind":"create","name":"已核实的姓名","username":"mz001","email":"","role_ids":null,"mode":"temporary"}
 ```
 
-role_ids=null表示使用当前普通员工角色；[]表示不授予业务角色；其他角色须先查询登记ID。首次密码由受控页面准备，首次登录必须修改。登录账号一期创建后不改名。
+role_ids 省略或 null 表示使用当前内置普通员工角色；空列表 [] 返回422；显式非空列表使用所选角色，不额外叠加默认权限，其他角色须先查询登记ID。首次密码由受控页面准备，首次登录必须修改。登录账号一期创建后不改名。
 
 资料修改为`kind=update`并携带identifier/version/name/email；启停或结束登录为`kind=disable/enable/logout`并携带identifier/version；重置为`kind=reset`并携带identifier/version/mode。每种动作都有独立的实时权限，不能因有业务授权管理权就假定能重置密码。
 
 管理中的账号请走本链路启停，避免只修改业务状态造成登录与业务不同步。本人改密使用控制台“账号与安全”，不让模型向员工索要旧密码或新密码。真实客户SMTP未配置时仅提供临时密码路径，不自动开邮件/通知通道。
 
 
-## 未开通访问记录（待认领身份）
+## 未开通访问记录（特殊运维能力，无普通 Web 入口）
 
 先用 `pending-identities --page 1 --limit 50 --q <关键词>` 或 MCP `pending_identities(page=1, limit=50, q="关键词")` 核对对象，按返回 pagination 继续分页（每页最多100项）。这是未开通身份的访问留痕，不代表入职申请或授权请求；登录不会自动创建业务人员或授予角色。已有账号已完成关联的不需要重复认领。已有登录但尚未绑定业务人员的身份，按以下JSON走既有access-preview/apply：
 

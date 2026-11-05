@@ -221,7 +221,6 @@ def main():
                     "e2e_web_console.py",
                     "e2e_workspace.py",
                     "e2e_account_menu.py",
-                    "e2e_provisioning.py",
                     "e2e_accounts.py",
                     "e2e_client_authorizations.py",
                     "e2e_tables.py",

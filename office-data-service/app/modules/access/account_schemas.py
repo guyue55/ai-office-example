@@ -12,7 +12,7 @@ class AccountCreate(Input):
     name: str = Field(min_length=1, max_length=100)
     username: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{1,63}$")
     email: str = Field(default="", max_length=254)
-    role_ids: list[Identifier] | None = Field(default=None, max_length=100)
+    role_ids: list[Identifier] | None = Field(default=None, min_length=1, max_length=100)
     mode: Literal["temporary", "email"] = "temporary"
 
     @field_validator("username")
@@ -37,7 +37,7 @@ class AccountLink(Input):
     kind: Literal["link"]
     remote_id: Identifier
     name: str = Field(min_length=1, max_length=100)
-    role_ids: list[Identifier] | None = Field(default=None, max_length=100)
+    role_ids: list[Identifier] | None = Field(default=None, min_length=1, max_length=100)
 
 
 class AccountTarget(Input):

@@ -201,7 +201,8 @@ def test_create_preview_error_restores_nonsecret_values(accounts, status):
     assert 'value="person01"' in response.text
     assert 'value="person@example.invalid"' in response.text
     assert '<img src=x onerror="alert(1)">' not in response.text
-    assert 'name="default_role" checked' not in response.text
+    assert 'name="default_role"' not in response.text
+    assert "内置普通员工角色" in response.text
     assert all(
         call.args[1] != "account.submit" for call in accounts.application.call.call_args_list
     )
@@ -229,3 +230,52 @@ def test_create_preview_does_not_recover_security_or_service_failure(accounts, s
     assert all(
         call.args[1] != "account.submit" for call in accounts.application.call.call_args_list
     )
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        {"kind": "create", "name": "人员", "username": "person01", "role_ids": []},
+        {"kind": "link", "name": "人员", "remote_id": "remote", "role_ids": []},
+    ],
+)
+def test_onboarding_contract_rejects_empty_roles(command):
+    with pytest.raises(ValidationError):
+        validate_command("account.preview", {"request": command})
+    with pytest.raises(ValidationError):
+        validate_command(
+            "account.submit",
+            {
+                "request": command,
+                "confirmation_digest": "a" * 64,
+                "idempotency_key": "onboard-test",
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    "operation,payload",
+    [
+        (
+            "access.create",
+            {
+                "kind": "employees",
+                "body": {
+                    "name": "人员",
+                    "issuer": "https://identity.invalid",
+                    "subject": "remote",
+                    "assign_default_role": False,
+                },
+            },
+        ),
+        (
+            "access.identity.claim",
+            {"name": "人员", "pending_id": "pending", "assign_default_role": False},
+        ),
+    ],
+)
+def test_external_onboarding_cannot_opt_out_of_default_role(operation, payload):
+    from app.modules.access.schemas import normalize_access_command
+
+    with pytest.raises(ValidationError):
+        normalize_access_command(operation, payload)

@@ -91,6 +91,9 @@ class AccountOperations:
     async def roles(self, ids):
         if ids is None:
             ids = [(await default_role(self.db)).id]
+        require(
+            bool(ids), 422, "invalid_input", "首次开通至少选择一个角色；未指定时使用普通员工角色"
+        )
         require(len(ids) == len(set(ids)), 422, "duplicate_links", "角色不能重复")
         found = (await self.db.scalars(select(Role).where(Role.id.in_(ids)))).all()
         require(len(found) == len(ids), 422, "unknown_link", "角色未登记，请重新选择")
@@ -118,7 +121,7 @@ class AccountOperations:
         roles_snapshot = ""
         if kind in ("create", "link"):
             command["role_ids"], roles_snapshot, names = await self.roles(command.get("role_ids"))
-            effects.append("关联角色：" + ("、".join(names) if names else "暂不授予业务角色"))
+            effects.append("关联角色：" + "、".join(names))
         if kind == "create":
             effects.insert(0, "创建登录账号并绑定业务人员：" + command["name"])
         elif kind == "link":

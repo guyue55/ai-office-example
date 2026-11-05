@@ -20,7 +20,7 @@ class Named(Input):
 
 
 class NewEmployee(Named):
-    assign_default_role: bool = True
+    assign_default_role: Literal[True] = True
     issuer: str = Field(min_length=1, max_length=512)
     subject: str = Field(min_length=1, max_length=100)
 
@@ -34,7 +34,7 @@ class EmployeeUpdate(Input):
 class PendingClaim(Input):
     """认领待认领登录：同时确定业务姓名并建立身份绑定。"""
 
-    assign_default_role: bool = True
+    assign_default_role: Literal[True] = True
     pending_id: str = Field(min_length=1, max_length=36)
     name: str = Field(min_length=1, max_length=100)
 

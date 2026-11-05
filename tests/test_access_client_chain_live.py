@@ -282,7 +282,7 @@ def test_business_employee_binding_and_disable_preview_chain(live):
             "kind": "employees",
             "body": {
                 "name": "仅绑定测试-" + uuid4().hex[:8],
-                "assign_default_role": False,
+                "assign_default_role": True,
                 "issuer": issuer,
                 "subject": "unassigned-test-" + uuid4().hex,
             },
@@ -301,7 +301,7 @@ def test_business_employee_binding_and_disable_preview_chain(live):
     preview = admin.preview_access_change(change)
     person = admin.apply_access_change(change, preview["confirmation_digest"])
     detail = admin.access_detail("employees", person["id"])
-    assert detail["active"] and not detail["links"] and not detail["permissions"]
+    assert detail["active"] and detail["links"] and detail["permissions"]
     change = {
         "operation": "access.employee.update",
         "payload": {

@@ -22,7 +22,6 @@ from app.entrypoints.web.assistant import OPERATIONS, OUTCOMES, STATUSES, regist
 from app.entrypoints.web.assistant_ui import register_assistant_ui
 from app.entrypoints.web.authentication import WebAuthentication, bind_identity
 from app.entrypoints.web.client_sessions import register_client_sessions
-from app.entrypoints.web.identity_access import register_identity_access
 from app.entrypoints.web.login_gate import LoginGate
 from app.entrypoints.web.model_settings import register_model_settings
 from app.entrypoints.web.responses import (
@@ -349,19 +348,12 @@ def web_router(application):
             "access.list",
             {"kind": "employees", **table_query(request, set(AccessList.model_fields) - {"kind"})},
         )
-        identity = await operate(request, "me", {})
-        pending = (
-            await operate(request, "access.identity.pending", {"limit": 1})
-            if "access.manage" in identity["permissions"]
-            else None
-        )
         return await render(
             request,
             "employees.html",
             items=listing["items"],
             listing=listing,
             search=q,
-            pending=pending,
             accounts_enabled=settings.identity_management is not None,
         )
 
@@ -562,7 +554,6 @@ def web_router(application):
             },
         )
 
-    register_identity_access(router, settings, operate, render, require_csrf, notify)
     register_model_settings(router, operate, render, require_csrf, notify)
     register_assistant_ui(router, operate, render, require_csrf)
     register_assistant(router, operate, render, require_csrf, form_version, notify)

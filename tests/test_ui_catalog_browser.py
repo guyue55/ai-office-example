@@ -166,16 +166,9 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                                         table.evaluate(
                                             "node => { node.parentElement.scrollLeft = 0; node.parentElement.blur(); }"
                                         )
-                        if template == "account_link.html":
-                            checkbox = page.locator('[name="default_role"]')
-                            bounds = checkbox.bounding_box()
-                            assert bounds and bounds["width"] <= 24, (template, width, bounds)
-                            assert (
-                                checkbox.evaluate(
-                                    "node=>getComputedStyle(node.parentElement).display"
-                                )
-                                == "flex"
-                            )
+                        if template in ("account_new.html", "account_link.html"):
+                            expect(page.locator('[name="default_role"]')).to_have_count(0)
+                            expect(page.locator("main")).to_contain_text("内置普通员工角色")
                         if template == "assistant_workspace.html":
                             page.evaluate("scrollTo(0,0)")
                             bounds = page.locator(".assistant-composer").bounding_box()
