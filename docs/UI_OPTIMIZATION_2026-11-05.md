@@ -79,5 +79,5 @@
 ## 管理表全局阅读复核
 
 - 研究：[Carbon Data Table](https://www.carbondesignsystem.com/building-blocks/core/components/data-table/guidelines)建议保持行与列语义可扫描；[Carbon Loading](https://www.carbondesignsystem.com/building-blocks/core/patterns/loading)与[Fluent Tooltip](https://fluent2.microsoft.design/components/web/react/core/tooltip/usage)分别强调状态反馈与辅助说明不能互相替代。本轮先处理低风险、高频的长表阅读问题。
-- 所有 `.management-table` 的表头在其滚动容器内保持 sticky，并保留边界阴影；桌面长列表、窄屏横向滚动和详情弹窗均复用同一规则。移动端的数据表卡片模式不受影响。
+- 所有 `.management-table` 的表头在其滚动容器内保持 sticky，并保留边界阴影；仅表格自身纵向滚动时固定表头，普通整页或外层弹窗滚动不因此固定；此前说明范围过宽，现予更正。移动端的数据表卡片模式不受影响。
 - 新增浏览器断言检查管理表表头的最终计算样式，与页面目录、交互状态回归合计 38 项通过；使用合成页面上下文，未进行真实业务写入。

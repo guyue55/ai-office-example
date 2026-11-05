@@ -813,12 +813,24 @@ def test_long_table_dialog_keeps_close_visible_and_restores_focus(ui_state):
 
 def test_management_table_header_stays_sticky_for_long_lists(ui_state):
     page, state = ui_state
-    page.goto(page.url.replace("/console/employees", "/console/employees"))
+    page.goto(page.url)
     table = page.locator(".management-table").first
     expect(table).to_be_visible()
     header = table.locator("thead th").first
     assert header.evaluate("el => getComputedStyle(el).position") == "sticky"
     assert header.evaluate("el => getComputedStyle(el).zIndex") == "1"
+    # 实际滚动长表，不把CSS声明当作布局行为已通过。
+    table.evaluate(
+        "table => { const body = table.tBodies[0]; "
+        "while (body.rows.length < 40) body.append(body.rows[0].cloneNode(true)); "
+        "table.parentElement.style.maxHeight = '240px'; }"
+    )
+    before = header.bounding_box()
+    table.evaluate("table => table.parentElement.scrollTop = 180")
+    after = header.bounding_box()
+    assert before is not None and after is not None
+    assert abs(before["y"] - after["y"]) <= 1
+    assert table.evaluate("table => table.parentElement.scrollTop") == 180
     assert state["writes"] == 0
 
 
