@@ -91,6 +91,23 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                     expect(page.locator("main h2")).to_have_count(1)
                     expect(page.locator("#assistant-panel")).to_have_count(1)
                     expect(page.locator(".shell-nav")).to_have_count(1)
+                    if template in {
+                        "account_new.html",
+                        "account_link.html",
+                        "account_preview.html",
+                        "account_operation.html",
+                    }:
+                        expect(page.locator(".task-steps li")).to_have_count(3)
+                        expect(page.locator('.task-steps [aria-current="step"]')).to_have_count(1)
+                    if template == "dashboard.html":
+                        meters = page.locator(".permission-distribution meter")
+                        assert meters.count() > 0
+                        assert meters.evaluate_all(
+                            "nodes=>nodes.reduce((sum,n)=>sum+n.value,0)===nodes[0].max"
+                        )
+                    if template == "account_detail.html":
+                        expect(page.get_by_role("navigation", name="账号详情分区")).to_be_visible()
+
                     if template in {"employees.html", "permission_sets.html"}:
                         summary = page.locator(".relation-summary").first
                         expect(summary).to_contain_text(

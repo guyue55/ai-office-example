@@ -80,6 +80,7 @@
 <div class="empty">尚未关联角色。当前账号没有业务能力；需要使用相关功能时，请联系管理员分配。</div>{% endif %}
 <p class="muted small dashboard-note">管理员调整角色配置后，这里的数量与下方权限会同步变化；此处只显示本人角色。</p>
 </section>
+
 <section class="card" id="my-permissions">
 <div class="section-head">
 <div>
@@ -87,6 +88,15 @@
 <p class="muted dashboard-description">以下为当前已生效的权限。本人范围与全部范围分别列出。</p>
 </div>
 <span class="badge neutral">{{ permission_details|length }} 项</span>
-</div>{{ permission_table(permission_details) }}<p class="muted small dashboard-note">“确认项目数据”还需要相应的记录读取权限；权限调整后，后续操作使用最新配置。</p>
+</div>{% if permission_details %}
+<div class="permission-distribution-block" aria-labelledby="permission-distribution-title">
+<h4 id="permission-distribution-title">我的权限分布</h4>
+<p class="muted">按能力类别统计当前账号已生效的权限，每项仅归属一个类别；完整说明见下表。</p>
+<ul class="permission-distribution">{% for group, entries in permission_details|groupby('group') %}
+<li><span>{{ group }}</span><strong>{{ entries|length }} 项</strong><meter min="0" max="{{ permission_details|length }}" value="{{ entries|length }}" aria-label="{{ group }}：{{ entries|length }} / {{ permission_details|length }} 项"></meter></li>
+{% endfor %}</ul>
+</div>
+{% endif %}
+{{ permission_table(permission_details) }}<p class="muted small dashboard-note">“确认项目数据”还需要相应的记录读取权限；权限调整后，后续操作使用最新配置。</p>
 </section>
 {% endblock %}
