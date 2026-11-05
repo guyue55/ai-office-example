@@ -8,7 +8,10 @@
 <h1>人员管理</h1>
 <p class="muted">统一维护员工、登录账号与角色；新建员工可一次完成开户和基础授权。</p>
 </div>
-{% if accounts_enabled and 'identity.read' in me.permissions %}<div class="actions">{% if 'identity.create' in me.permissions and can_manage %}<a class="button" href="/console/accounts/new">新建员工</a>{% endif %}{% if can_manage %}<a class="button secondary" href="/console/accounts/link">关联已有账号</a>{% endif %}</div>{% endif %}
+<div class="actions">
+{% if accounts_enabled and 'identity.read' in me.permissions %}{% if 'identity.create' in me.permissions and can_manage %}<a class="button" href="/console/accounts/new">新建员工</a>{% endif %}{% if can_manage %}<a class="button secondary" href="/console/accounts/link">关联已有账号</a>{% endif %}{% endif %}
+{% if can_manage %}<a href="#employee-bind" data-open-form="employee-bind">手动绑定标识</a>{% endif %}
+</div>
 </header>
 {% include '_access_flow.html' %}
 {% if can_manage and pending and pending['items'] %}
@@ -108,8 +111,8 @@
 </div>{% include 'pagination.html' %}
 </section>
 {% if can_manage %}
-<details class="card" data-form-dialog>
-<summary>高级：直接绑定登录标识</summary>
+<details class="card" data-form-dialog id="employee-bind" open>
+<summary>手动绑定登录标识</summary>
 <p>仅当对方还没登录过系统时才需要手动绑定：请对方先完成一次受控登录（出现「待认领登录」最简单），或从身份系统复制登录标识。</p>
 <p class="muted">这里不创建账号或设置密码。「登录标识」是身份系统提供的用户 ID，请勿填写姓名或随意编写。</p>
 <form class="form-stack" method="post" action="/console/employees/new">

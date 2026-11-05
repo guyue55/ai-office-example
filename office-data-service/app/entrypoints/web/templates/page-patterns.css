@@ -65,3 +65,7 @@
   .dashboard-overview {grid-template-columns:1fr}
   .dashboard-overview > .metric-card + .metric-card {border-left:0;border-top:1px solid var(--line)}
 }
+
+/* 帮助与低频动作有稳定入口；短元信息直接阅读，不作为折叠容器。 */
+.contextual-help {margin:0 0 var(--space-4);font-size:13px;text-align:right}
+.configuration-meta {display:flex;gap:var(--space-3);flex-wrap:wrap;line-height:1.7;margin-block:var(--space-4);overflow-wrap:anywhere}

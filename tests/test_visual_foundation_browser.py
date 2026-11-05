@@ -96,7 +96,7 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 queue = page.locator(".pending-queue")
                 expect(queue).not_to_have_attribute("open", "")
                 expect(queue.locator("summary")).to_contain_text("1 人")
-                expect(page.locator(".flow-guide")).not_to_have_attribute("open", "")
+                expect(page.locator(".flow-guide")).to_be_hidden()
                 expect(page.locator("a.permission-name")).to_have_count(10)
                 expect(page.locator("a.permission-name").first).to_be_in_viewport()
 
@@ -151,9 +151,9 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 queue.locator("summary").click()
                 expect(queue.get_by_role("button", name="认领并开通", exact=True)).to_be_visible()
                 queue.locator("summary").click()
-                page.locator(".flow-guide > summary").click()
-                expect(page.locator(".flow")).to_be_visible()
-                page.locator(".flow-guide > summary").click()
+                page.get_by_role("link", name="授权配置帮助", exact=True).click()
+                expect(page.locator("#record-dialog .flow")).to_be_visible()
+                page.get_by_role("button", name="关闭详情", exact=True).click()
                 page.get_by_role("link", name="下一页", exact=True).click()
                 assert calls[-1] == 2
                 expect(page.locator("a.permission-name").first).to_contain_text("10")

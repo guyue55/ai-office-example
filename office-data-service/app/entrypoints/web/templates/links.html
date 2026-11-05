@@ -90,9 +90,6 @@
 </form>
 {% include 'pagination.html' %}
 <p class="muted small" style="margin:14px 0 0">保存保留其他页及筛选外已选择的关联项；切换页面或搜索前请先保存当前修改。取消勾选并保存会撤销对应关联。</p>
-<details style="margin-top:14px">
-<summary class="small">并发保护信息</summary>
-<span class="muted">当前版本 {{ assoc.version }}；若配置已被他人更新，保存将提示冲突，请刷新后重新核对。</span>
-</details>
+<p class="muted small configuration-meta">当前版本 {{ assoc.version }}；若配置已被他人更新，保存将提示冲突，请刷新后重新核对。</p>
 </section>
 {% endblock %}

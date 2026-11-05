@@ -69,9 +69,5 @@
 </table>
 </div>{% include 'pagination.html' %}
 </section>{% endif %}
-<details class="card">
-<summary>配置标识</summary>
-<p class="code">{{ detail.id }}</p>
-<span class="muted">配置版本 {{ detail.version }} · 修改时会检查版本，避免覆盖其他人的更新。</span>
-</details>
+<footer class="configuration-meta"><span class="muted small">配置标识：<code>{{ detail.id }}</code></span><span class="muted small">配置版本 {{ detail.version }} · 修改时会检查版本，避免覆盖其他人的更新。</span></footer>
 {% endblock %}

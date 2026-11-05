@@ -22,7 +22,7 @@ def main():
         login(page, "operator", (ROOT / "runtime/secrets/operator_password").read_text().strip())
         for default in (True, False):
             page.goto(BASE + "/console/employees")
-            page.get_by_text("高级：直接绑定登录标识", exact=True).click()
+            page.get_by_text("手动绑定标识", exact=True).click()
             dialog = page.locator("#workspace")
             expect(dialog).to_be_visible()
             name = "浏览器开通验证-" + uuid4().hex[:10]

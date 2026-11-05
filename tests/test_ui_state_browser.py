@@ -802,3 +802,30 @@ def test_account_candidate_expands_only_when_selected(ui_state):
     expect(editor.locator('input[name="lookup"]')).to_have_value("candidate")
     expect(page.locator("dialog[open]")).to_have_count(0)
     assert state["writes"] == 0
+
+
+def test_help_and_manual_binding_have_explicit_entry_and_focus(ui_state):
+    page, state = ui_state
+    help_link = page.get_by_role("link", name="授权配置帮助", exact=True)
+    help_link.click()
+    expect(page.locator("#record-dialog .flow")).to_be_visible()
+    expect(page.locator("dialog[open]")).to_have_count(1)
+    page.keyboard.press("Escape")
+    expect(help_link).to_be_focused()
+    bind = page.get_by_role("link", name="手动绑定标识", exact=True)
+    expect(page.locator("#employee-bind")).to_be_hidden()
+    bind.click()
+    expect(page.locator("#workspace.is-compact")).to_be_visible()
+    expect(page.locator('#workspace input[name="subject"]')).to_be_visible()
+    expect(page.locator('#workspace input[name="csrf"]')).to_have_count(1)
+    page.get_by_role("button", name="关闭操作面板", exact=True).click()
+    expect(bind).to_be_focused()
+    assert state["writes"] == 0
+    plain = page.context.browser.new_context(java_script_enabled=False)
+    try:
+        fallback = plain.new_page()
+        fallback.goto(page.url)
+        expect(fallback.locator("#employee-bind input[name='subject']")).to_be_visible()
+        expect(fallback.locator("#access-guide .flow")).to_be_visible()
+    finally:
+        plain.close()
