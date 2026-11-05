@@ -205,6 +205,7 @@
   "components": [
     "_access_flow.html",
     "_account_menu.html",
+    "_account_role_select.html",
     "_assistant_panel.html",
     "_assistant_result.html",
     "_filters.html",
@@ -216,6 +217,7 @@
     "_table_scroll_hint.html",
     "_workspace.html",
     "account-menu.js",
+    "account-role-select.js",
     "assistant-content.js",
     "assistant-shell.js",
     "assistant-transport.js",
