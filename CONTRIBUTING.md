@@ -24,7 +24,7 @@ uv run pytest -m 'not live' -q
 
 ## 独立活体验收
 
-避免占用其他项目的默认端口。首次开发环境可设置`OFFICE_DEV_PORT=18890 uv run python scripts/dev_stack.py up`；随后provision、migrate，按owner配置执行bootstrap，再用运行配置启动`office-service serve --port 18890`。既有配置保留，不因环境变量改变而迁址。
+避免占用其他项目的默认端口。首次开发环境可设置`OFFICE_DEV_PORT=18890 uv run python scripts/dev_stack.py up`；随后provision、migrate，按owner配置执行bootstrap，再用运行配置启动`office-service serve --port 18890`。既有配置保留，不因环境变量改变而迁址。首次可用 OFFICE_DEV_IDENTITY_PORT 指定空闲身份端口；后续启动以配置中的 issuer 为准。provision 自动建立最小权限在线校验客户端并用合成无效令牌检查凭据，重复执行不轮换客户端秘密。通过 OFFICE_CONFIG 可指定本机开发配置；秘密按配置文件隔离保存。客户端配置异常会停止，不自动改权限或重置用户。
 
 真实测试设置`OFFICE_LIVE_TESTS=1 OFFICE_TEST_URL=http://127.0.0.1:18890`，入口必须与专用config.json一致。先`uv run playwright install chromium`，也可用PLAYWRIGHT_CHROMIUM_EXECUTABLE明确指定已安装浏览器路径。测试辅助仅允许本机HTTP根地址，不探测、停用或接管其他应用。
 

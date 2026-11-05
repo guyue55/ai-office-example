@@ -560,14 +560,26 @@ def test_verify_waits_for_restarting_identity_without_weakening_issuer(tmp_path,
     (tmp_path / "service").mkdir()
     issuer = "http://192.168.1.10/identity/realms/office"
     (tmp_path / "service/service.json").write_text(
-        json.dumps({"public_url": "http://192.168.1.10", "issuer": issuer})
+        json.dumps(
+            {
+                "public_url": "http://192.168.1.10",
+                "issuer": issuer,
+                "token_introspection": {
+                    "client_id": "synthetic",
+                    "client_secret_file": "probe-secret",
+                },
+            }
+        )
     )
+    (tmp_path / "service/probe-secret").write_text("synthetic-secret")
     monkeypatch.setattr(server, "ROOT", tmp_path)
     monkeypatch.setattr(database, "verify_database", lambda root: {"checked": True})
     monkeypatch.setattr(server.time, "sleep", lambda seconds: None)
     attempts = []
 
     def respond(request):
+        if request.url.path.endswith("/introspect"):
+            return httpx.Response(200, json={"active": False})
         if request.url.host == "identity":
             attempts.append(1)
             if len(attempts) == 1:

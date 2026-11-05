@@ -18,7 +18,7 @@ services:
   identity:
     pull_policy: never
     image: quay.io/keycloak/keycloak:26.8.1
-    ports: ["127.0.0.1:8081:8080"]
+    ports: ["127.0.0.1:${OFFICE_DEV_IDENTITY_PORT:-8081}:8080"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/office_identity
