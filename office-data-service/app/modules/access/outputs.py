@@ -35,6 +35,7 @@ class NamedOutput(Versioned):
 
 
 class EmployeeListOutput(EmployeeOutput):
+    role_names: list[str] = Field(default_factory=list, max_length=3)
     role_count: int
     login_name: str | None = None
     account_status: str = ""
@@ -49,6 +50,8 @@ class RoleOutput(NamedOutput):
 
 
 class PermissionSetOutput(NamedOutput):
+    role_names: list[str] = Field(default_factory=list, max_length=3)
+    permission_names: list[str] = Field(default_factory=list, max_length=3)
     permission_count: int
     role_count: int
 

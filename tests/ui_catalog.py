@@ -50,11 +50,14 @@ def context(template):
         "active": True,
         "version": 2,
         "role_count": 1,
+        "role_names": ["资料查阅角色"],
     }
     role = {
         "id": "role",
         "name": "资料查阅角色",
         "version": 2,
+        "permission_names": ["查阅项目", "查看字段", "上报资料"],
+        "role_names": ["资料查阅角色"],
         "permission_count": 5,
         "employee_count": 2,
         "set_count": 1,

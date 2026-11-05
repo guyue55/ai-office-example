@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import socket
 import threading
 import time
@@ -90,6 +91,18 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                     expect(page.locator("main h2")).to_have_count(1)
                     expect(page.locator("#assistant-panel")).to_have_count(1)
                     expect(page.locator(".shell-nav")).to_have_count(1)
+                    if template in {"employees.html", "permission_sets.html"}:
+                        summary = page.locator(".relation-summary").first
+                        expect(summary).to_contain_text(
+                            "资料查阅角色" if template == "employees.html" else "查阅项目"
+                        )
+                        expect(summary).to_have_attribute("tabindex", "0")
+                        expect(summary).to_have_attribute("data-tooltip", re.compile(".+"))
+                    if template == "permissions.html":
+                        expect(
+                            page.get_by_role("columnheader", name="权限编码", exact=True)
+                        ).to_be_visible()
+
                     unnamed = page.locator(
                         'main input:not([type="hidden"]),main select,main textarea'
                     ).evaluate_all(

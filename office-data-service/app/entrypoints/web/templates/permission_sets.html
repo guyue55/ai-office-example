@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from '_relation_summary.html' import relation_summary %}
 {% block title %}权限集 · {{ product.short_name }}{% endblock %}
 {% block content %}
 <header class="page-header">
@@ -26,10 +27,8 @@
 <td>
 <a class="permission-name" href="/console/access/permission-sets/{{ item.id }}">{{ item.name }}</a>
 </td>
-<td>{% if item.permission_count|default(0) %}{{ item.permission_count }} 项{% else %}
-<span class="badge neutral">待配置权限</span>{% endif %}
-</td>
-<td>{{ item.role_count|default(0) }} 个角色使用</td>
+<td>{{ relation_summary(item.permission_names|default([]), item.permission_count|default(0), '待配置权限') }}</td>
+<td>{{ relation_summary(item.role_names|default([]), item.role_count|default(0), '尚无角色使用') }}</td>
 <td>
 <div class="actions">
 <a href="/console/access/permission-sets/{{ item.id }}">查看内容与角色</a>

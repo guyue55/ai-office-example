@@ -17415,6 +17415,14 @@
             "type": "boolean",
             "title": "Active"
           },
+          "role_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Role Names"
+          },
           "role_count": {
             "type": "integer",
             "title": "Role Count"
@@ -19170,6 +19178,22 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "role_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Role Names"
+          },
+          "permission_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Permission Names"
           },
           "permission_count": {
             "type": "integer",

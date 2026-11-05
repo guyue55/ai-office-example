@@ -78,6 +78,11 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(base + "/console/dashboard")
+                # 完整页面的可见性不能改变侧栏打开偏好。
+                page.goto(base + "/console/assistant/workspace")
+                expect(page.locator("#assistant-panel")).to_be_visible()
+                page.goto(base + "/console/dashboard")
+                expect(page.locator("#assistant-panel")).to_be_hidden()
                 page.get_by_role("button", name="打开智能助手", exact=True).click()
                 expect(page.locator("#assistant-panel")).to_be_visible()
                 expect(history(page).locator("[data-conversation]")).to_have_count(1)

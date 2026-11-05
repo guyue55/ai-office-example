@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from '_relation_summary.html' import relation_summary %}
 {% block title %}人员管理 · {{ product.short_name }}{% endblock %}
 {% block content %}
 <header class="page-header">
@@ -55,7 +56,8 @@
 <th>姓名</th>
 <th>登录账号</th>
 <th>状态</th>
-<th>授权配置</th>
+<th>已关联角色</th>
+<th>账号维护</th>
 <th>操作</th>
 </tr>
 </thead>
@@ -69,9 +71,8 @@
 <td>
 <span class="badge {{ 'on' if item.active else 'off' }}">{{ item.account_status or ('启用' if item.active else '停用') }}</span>
 </td>
-<td>{% if item.role_count|default(0) %}已关联 {{ item.role_count }} 个角色{% else %}
-<span class="badge neutral">未配置角色</span>{% endif %}
-</td>
+<td>{{ relation_summary(item.role_names|default([]), item.role_count|default(0), '未配置角色') }}</td>
+<td><span class="small" tabindex="0" data-tooltip="{{ '可在本系统维护登录资料与凭证；实际操作仍须核验权限。' if item.managed else '已绑定的身份；凭证由原身份管理渠道维护。' }}">{{ '本系统维护' if item.managed else '外部绑定' }}</span></td>
 <td>
 <div class="actions">
 {% if accounts_enabled and 'identity.read' in me.permissions %}<a href="/console/accounts/employees/{{ item.id }}">账号详情</a>{% endif %}
@@ -100,7 +101,7 @@
 </td>
 </tr>{% else %}
 <tr>
-<td colspan="5" class="empty">{% set empty_title = '暂无人员' %}{% set empty_description = '开通员工后，可在这里维护账号与角色。' %}{% include '_list_empty.html' %}</td>
+<td colspan="6" class="empty">{% set empty_title = '暂无人员' %}{% set empty_description = '开通员工后，可在这里维护账号与角色。' %}{% include '_list_empty.html' %}</td>
 </tr>{% endfor %}
 </tbody>
 </table>

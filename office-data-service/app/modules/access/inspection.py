@@ -54,6 +54,64 @@ class Inspection:
             for item in items:
                 item[field] = counts.get(item["id"], 0)
 
+        await self.summaries(kind, items)
+
+    async def summaries(self, kind, items):
+        """当前页批量摘要：每对象最多三项，不产生逐行查询或加载完整关系。"""
+        if not items:
+            return
+        ids = [item["id"] for item in items]
+        specs: dict[str, list[tuple[str, Any, Any, Any, Any]]] = {
+            "employees": [
+                (
+                    "role_names",
+                    EmployeeRole.employee_id,
+                    Role.name,
+                    Role,
+                    EmployeeRole.role_id == Role.id,
+                )
+            ],
+            "permission-sets": [
+                ("role_names", RoleSet.set_id, Role.name, Role, RoleSet.role_id == Role.id),
+                (
+                    "permission_names",
+                    SetPermission.set_id,
+                    Permission.code,
+                    Permission,
+                    SetPermission.permission_code == Permission.code,
+                ),
+            ],
+        }
+        for field, key, label, model, condition in specs.get(kind, []):
+            relation = key.class_
+            ranked = (
+                select(
+                    key.label("parent"),
+                    label.label("label"),
+                    func.row_number().over(partition_by=key, order_by=label).label("position"),
+                )
+                .select_from(relation)
+                .join(model, condition)
+                .where(key.in_(ids))
+                .subquery()
+            )
+            rows = (
+                await self.db.execute(
+                    select(ranked.c.parent, ranked.c.label)
+                    .where(ranked.c.position <= 3)
+                    .order_by(ranked.c.parent, ranked.c.position)
+                )
+            ).all()
+            names: dict[str, list[str]] = {}
+            for parent, label_value in rows:
+                names.setdefault(parent, []).append(
+                    describe_permission(label_value)["name"]
+                    if field == "permission_names"
+                    else label_value
+                )
+            for item in items:
+                item[field] = names.get(item["id"], [])
+
     async def employee_accounts(self, items, issuer):
         """仅为当前页批量提供账号摘要，不逐人调用身份HTTP。"""
         ids = [row["id"] for row in items]

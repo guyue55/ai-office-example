@@ -48,7 +48,7 @@
   ui.decorateIcon(latest,'down','回到最新消息');
   const historyPopup=ui.floating($('[data-assistant-history]'),$('#assistant-history-panel'),{initialFocus:()=>query});
   const optionsPopup=ui.floating($('[data-assistant-menu]'),$('#assistant-options-panel'));
-  function save(){try{sessionStorage.setItem(storeKey,JSON.stringify({id:state.id,open:full||!root.hidden,width}));}catch(_){}}
+  function save(){try{const previous=JSON.parse(sessionStorage.getItem(storeKey)||'{}');sessionStorage.setItem(storeKey,JSON.stringify({id:state.id,open:full?previous.open===true:!root.hidden,width:full?(previous.width||width):width}));}catch(_){}}
   function say(text,{visible=false,error=false,retry=false,key=''}={}){
     if(feedback.textContent!==text||key&&key!==lastAnnouncement)feedback.replaceChildren(document.createTextNode(text));
     lastAnnouncement=key;
