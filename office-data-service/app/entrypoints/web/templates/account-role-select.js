@@ -1,6 +1,9 @@
 /* 开户与关联共用角色选择；更新选项不提交表单，不覆盖当前选择。 */
 (() => {
-  document.querySelectorAll('[data-account-role-picker]').forEach(root => {
+  const initialized = new WeakSet();
+  function setup() { document.querySelectorAll('[data-account-role-picker]').forEach(root => {
+    if (initialized.has(root)) return;
+    initialized.add(root);
     const select = root.querySelector('[data-role-select]');
     const refresh = root.querySelector('[data-role-refresh]');
     const search = root.querySelector('[data-role-search-button]');
@@ -44,5 +47,7 @@
     query.addEventListener('keydown', event => {
       if (event.key === 'Enter') { event.preventDefault(); load(); }
     });
-  });
+  }); }
+  setup();
+  new MutationObserver(setup).observe(document.body, {childList: true, subtree: true});
 })();

@@ -164,16 +164,39 @@ def register_accounts(
             "constraint_conflict",
             "账号已关联人员，请刷新核对",
         )
-        return await preview(
-            request,
-            {
-                "kind": "link",
-                "remote_id": str(form.get("remote_id", "")),
-                "name": str(form.get("name", "")),
-                "role_ids": [str(form["role_id"])] if form.get("role_id") else None,
-            },
-            target=target,
-        )
+        try:
+            return await preview(
+                request,
+                {
+                    "kind": "link",
+                    "remote_id": str(form.get("remote_id", "")),
+                    "name": str(form.get("name", "")),
+                    "role_ids": [str(form["role_id"])] if form.get("role_id") else None,
+                },
+                target=target,
+            )
+        except (DomainError, ValidationError) as caught:
+            error = validation_error(caught) if isinstance(caught, ValidationError) else caught
+            if error.status not in {409, 422}:
+                raise
+            # 只恢复未执行的关联预览，不吞掉权限错误。
+            await permission(request, "access.manage", "identity.read")
+            response = await render(
+                request,
+                "account_link.html",
+                found=found,
+                search=lookup,
+                restore_id=target["id"],
+                restore_values={
+                    "name": str(form.get("name", ""))[:100],
+                    "role_id": str(form.get("role_id", ""))[:100],
+                },
+                form_error=error.message,
+                role_options=await role_options(request),
+            )
+            response.status_code = error.status
+            response.headers["Cache-Control"] = "no-store"
+            return response
 
     @router.get("/console/accounts/employees/{identifier}")
     async def employee_account(request: Request, identifier: str):

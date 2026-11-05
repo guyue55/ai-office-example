@@ -67,6 +67,8 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
             selected[:] = payload["body"]["ids"]
             return {"id": "person", "version": 3}
         if name == "account.preview":
+            if payload["request"].get("name") == "关联失败测试":
+                raise DomainError(422, "unknown_link", "角色未登记，请重新选择")
             if payload["request"].get("username") == "taken01":
                 raise DomainError(409, "constraint_conflict", "账号信息已变更，请调整后核对")
             calls.append((name, payload))
@@ -125,6 +127,11 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(base + "/console/accounts/new")
+                # 模拟工作区导入服务端内容：新DOM不会执行页面脚本。
+                page.locator("[data-account-role-picker]").evaluate(
+                    "node => { const copy = node.cloneNode(true); copy.querySelector('[data-role-refresh]').hidden = true; node.replaceWith(copy); }"
+                )
+                expect(page.get_by_role("button", name="刷新角色选项")).to_be_visible()
                 expect(page.locator('[name="default_role"]')).to_have_count(0)
                 expect(page.locator('[name="role_id"]')).to_have_value("")
                 page.locator('[name="role_id"]').select_option("new-role")
@@ -172,6 +179,12 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 expect(page.get_by_role("button", name="核对关联", exact=True)).not_to_be_visible()
                 page.locator(".account-candidate-edit > summary").click()
                 page.locator('[name="role_id"]').select_option("new-role")
+                page.locator('[name="name"]').fill("关联失败测试")
+                page.get_by_role("button", name="核对关联", exact=True).click()
+                expect(page.locator("[data-server-form-error]")).to_contain_text("角色未登记")
+                expect(page.locator('[name="name"]')).to_have_value("关联失败测试")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.locator('[name="name"]').fill("待关联人员")
                 page.get_by_role("button", name="核对关联", exact=True).click()
                 expect(page.get_by_role("heading", name="核对账号操作")).to_be_visible()
                 assert calls[2][1]["request"]["kind"] == "link"
@@ -209,6 +222,20 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 expect(page.locator('[name="default_role"]')).to_have_count(0)
                 assert len(calls) == 4
                 expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                # 合成入口复用真实工作区拦截与加载，不依赖实例开户配置。
+                page.goto(base + "/console/employees")
+                page.evaluate(
+                    "() => { const a = document.createElement('a'); a.href = '/console/accounts/new'; a.textContent = '隔离开户入口'; document.querySelector('main').append(a); }"
+                )
+                page.get_by_role("link", name="隔离开户入口").click()
+                expect(page.locator("#workspace")).to_be_visible()
+                expect(page.locator("#workspace [data-role-refresh]")).to_be_visible()
+                page.locator('#workspace [name="role_id"]').select_option("new-role")
+                page.locator("#workspace [data-role-refresh]").click()
+                expect(page.locator("#workspace [data-role-status]")).to_contain_text(
+                    "角色选项已更新"
+                )
+                expect(page.locator('#workspace [name="role_id"]')).to_have_value("new-role")
                 assert not errors
             finally:
                 browser.close()
