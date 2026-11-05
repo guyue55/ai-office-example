@@ -49,12 +49,13 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
         if name == "access.list" and payload["kind"] == "roles":
             return {
                 "items": [
+                    {"id": "employee-role", "name": "普通员工", "builtin_key": "employee"},
                     {
                         "id": "new-role",
                         "name": "新增查阅角色",
                         "permission_count": 2,
                         "employee_count": 0,
-                    }
+                    },
                 ],
                 "next": None,
                 "has_more": False,
@@ -125,6 +126,27 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(base + "/console/accounts/new")
                 expect(page.locator('[name="default_role"]')).to_have_count(0)
+                expect(page.locator('[name="role_id"]')).to_have_value("")
+                page.locator('[name="role_id"]').select_option("new-role")
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.route(
+                    "**/console/accounts/role-options?*", lambda route: route.fulfill(status=503)
+                )
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色读取失败")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
+                page.route(
+                    "**/console/accounts/role-options?*",
+                    lambda route: route.fulfill(json={"items": [], "has_more": False}),
+                )
+                page.locator("[data-role-query]").fill("没有匹配")
+                page.get_by_role("button", name="搜索角色", exact=True).click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
                 page.locator('[name="name"]').fill("隔离测试人员")
                 page.locator('[name="username"]').fill("无效 账号")
                 page.get_by_role("button", name="核对开通信息").click()
@@ -135,6 +157,7 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 page.get_by_role("button", name="核对开通信息").click()
                 expect(page.get_by_role("heading", name="核对账号操作")).to_be_visible()
                 assert len(calls) == 1 and calls[0][0] == "account.preview"
+                assert calls[0][1]["request"]["role_ids"] == ["new-role"]
                 page.get_by_role("button", name="确认并提交", exact=True).click()
                 expect(page.get_by_role("heading", name="账号处理进度")).to_be_visible()
                 expect(page.locator("main")).to_contain_text("隔离操作已完成")
@@ -148,10 +171,12 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 assert len(calls) == 2
                 expect(page.get_by_role("button", name="核对关联", exact=True)).not_to_be_visible()
                 page.locator(".account-candidate-edit > summary").click()
+                page.locator('[name="role_id"]').select_option("new-role")
                 page.get_by_role("button", name="核对关联", exact=True).click()
                 expect(page.get_by_role("heading", name="核对账号操作")).to_be_visible()
                 assert calls[2][1]["request"]["kind"] == "link"
                 assert calls[2][1]["request"]["remote_id"] == "remote-person"
+                assert calls[2][1]["request"]["role_ids"] == ["new-role"]
                 page.get_by_role("button", name="确认并提交", exact=True).click()
                 expect(page.get_by_role("heading", name="账号处理进度")).to_be_visible()
                 assert calls[3][0] == "account.submit"
@@ -176,12 +201,14 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 page.goto(base + "/console/accounts/new")
                 page.locator('[name="name"]').fill("保留已填姓名")
                 page.locator('[name="username"]').fill("taken01")
+                page.locator('[name="role_id"]').select_option("new-role")
                 page.get_by_role("button", name="核对开通信息").click()
                 expect(page.locator("[data-server-form-error]")).to_be_focused()
                 expect(page.locator('[name="name"]')).to_have_value("保留已填姓名")
                 expect(page.locator('[name="username"]')).to_have_value("taken01")
                 expect(page.locator('[name="default_role"]')).to_have_count(0)
                 assert len(calls) == 4
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
                 assert not errors
             finally:
                 browser.close()
