@@ -15,18 +15,18 @@
 <span class="muted">当前账号</span>
 <strong class="stat">{{ me.name }}</strong>
 <span class="muted">每次操作都会检查当前授权</span>
-<span class="metric-affordance" aria-hidden="true">↗</span><span class="sr-only">查看本人账号与安全</span>
+<span class="metric-affordance" aria-hidden="true">›</span><span class="sr-only">查看本人账号与安全</span>
 </a>
 <a class="card metric-card" href="#my-permissions" data-overview-open="my-permissions">
 <span class="muted">已获授权</span>
 <strong class="stat">{{ permission_details|length }} <span class="muted">项能力</span>
 </strong>
-<span class="metric-affordance" aria-hidden="true">↗</span><span class="sr-only">查看我的权限</span>
+<span class="metric-affordance" aria-hidden="true">›</span><span class="sr-only">查看我的权限</span>
 </a>
 <a class="card metric-card" href="#my-roles" data-overview-open="my-roles">
 <span class="muted">关联角色</span>
 <strong class="stat">{{ me.roles|default([], true)|length }} <span class="muted">个角色</span></strong>
-<span class="metric-affordance" aria-hidden="true">↗</span><span class="sr-only">查看我的角色</span>
+<span class="metric-affordance" aria-hidden="true">›</span><span class="sr-only">查看我的角色</span>
 </a>
 </div>
 <section class="card">
