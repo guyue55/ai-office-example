@@ -146,6 +146,8 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 page.goto(base + "/console/accounts/link?q=existing")
                 expect(page.locator('[name="default_role"]')).to_be_checked()
                 assert len(calls) == 2
+                expect(page.get_by_role("button", name="核对关联", exact=True)).not_to_be_visible()
+                page.locator(".account-candidate-edit > summary").click()
                 page.get_by_role("button", name="核对关联", exact=True).click()
                 expect(page.get_by_role("heading", name="核对账号操作")).to_be_visible()
                 assert calls[2][1]["request"]["kind"] == "link"

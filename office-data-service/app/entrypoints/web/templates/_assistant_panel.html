@@ -1,7 +1,7 @@
 <section id="assistant-panel" class="assistant-panel{% if assistant_full %} assistant-full{% endif %}" aria-labelledby="assistant-title" data-full="{{ 'true' if assistant_full else 'false' }}" data-csrf="{{ csrf }}" data-owner="{{ me.id|default('current') }}" {% if not assistant_full %}hidden{% endif %}>
   <div class="assistant-resize" role="separator" tabindex="0" aria-label="调整助手宽度" aria-orientation="vertical" aria-valuemin="360" aria-valuemax="640" aria-valuenow="420" {% if assistant_full %}hidden{% endif %}></div>
   <header class="assistant-header">
-    <div class="assistant-heading"><h2 id="assistant-title">智能助手 <span class="assistant-ai-label">AI</span></h2><div class="assistant-tools"><button type="button" class="ui-text-action" data-assistant-new>新会话</button><button type="button" data-assistant-menu aria-label="更多会话操作">更多会话操作</button><button type="button" data-assistant-close aria-label="收起智能助手" {% if assistant_full %}hidden{% endif %}>收起</button></div></div>
+    <div class="assistant-heading"><{{ 'h1' if assistant_full else 'h2' }} id="assistant-title">智能助手 <span class="assistant-ai-label">AI</span></{{ 'h1' if assistant_full else 'h2' }}><div class="assistant-tools"><button type="button" class="ui-text-action" data-assistant-new>新会话</button><button type="button" data-assistant-menu aria-label="更多会话操作">更多会话操作</button><button type="button" data-assistant-close aria-label="收起智能助手" {% if assistant_full %}hidden{% endif %}>收起</button></div></div>
     <div class="assistant-topicbar"><span id="assistant-topic">新会话</span><button type="button" class="ui-text-action" data-assistant-history>历史会话</button></div>
   </header>
   <div id="assistant-feedback" class="assistant-feedback sr-only" role="status" aria-live="polite"></div>

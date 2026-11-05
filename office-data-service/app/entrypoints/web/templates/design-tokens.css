@@ -7,8 +7,8 @@
   --space-5:20px;
   --space-6:24px;
   --space-8:32px;
-  --radius-control:8px;
-  --radius-surface:12px;
+  --radius-control:6px;
+  --radius-surface:10px;
   --surface:#fff;
   --surface-subtle:#f8fafc;
   --surface-hover:#f1f5f9;
@@ -22,14 +22,14 @@
   --focus-ring:var(--focus-default);
   --focus-halo:rgba(37,99,235,.12);
   --soft:#eff5ff;
-  --bg:#f4f6fa;
-  --nav-surface:#152338;
-  --nav-hover:#253950;
-  --nav-text:#d5deeb;
-  --nav-muted:#a4b5cb;
+  --bg:#f7f8fa;
+  --nav-surface:#fff;
+  --nav-hover:#edf2f8;
+  --nav-text:#334155;
+  --nav-muted:#526477;
   --nav-width:232px;
   --page-inset:32px;
-  --shadow-surface:0 1px 3px #172b3a08;
+  --shadow-surface:none;
 }
 @supports (color:color-mix(in srgb,red,black)) {
   :root {

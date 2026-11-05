@@ -4,7 +4,7 @@
 .settings-editor {container:settings-editor / inline-size;min-width:0;}
 .settings-layout .card {margin:0;min-width:0;}
 .settings-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
-.settings-heading h3 {margin:0;}
+.settings-heading h2 {margin:0;}
 .settings-section {border:0;border-top:1px solid var(--line);padding:20px 0 0;margin:0 0 24px;min-width:0;}
 .settings-section legend {padding:0 12px 0 0;font-size:14px;font-weight:600;color:var(--ink);}
 .settings-section legend .badge {margin-left:6px;font-weight:400;}
@@ -29,7 +29,7 @@
 .settings-footer {display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:8px;}
 .settings-footer .muted {font-size:12px;}
 .settings-side {display:grid;gap:20px;min-width:0;}
-.settings-side h3 {margin:0 0 16px;}
+.settings-side h2 {margin:0 0 16px;}
 .settings-side .settings-heading {margin-bottom:0;}
 .settings-facts {grid-template-columns:90px minmax(0,1fr);gap:10px 12px;font-size:13px;}
 .settings-summary {display:grid;gap:6px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.6;}

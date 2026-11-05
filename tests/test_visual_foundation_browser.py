@@ -140,7 +140,7 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                     )
                     >= 3
                 )
-                page.locator(".page-header h2").click()
+                page.locator(".page-header h1").click()
                 # 详情以共享抽屉导入时，不得复制全局助手入口和位置栏。
                 page.locator("a.permission-name").first.click()
                 expect(page.locator("#workspace")).to_be_visible()

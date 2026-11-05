@@ -11,7 +11,7 @@
 <header class="page-header" data-panel-title="{{ detail.name }} · {{ '分配角色' if relation == 'roles' else '配置' ~ access_labels[relation] }}">
 <div>
 <p class="eyebrow">{{ access_labels[kind] }} · {{ detail.name }}</p>
-<h2>授权关联</h2>
+<h1>授权关联</h1>
 <p class="muted">为「{{ detail.name }}」{{ '分配' if relation == 'roles' else '选择' }}{{ access_labels[relation] }}。先查看内容，再勾选并保存。</p>
 </div>
 <a class="button secondary" href="/console/access/{{ kind }}/{{ identifier }}">查看详情与配置效果</a>
@@ -21,7 +21,7 @@
 <div class="hint">这是共享配置。保存后会影响使用此{{ access_labels[kind] }}的角色或员工；请先在详情页检查使用情况。</div>{% endif %}
 <section class="card">
 <div class="section-head">
-<h3>当前已关联{{ access_labels[relation] }}</h3>
+<h2>当前已关联{{ access_labels[relation] }}</h2>
 <span class="badge neutral">{{ assoc.ids|length }} 项</span>
 </div>{% if detail.links %}
 <ul class="pill-list">{% for item in detail.links %}

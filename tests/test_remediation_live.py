@@ -169,7 +169,7 @@ def test_fresh_web_client_provisions_and_logs_in(live, tmp_path, web_listener):
                 (ROOT / "runtime/secrets/operator_password").read_text().strip()
             )
             page.locator("#kc-login").click()
-            expect(page.locator("main h2")).to_have_text("仪表盘")
+            expect(page.locator("main h1")).to_have_text("仪表盘")
             browser.close()
     finally:
         server.should_exit = True

@@ -41,7 +41,7 @@ def main():
         def inspect(template, path, status=200, suffix=""):
             response = page.goto(BASE + path)
             assert response.status == status, (template, response.status)
-            expect(page.locator("main h2")).to_have_count(1)
+            expect(page.locator("main h1")).to_have_count(1)
             for width in (1024, 1280, 1440, 1920):
                 page.set_viewport_size({"width": width, "height": 1000})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
@@ -123,7 +123,7 @@ def main():
         )
         expect(history.first).to_be_visible()
         history.first.click()
-        expect(page.locator("main h2")).to_have_text("账号处理进度")
+        expect(page.locator("main h1")).to_have_text("账号处理进度")
         # 新建员工普通表单也必须保护草稿与完整页面出口。
         page.goto(BASE + "/console/employees")
         page.get_by_role("link", name="新建员工", exact=True).click()
@@ -154,7 +154,7 @@ def main():
             "form => window.OfficeForms.dirty(document.querySelector('main')) && !window.OfficeForms.dirty(document.querySelector('main'), form)"
         )
         page.get_by_role("button", name="核对开通信息", exact=True).click()
-        expect(page.locator("main h2")).to_have_text("核对账号操作")
+        expect(page.locator("main h1")).to_have_text("核对账号操作")
         expect(page.locator("main")).to_contain_text(username)
         expect(page.locator("#action-confirm")).not_to_be_visible()
         visited.add("account_preview.html")

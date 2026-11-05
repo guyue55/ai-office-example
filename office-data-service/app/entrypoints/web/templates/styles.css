@@ -80,15 +80,15 @@ input:is([type=text],[type=search],[type=email],[type=url],[type=password],[type
 @media (hover:hover) {
   input:is([type=text],[type=search],[type=email],[type=url],[type=password],[type=date],[type=number]):not(:disabled):not(:focus):not([aria-invalid=true]):hover,select:not(:disabled):not(:focus):not([aria-invalid=true]):hover,textarea:not(:disabled):not(:focus):not([aria-invalid=true]):hover {border-color:#596f7b}
 }
-h1,h2,h3,p {
+h1,h2,h3,h4,p {
   margin-top:0
 }
-h2 {
-  font-size:25px;
+h1 {
+  font-size:28px;
   letter-spacing:-.5px;
   margin-bottom:7px
 }
-h3 {
+h2 {
   font-size:17px;
   margin-bottom:14px
 }
@@ -100,11 +100,12 @@ h3 {
   font-size:12px
 }
 .shell-nav {
-  --focus-ring:#a8efe3;
+  --focus-ring:var(--focus-default);
   position:fixed;
   inset:0 auto 0 0;
   width:var(--nav-width);
-  padding:28px 16px 12px;
+  padding:24px 16px 12px;
+  border-right:1px solid var(--line);
   background:var(--nav-surface);
   color:var(--nav-text);
   display:flex;
@@ -115,7 +116,7 @@ h3 {
 }
 .brand {
   font-size:21px;
-  color:white;
+  color:var(--ink);
   font-weight:700;
   padding:0 14px 22px
 }
@@ -138,13 +139,13 @@ h3 {
 }
 .shell-nav>a:hover,.shell-nav>a.active {
   background:var(--nav-hover);
-  color:white;
+  color:var(--ink);
   text-decoration:none
 }
 .nav-bottom {
   margin-top:auto;
   padding-top:14px;
-  border-top:1px solid #315058;
+  border-top:1px solid var(--line);
   min-width:0
 }
 .account-menu { position:relative; }
@@ -168,16 +169,16 @@ h3 {
   place-items:center;
   flex:0 0 32px;
   height:32px;
-  border:1px solid #43666c;
+  border:1px solid var(--line);
   border-radius:50%;
   background:var(--nav-hover);
-  color:#e0efed;
+  color:var(--ink);
   font-size:13px
 }
 .account-identity { flex:1; min-width:0; }
-.account-name { display:block; color:#e0efed; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.account-caption { display:block; color:#9bb7ba; font-size:11px; line-height:1.4; }
-.account-chevron { flex-shrink:0; color:#9bb7ba; }
+.account-name { display:block; color:var(--ink); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.account-caption { display:block; color:var(--nav-muted); font-size:11px; line-height:1.4; }
+.account-chevron { flex-shrink:0; color:var(--nav-muted); }
 .account-menu[open] .account-chevron { color:var(--nav-text); }
 .account-panel {
   position:absolute;
@@ -472,7 +473,7 @@ details[open]>summary {
   align-items:center;
   margin-bottom:15px
 }
-.section-head h3 {
+.section-head :is(h2,h3) {
   margin:0
 }
 .subtle-list {
@@ -662,7 +663,7 @@ button,.button {transition:background-color 140ms ease,border-color 140ms ease,c
 button.secondary:not(:disabled):hover,.button.secondary:not(:disabled):hover {background:#f0f5f5;border-color:#596f7b}
 button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {background:#fff3f1!important;border-color:#c78079!important}
 [data-form-dialog] > summary { color:var(--accent); font-weight:600; }
-@keyframes workspace-in { from { transform:translateX(24px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@keyframes workspace-in { from { transform:translateX(8px); opacity:0; } to { transform:translateX(0); opacity:1; } }
 @keyframes modal-in { from { transform:translateY(8px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 @media (max-width:760px) {
   .workspace { width:100vw; }
@@ -895,7 +896,7 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 /* 全页面复用：表单、技术标识和结果页保持同一阅读节奏。 */
 .block-code { display:block; margin-top:4px; }
 .page-header > div { min-width:0; }
-.page-header h2,.card strong,.card p,.breadcrumb { overflow-wrap:anywhere; }
+.page-header h1,.card strong,.card p,.breadcrumb { overflow-wrap:anywhere; }
 .search-form { display:flex; align-items:flex-end; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
 .search-form > label { display:grid; gap:6px; flex:1 1 220px; max-width:360px; }
 .search-form input { width:100%; min-width:0; }

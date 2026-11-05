@@ -121,3 +121,27 @@
 - 当前页选择、候选账号与全页目录最终3通过；选择验证跨页保留、撤销、部分选中及零自动写入。其他共享状态与完整离线结果继续记录。
 - 第三轮最终验证：完整离线747通过、135 live排除；共享状态和目录首组32通过；新增选择/候选/目录专项3通过；修复后Web相关86通过；Ruff/格式、架构、契约与差异检查通过。记录数量来自本轮输出，不累计重复用例。
 - 实现提交4dddd47。本轮主要覆盖授权编辑、账号关联和复杂列表检索，未宣称已穷尽所有页面的未知问题。真人业务操作、真实供应商与远程发布仍未执行。
+
+## 第四轮：重新建立页面结构与中性工作台视觉
+
+本轮按用户明确要求重新审视旧布局，使用frontend-ui-engineering的组合/语义原则、UI UX Pro Max的Corporate Modern方向，以及GSAP Core的可中断与减少动态原则。旧阶段通过只作历史证据，不能阻止新设计。
+
+### 分类型研究与实施
+
+| 页面类型与覆盖 | 本轮依据 | 当前实施 |
+|---|---|---|
+| 全部24页及全局导航 | [Atlassian当前导航布局](https://atlassian.design/components/navigation-system/layout)、[WAI标题](https://www.w3.org/WAI/tutorials/page-structure/headings/) | 浅色中性导航、克制表面/边框/圆角；每页唯一h1，分区h2；抽屉标题识别与活体脚本同步 |
+| 概览 | [PatternFly概览](https://www.patternfly.org/patterns/dashboard/) | 紧凑本人概览带替代等权大卡片组；数字与身份层级分开，仍按需打开详情 |
+| 人员/角色/权限集/权限目录/审计/授权/操作列表 | [Carbon表格](https://www.carbondesignsystem.com/building-blocks/core/components/data-table/guidelines) | 在现有受控摘要/筛选/选择基础上迁移新标题层级及中性表面；不虚构排序或全局统计 |
+| 开户/关联/预览/详情/安全/凭证/关联配置 | [Carbon表单](https://www.carbondesignsystem.com/building-blocks/core/patterns/forms)、[GOV.UK核对](https://design-system.service.gov.uk/patterns/check-answers/) | 开户按资料/初始权限与交付分fieldset；预览分别呈现影响和目标资料；账号详情资料与安全分栏，窄容器单列 |
+| 账号回执、助手任务/结果 | [GOV.UK回执](https://design-system.service.gov.uk/patterns/confirmation-pages/) | 账号回执状态成为主要阅读点，按真实状态强调；需要核实不使用成功色；自动刷新复用草稿/等待回执保护 |
+| 助手完整页/侧栏、模型设置 | [PatternFly Chatbot源码](https://github.com/patternfly/chatbot)、[Fluent动效](https://fluent2.microsoft.design/motion) | 完整页h1与侧栏h2分别渲染；设置与助手结果分区同步语义；面板只保留短距离入场，沿用减少动态回退 |
+| 错误/重新登录/退出 | [Carbon空态](https://www.carbondesignsystem.com/building-blocks/core/patterns/empty-states) | 保留原因与恢复路径，迁移真实页面主标题，不能把退出清理未知写成成功 |
+
+这次没有需要时间线编排的复杂动效；按[GSAP matchMedia](https://gsap.com/docs/v3/GSAP/gsap.matchMedia()/)的断点与减少动态原则审阅，简单入场继续用本地CSS，不为技能名增加运行依赖。对动效的选择是本项目适配，不是声称已接入GSAP。
+
+### 二次复核
+
+- 已查看中性外壳下的人员桌面截图；文字、焦点和页面目录首组检查通过。浅色导航同时重配账号菜单、活动状态与焦点，避免只改背景导致文字消失。
+- 初轮完整离线747通过、136 live排除；相关Web86通过。首轮表单组2通过、1失败：关联候选表单的旧测试直接点击隐藏按钮；修正为展开后核对，继续保留摘要/幂等断言。
+- 全部标题变更同步到工作区提取、页面恢复及退出判定；不能只替换HTML导致抽屉读取到错误标题。源码/合成浏览器不代表真实身份或模型验收。

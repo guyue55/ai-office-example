@@ -5,32 +5,32 @@
 <header class="page-header">
 <div>
 <p class="eyebrow">工作台概览</p>
-<h2>仪表盘</h2>
+<h1>仪表盘</h1>
 <p class="muted">你好，{{ me.name }}。在这里查看当前账号可用的能力。</p>
 </div>
 <span class="badge on">账号已启用</span>
 </header>
-<div class="grid">
-<a class="card metric-card" href="/console/security">
+<section class="card dashboard-overview" aria-label="本人概览">
+<a class="metric-card" href="/console/security">
 <span class="muted">当前账号</span>
 <strong class="stat">{{ me.name }}</strong>
 <span class="muted">每次操作都会检查当前授权</span>
 <span class="metric-affordance" aria-hidden="true">›</span><span class="sr-only">查看本人账号与安全</span>
 </a>
-<a class="card metric-card" href="#my-permissions" data-overview-open="my-permissions">
+<a class="metric-card" href="#my-permissions" data-overview-open="my-permissions">
 <span class="muted">已获授权</span>
 <strong class="stat">{{ permission_details|length }} <span class="muted">项能力</span>
 </strong>
 <span class="metric-affordance" aria-hidden="true">›</span><span class="sr-only">查看我的权限</span>
 </a>
-<a class="card metric-card" href="#my-roles" data-overview-open="my-roles">
+<a class="metric-card" href="#my-roles" data-overview-open="my-roles">
 <span class="muted">关联角色</span>
 <strong class="stat">{{ me.roles|default([], true)|length }} <span class="muted">个角色</span></strong>
 <span class="metric-affordance" aria-hidden="true">›</span><span class="sr-only">查看我的角色</span>
 </a>
-</div>
+</section>
 <section class="card">
-<div class="section-head"><div><h3>常用入口</h3><p class="muted">从当前账号可用的任务开始。</p></div></div>
+<div class="section-head"><div><h2>常用入口</h2><p class="muted">从当前账号可用的任务开始。</p></div></div>
 <div class="dashboard-links">
 {% if 'agent.run' in me.permissions %}<a href="/console/assistant/workspace"><strong>开始使用智能助手</strong><span>查询获准资料，准备操作并核对回执</span></a>{% endif %}
 <a href="/console/client-authorizations?scope=own"><strong>管理我的客户端授权</strong><span>查看本人设备与客户端的授权情况</span></a>
@@ -47,7 +47,7 @@
 <details class="card dashboard-detail" id="my-roles" data-overview-detail open><summary>我的角色</summary>
 <div class="section-head">
 <div>
-<h3>我的角色</h3>
+<h2>我的角色</h2>
 <p class="muted dashboard-description">角色是能力的来源。以下为当前账号已关联的角色，实际可用能力以“我的权限”为准。</p>
 </div>
 <span class="badge neutral">{{ my_roles|length }} 个</span>
@@ -85,13 +85,13 @@
 <details class="card dashboard-detail" id="my-permissions" data-overview-detail open><summary>我的权限</summary>
 <div class="section-head">
 <div>
-<h3>我的权限</h3>
+<h2>我的权限</h2>
 <p class="muted dashboard-description">以下为当前已生效的权限。本人范围与全部范围分别列出。</p>
 </div>
 <span class="badge neutral">{{ permission_details|length }} 项</span>
 </div>{% if permission_details %}
 <div class="permission-distribution-block" aria-labelledby="permission-distribution-title">
-<h4 id="permission-distribution-title">我的权限分布</h4>
+<h3 id="permission-distribution-title">我的权限分布</h3>
 <p class="muted">按能力类别统计当前账号已生效的权限，每项仅归属一个类别；完整说明见下表。</p>
 <ul class="permission-distribution">{% for group, entries in permission_details|groupby('group') %}
 <li><span>{{ group }}</span><strong>{{ entries|length }} 项</strong><meter min="0" max="{{ permission_details|length }}" value="{{ entries|length }}" aria-label="{{ group }}：{{ entries|length }} / {{ permission_details|length }} 项"></meter></li>

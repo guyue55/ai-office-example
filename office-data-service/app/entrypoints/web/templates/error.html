@@ -3,7 +3,7 @@
 {% block content %}
 <section class="card state-page state-error" aria-labelledby="operation-error-title">
   <span class="state-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 3h.01"/></svg></span>
-  <h2 id="operation-error-title">操作未成功</h2>
+  <h1 id="operation-error-title">操作未成功</h1>
   <p role="alert" data-error-message>原因：<strong>{{ message }}</strong></p>
   <dl class="state-facts"><dt>错误码</dt><dd>{{ code }}</dd><dt>追踪号</dt><dd>{{ trace_id }}</dd></dl>
   {% if recovery_path %}

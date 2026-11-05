@@ -39,3 +39,29 @@
 .applied-filters a:hover {background:var(--soft);border-color:var(--accent);text-decoration:none}
 [data-grant-editor] tbody tr:has(input[type=checkbox]:checked) {background:var(--soft)}
 [data-grant-editor] tbody tr:focus-within {outline:2px solid var(--focus-ring);outline-offset:-2px}
+
+/* 回执按真实状态组织；需要核实不能获得成功配色。 */
+.receipt-panel {border-top:3px solid var(--control-border)}
+.receipt-panel[data-receipt-state=succeeded] {border-top-color:#21664b}
+.receipt-panel:is([data-receipt-state=needs_attention],[data-receipt-state=needs_confirmation],[data-receipt-state=awaiting_user]) {border-top-color:#b76e00}
+.receipt-state {font-size:22px;line-height:1.5}
+.receipt-panel .actions {margin-block:var(--space-5)}
+
+/* 表单按任务分组，详情按阅读与安全职责分栏；窄容器回到单列。 */
+.form-section {display:grid;gap:var(--space-4);min-width:0;border:0;padding:0;margin:0}
+.form-section + .form-section {border-top:1px solid var(--line);padding-top:var(--space-5)}
+.form-section legend {font-weight:600;padding:0 0 var(--space-4);color:var(--ink)}
+.form-section > label:not(.check-option) {display:grid;gap:var(--space-2)}
+.form-section > p {margin:0;line-height:1.7}
+.account-detail-grid {display:grid;gap:var(--space-5);grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start}
+.account-detail-grid > .card {min-width:0}
+
+/* 概览带区分身份与数字；任务入口按阅读顺序排列，不使用等权大卡片堆叠。 */
+.dashboard-overview {display:grid;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(0,1fr));padding:0}
+.dashboard-overview > .metric-card {margin:0;border:0;border-radius:0;padding:var(--space-5) 48px var(--space-5) var(--space-5);min-width:0}
+.dashboard-overview > .metric-card + .metric-card {border-left:1px solid var(--line)}
+.dashboard-overview > .metric-card:first-child .stat {font-size:20px;line-height:1.6}
+@media(max-width:700px) {
+  .dashboard-overview {grid-template-columns:1fr}
+  .dashboard-overview > .metric-card + .metric-card {border-left:0;border-top:1px solid var(--line)}
+}

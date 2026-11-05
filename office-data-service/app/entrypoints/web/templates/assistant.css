@@ -13,7 +13,7 @@ main.assistant-launch-main {padding-bottom:calc(120px + env(safe-area-inset-bott
 body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-width,420px)}
 .assistant-header {padding:12px 16px 8px;border-bottom:1px solid var(--line);flex-shrink:0}
 .assistant-heading,.assistant-topicbar {display:flex;align-items:center;justify-content:space-between;gap:8px}
-.assistant-heading h2 {font-size:15px;margin:0;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.assistant-heading :is(h1,h2) {font-size:15px;margin:0;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .assistant-ai-label {font-size:10px;font-weight:600;color:var(--muted);border:1px solid var(--line);padding:0 4px;border-radius:4px}
 .assistant-tools {display:flex;gap:2px;align-items:center;flex-shrink:0}
 .assistant-tools .ui-text-action {font-size:12px;padding-inline:8px}

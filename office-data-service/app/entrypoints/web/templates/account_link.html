@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% from '_page_patterns.html' import task_steps %}{% block title %}关联已有账号 · {{ product.short_name }}{% endblock %}
-{% block content %}<header class="page-header"><div><p class="eyebrow">人员与账号</p><h2>关联已有账号</h2><p class="muted">核对真实登录资料后关联业务人员，不重置原账号密码，也不按同名自动绑定。</p></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
+{% block content %}<header class="page-header"><div><p class="eyebrow">人员与账号</p><h1>关联已有账号</h1><p class="muted">核对真实登录资料后关联业务人员，不重置原账号密码，也不按同名自动绑定。</p></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
 {{ task_steps(['搜索账号', '核对关联', '处理回执'], 1) }}
 
 <section class="card form-card"><form role="search" method="get" class="search-form"><label>姓名或登录账号<input type="text" name="q" minlength="2" maxlength="100" value="{{ search }}" required></label><button type="submit">搜索</button></form>

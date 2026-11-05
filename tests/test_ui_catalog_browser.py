@@ -88,7 +88,7 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                 for template in sorted(templates):
                     response = page.goto(base + "/catalog/" + template)
                     assert response.status == 200, template
-                    expect(page.locator("main h2")).to_have_count(1)
+                    expect(page.locator("main h1")).to_have_count(1)
                     expect(page.locator("#assistant-panel")).to_have_count(1)
                     expect(page.locator(".shell-nav")).to_have_count(1)
                     if template in {

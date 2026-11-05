@@ -47,14 +47,14 @@
     full.href = url;
     full.hidden = false;
     reload.hidden = new URL(url).pathname === '/console/accounts/new';
-    title.textContent = main.querySelector('[data-panel-title]')?.dataset.panelTitle || main.querySelector('h2')?.textContent.trim() || '管理操作';
+    title.textContent = main.querySelector('[data-panel-title]')?.dataset.panelTitle || main.querySelector('h1,h2')?.textContent.trim() || '管理操作';
     // 服务端页面中的 ?q / ?after 相对链接必须以抽屉页面为基准，
     // 不能错误解析成背后人员列表的 URL。
     main.querySelectorAll('a[href]').forEach(link => {
       link.href = new URL(link.getAttribute('href'), url).href;
     });
     content.replaceChildren(...Array.from(main.childNodes));
-    content.querySelector('.page-header h2')?.setAttribute('class', 'workspace-section-title');
+    content.querySelector('.page-header h1')?.setAttribute('class', 'workspace-section-title');
     panel.classList.toggle('is-compact', new URL(url).pathname === '/console/accounts/new');
     back.hidden = !trail.length;
     setup(content);
@@ -149,7 +149,7 @@
         .find(link => link.getAttribute('href') === focusHref);
       window.OfficeUI?.enhance(document);
       if (!panel.open && !window.OfficeUI?.restoreFocus()) {
-        const restored = target || document.querySelector('main h2');
+        const restored = target || document.querySelector('main h1');
         if (restored) { restored.tabIndex = restored.tabIndex < 0 ? -1 : restored.tabIndex; restored.focus({preventScroll: true}); }
       }
     } catch {
@@ -194,7 +194,7 @@
     const view = trail.pop();
     content.replaceChildren(...view.nodes);
     currentURL = view.url; full.href = view.url;
-    title.textContent = content.querySelector('[data-panel-title]')?.dataset.panelTitle || content.querySelector('h2')?.textContent.trim() || '管理操作';
+    title.textContent = content.querySelector('[data-panel-title]')?.dataset.panelTitle || content.querySelector('h1,h2')?.textContent.trim() || '管理操作';
     back.hidden = !trail.length;
     showFeedback('');
     title.focus();
@@ -378,7 +378,7 @@
         const errorText = main.querySelector('.card')?.textContent.trim() || '操作未成功，请核对后重试。';
         throw new Error(errorText);
       }
-      if (main.querySelector('h2')?.textContent.trim() === '登录授权已结束') { leaving = true; location.assign('/console/signed-out'); return; }
+      if (main.querySelector('h1,h2')?.textContent.trim() === '登录授权已结束') { leaving = true; location.assign('/console/signed-out'); return; }
       if (!main.querySelector('.notice')) throw new Error('未取得保存确认。请重新登录或刷新核对，勿重复提交。');
       // 已取得保存回执的当前表单不再是未保存草稿；发送期间禁止继续修改。
       remember(form);
