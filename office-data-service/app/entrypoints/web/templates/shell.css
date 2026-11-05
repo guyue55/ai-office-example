@@ -104,3 +104,11 @@ tbody tr:focus-within {background:var(--surface-hover)}
   .page-header > div:first-child {flex-basis:100%}
   .card {padding:var(--space-4)}
 }
+
+/* 概览按真实能力给出任务入口，不引入未实现的业务指标。 */
+.dashboard-links {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:var(--space-3)}
+.dashboard-links > a {display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-control);color:var(--ink);background:var(--surface)}
+.dashboard-links > a:hover {background:var(--soft);border-color:var(--accent);text-decoration:none}
+.dashboard-links > a > span {color:var(--muted);font-size:13px;line-height:1.7}
+.dashboard-description {margin:var(--space-1) 0 0}
+.dashboard-note {margin:var(--space-4) 0 0}

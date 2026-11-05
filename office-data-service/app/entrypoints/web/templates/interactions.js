@@ -135,8 +135,15 @@
   }
   function placeTip(target) {
     const rect = target.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
-    tip.style.left = Math.max(8, Math.min(innerWidth-width-8, rect.x+rect.width/2-width/2)) + 'px';
-    tip.style.top = Math.max(8,Math.min(innerHeight-height-8,rect.top > height+12 ? rect.top-height-8 : rect.bottom+8)) + 'px';
+    let left=rect.x+rect.width/2-width/2, top=rect.top-height-8;
+    // 顶部工具栏上方不足时先放侧面，避免提示覆盖下一行按钮。
+    if(top<8){
+      if(rect.left-width-8>=8){left=rect.left-width-8;top=rect.top+(rect.height-height)/2;}
+      else if(rect.right+width+8<=innerWidth-8){left=rect.right+8;top=rect.top+(rect.height-height)/2;}
+      else top=rect.bottom+8;
+    }
+    tip.style.left=Math.max(8,Math.min(innerWidth-width-8,left))+'px';
+    tip.style.top=Math.max(8,Math.min(innerHeight-height-8,top))+'px';
   }
   function syncTip() {
     clearTimeout(tipHideTimer);

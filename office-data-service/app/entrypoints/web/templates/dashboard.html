@@ -23,32 +23,31 @@
 <a href="#my-permissions">查看权限说明 ↓</a>
 </section>
 <section class="card">
-<span class="muted">常用入口</span>
-{% if 'agent.run' in me.permissions %}<p><a class="button" href="/console/assistant/workspace">开始使用智能助手</a></p>{% endif %}
-<p><a href="/console/client-authorizations?scope=own">管理我的客户端授权</a></p>
-{% if 'access.read' in me.permissions %}
-<ul class="subtle-list">
-<li>
-<a href="/console/employees">查看人员及角色</a>
-</li>
-<li>
-<a href="/console/permission-sets">检查权限集配置</a>
-</li>
-{% if 'audit.read' in me.permissions %}<li>
-<a href="/console/audit">查看操作记录</a>
-</li>{% endif %}
-</ul>{% else %}
-<p style="margin:12px 0">可通过已授权的客户端使用业务能力。</p>
-<p class="muted">需要新增能力时，请联系管理员。</p>{% endif %}
+<span class="muted">关联角色</span>
+<strong class="stat">{{ me.roles|default([], true)|length }} <span class="muted">个角色</span></strong>
+<a href="#my-roles">查看能力来源 ↓</a>
 </section>
 </div>
+<section class="card">
+<div class="section-head"><div><h3>常用入口</h3><p class="muted">从当前账号可用的任务开始。</p></div></div>
+<div class="dashboard-links">
+{% if 'agent.run' in me.permissions %}<a href="/console/assistant/workspace"><strong>开始使用智能助手</strong><span>查询获准资料，准备操作并核对回执</span></a>{% endif %}
+<a href="/console/client-authorizations?scope=own"><strong>管理我的客户端授权</strong><span>查看本人设备与客户端的授权情况</span></a>
+{% if 'access.read' in me.permissions %}
+<a href="/console/employees"><strong>查看人员及角色</strong><span>维护员工账号，检查角色与权限来源</span></a>
+<a href="/console/permission-sets"><strong>检查权限集配置</strong><span>复用能力组合，核对关联角色</span></a>
+{% endif %}
+{% if 'audit.read' in me.permissions %}<a href="/console/audit"><strong>查看操作记录</strong><span>按操作者与时间追溯已提交的变更</span></a>{% endif %}
+</div>
+{% if 'access.read' not in me.permissions %}<p class="muted dashboard-note">可通过已授权的客户端使用业务能力；需要新增能力时，请联系管理员。</p>{% endif %}
+</section>
 {% if 'access.read' in me.permissions %}{% include '_access_flow.html' %}{% endif %}
 {% set my_roles = me.roles | default([], true) %}
 <section class="card" id="my-roles">
 <div class="section-head">
 <div>
 <h3>我的角色</h3>
-<p class="muted" style="margin:5px 0 0">角色是能力的来源。以下为当前账号已关联的角色，实际可用能力以“我的权限”为准。</p>
+<p class="muted dashboard-description">角色是能力的来源。以下为当前账号已关联的角色，实际可用能力以“我的权限”为准。</p>
 </div>
 <span class="badge neutral">{{ my_roles|length }} 个</span>
 </div>{% if my_roles %}
@@ -79,15 +78,15 @@
 </table>
 </div>{% else %}
 <div class="empty">尚未关联角色。当前账号没有业务能力；需要使用相关功能时，请联系管理员分配。</div>{% endif %}
-<p class="muted small" style="margin:18px 0 0">管理员调整角色配置后，这里的数量与下方权限会同步变化；此处只显示本人角色。</p>
+<p class="muted small dashboard-note">管理员调整角色配置后，这里的数量与下方权限会同步变化；此处只显示本人角色。</p>
 </section>
 <section class="card" id="my-permissions">
 <div class="section-head">
 <div>
 <h3>我的权限</h3>
-<p class="muted" style="margin:5px 0 0">以下为当前已生效的权限。本人范围与全部范围分别列出。</p>
+<p class="muted dashboard-description">以下为当前已生效的权限。本人范围与全部范围分别列出。</p>
 </div>
 <span class="badge neutral">{{ permission_details|length }} 项</span>
-</div>{{ permission_table(permission_details) }}<p class="muted small" style="margin:18px 0 0">“确认项目数据”还需要相应的记录读取权限；权限调整后，后续操作使用最新配置。</p>
+</div>{{ permission_table(permission_details) }}<p class="muted small dashboard-note">“确认项目数据”还需要相应的记录读取权限；权限调整后，后续操作使用最新配置。</p>
 </section>
 {% endblock %}

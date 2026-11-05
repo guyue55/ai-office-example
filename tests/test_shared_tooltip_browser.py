@@ -24,7 +24,9 @@ def test_tooltip_focus_hover_ownership_and_dismissal():
                 <dialog id="record-dialog"><h2 id="record-dialog-title" tabindex="-1"></h2>
                 <button data-record-close>关闭</button><div id="record-dialog-content"></div></dialog>
                 <div id="ui-notifications"></div><div id="ui-tooltip" popover="manual" role="tooltip"></div>""")
-            page.add_style_tag(content=(root / "styles.css").read_text())
+            page.add_style_tag(
+                content=(root / "design-tokens.css").read_text() + (root / "styles.css").read_text()
+            )
             page.add_script_tag(content=(root / "interactions.js").read_text())
             tip = page.get_by_role("tooltip")
             page.locator("#a").focus()
@@ -53,6 +55,17 @@ def test_tooltip_focus_hover_ownership_and_dismissal():
             expect(tip).to_be_hidden()
             page.locator("#b").hover()
             expect(tip).to_have_text("提示B")
+            # 顶栏提示不能覆盖下一行的真实操作，保持提示自身可悬停。
+            page.locator("#b").evaluate(
+                "n=>{n.style.position='fixed';n.style.right='8px';n.style.top='8px'}"
+            )
+            page.locator("#outside").evaluate(
+                "n=>{n.style.position='fixed';n.style.right='8px';n.style.top='48px'}"
+            )
+            page.locator("#b").focus()
+            expect(tip).to_have_text("提示B")
+            page.locator("#outside").click(timeout=2000)
+            expect(page.locator("#outside")).to_be_focused()
             assert not errors
         finally:
             browser.close()
