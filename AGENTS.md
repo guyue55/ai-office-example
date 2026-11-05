@@ -21,6 +21,7 @@
 | 设置品牌／创建新企业 | [配置边界](docs/CONFIGURATION.md)、template.toml、scripts/new_project.py、scripts/configure_template.py |
 | 服务端／员工部署 | [INSTALL.md](INSTALL.md)、对应安装脚本及其帮助 |
 | 开发、检查、活体验收 | [CONTRIBUTING.md](CONTRIBUTING.md)、[验收记录与边界](docs/ACCEPTANCE.md) |
+| 登录／认证主题体验 | [登录体验研究](docs/LOGIN_UX_RESEARCH.md)；Keycloak主题不在Jinja页面目录内，品牌生成文件不手改，认证状态独立验收 |
 | 工作台 UI 逐页设计与经验 | [设计与复核指南](docs/UI_DESIGN_GUIDE.md)、[当前重构账本](docs/WORKSPACE_UI_REFACTOR.md)；先判断常驻信息与按需详情，再选组件，不能以共享换肤代替逐页任务复核 |
 | 控制台与助手整体体验升级 | [整体UI方案及阶段清单](docs/UI_UPGRADE_PLAN.md)、tests/ui-pages.json；局部通过不能代替全部阶段完成 |
 | Agent前端选型／CopilotKit示例研究 | [路线与证据核查](docs/COPILOTKIT_FRONTEND_RESEARCH.md)；含产品范围、模型配置前置、交互数据流及阶段门槛；仍为研究草案，不代表已接入AG-UI或新前端 |
