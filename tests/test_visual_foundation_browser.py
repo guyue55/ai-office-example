@@ -108,6 +108,8 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 muted = color(".page-header .muted", "color")
                 assert contrast(muted, color("body", "backgroundColor")) >= 4.5
                 assert contrast(muted, "rgb(255, 255, 255)") >= 4.5
+                assert contrast(color(".trace", "color"), color("body", "backgroundColor")) >= 4.5
+                assert contrast(color(".code", "color"), "rgb(255, 255, 255)") >= 4.5
                 field = page.locator("input[type=search]").first
                 assert (
                     contrast(

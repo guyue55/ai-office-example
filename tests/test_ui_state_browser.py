@@ -231,6 +231,30 @@ def edit_name(page):
     page.locator("#record-dialog-content input[name=name]").fill("合成修改")
 
 
+def test_mobile_escape_closes_only_topmost_account_layer(ui_state):
+    page, state = ui_state
+    page.set_viewport_size({"width": 390, "height": 844})
+    navigation = page.locator("[data-navigation-toggle]")
+    menu = page.locator("[data-account-menu]")
+    navigation.click()
+    menu.locator("summary").click()
+    page.keyboard.press("Escape")
+    expect(menu).not_to_have_attribute("open", "")
+    expect(navigation).to_have_attribute("aria-expanded", "true")
+    expect(menu.locator("summary")).to_be_focused()
+    page.keyboard.press("Escape")
+    expect(navigation).to_have_attribute("aria-expanded", "false")
+    expect(navigation).to_be_focused()
+    navigation.click()
+    menu.locator("summary").click()
+    page.evaluate("() => { void OfficeUI.confirm('仅验证焦点',{title:'合成确认'}); }")
+    expect(page.locator("#action-confirm")).to_be_visible()
+    page.keyboard.press("Escape")
+    expect(page.locator("#action-confirm")).to_be_hidden()
+    expect(navigation).to_have_attribute("aria-expanded", "true")
+    assert state["writes"] == 0
+
+
 def test_save_preserves_shell_and_assistant_binding(ui_state):
     page, _ = ui_state
     page.evaluate(

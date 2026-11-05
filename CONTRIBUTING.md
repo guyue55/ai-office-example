@@ -74,6 +74,8 @@ OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome OFFICE_UI_PUBLIC
 
 该入口仅打开登录页，不填写或读取凭证，不创建账号；检查刷新后布局位置和五种宽度，不能据此宣称所有瞬态布局偏移为零。开户／关联／授予角色流程使用隔离替身验证，不修改真实用户授权。
 
+身份服务分离部署时额外显式设置`OFFICE_UI_IDENTITY_URL`为受信realm根地址；默认仍校验本站`/identity/realms/`。检查还覆盖640px短屏、空白表单显隐和无JS，不自动允许跳转到任意来源。完整设计审查范围与自动扫描边界见[全站设计审阅](docs/WEBSITE_DESIGN_AUDIT.md)。
+
 
 模型管理变更额外验收（仅创建临时PG，不使用已有实例）：
 

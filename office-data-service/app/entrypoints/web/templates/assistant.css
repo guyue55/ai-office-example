@@ -68,7 +68,7 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-footnote .ui-icon-button svg {width:14px;height:14px}
 .assistant-welcome {padding:32px 8px 20px;max-width:480px;margin:auto}
 .assistant-eyebrow {font-size:12px;color:var(--muted)}
-.assistant-welcome h3 {font-size:22px;font-weight:600;margin:8px 0 12px}
+.assistant-welcome :is(h2,h3) {font-size:22px;font-weight:600;margin:8px 0 12px}
 .assistant-welcome p {font-size:13px;line-height:1.8}
 .assistant-starters {display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
 .assistant-prompt {border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px 12px;font-size:12px;color:var(--ink)}

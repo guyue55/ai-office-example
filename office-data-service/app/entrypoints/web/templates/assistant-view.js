@@ -76,7 +76,7 @@
   }
   function renderWelcome(controls,{ready=true,loading=false}={}) {
     const box=el('div',undefined,'assistant-welcome');box.dataset.placeholder='true';
-    box.append(el('span','开始一项工作','assistant-eyebrow'),el('h3',loading?'正在准备助手':ready?'今天需要完成什么？':'助手当前不可用'),el('p','可查询获准数据、整理信息并预览操作。涉及写入时，会请您核对确认。','muted'));
+    box.append(el('span','开始一项工作','assistant-eyebrow'),el(api.root.dataset.full==='true'?'h2':'h3',loading?'正在准备助手':ready?'今天需要完成什么？':'助手当前不可用'),el('p','可查询获准数据、整理信息并预览操作。涉及写入时，会请您核对确认。','muted'));
     const prompts=el('div',undefined,'assistant-starters');
     for(const [label,prompt] of [['了解我的权限','请说明我当前具备哪些权限，以及可以进行哪些操作。'],['查阅数据容器','请查询我可以访问的数据容器，说明返回结果的覆盖范围，不要修改数据。']]){const starter=button(label,()=>controls.fillDraft(prompt),'assistant-prompt');starter.disabled=!ready;prompts.append(starter);}
     box.append(prompts,el('p','仅提交获准资料；页面关联只说明讨论位置。','small muted'));return box;

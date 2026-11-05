@@ -91,6 +91,16 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                     expect(page.locator("main h1")).to_have_count(1)
                     expect(page.locator("#assistant-panel")).to_have_count(1)
                     expect(page.locator(".shell-nav")).to_have_count(1)
+                    if template in {"links.html", "access_detail.html"}:
+                        expect(page.locator(".breadcrumb")).to_have_count(0)
+                        expect(page.locator(".shell-context")).to_be_visible()
+                    if template == "assistant_workspace.html":
+                        expect(page.locator(".assistant-welcome h2")).to_be_visible()
+                    if template == "permissions.html":
+                        # 连续长编码也不能撑开窄屏权限卡片。
+                        page.locator(".data-table .code").first.evaluate(
+                            "node=>node.textContent='synthetic_permission_'.repeat(16)"
+                        )
                     if template in {
                         "account_new.html",
                         "account_link.html",

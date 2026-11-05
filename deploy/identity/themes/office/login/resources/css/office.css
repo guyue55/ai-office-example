@@ -13,7 +13,16 @@ html.login-pf,
   background: #f4f7f9;
   color-scheme: light;
 }
-.login-pf #kc-header-wrapper { color: #18343b !important; font-weight: 600; }
+.login-pf #kc-header-wrapper {
+  color: #18343b !important;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 .pf-v5-c-login__main { border-radius: 12px; }
 
 /* 页面高度变化时不重新垂直居中；长表单仍允许自然滚动。 */
@@ -22,14 +31,28 @@ html.login-pf { scrollbar-gutter: stable; }
   display: block;
   box-sizing: border-box;
   min-height: 100svh;
-  padding: clamp(24px, 18vh, 180px) 24px 32px;
+  padding: clamp(32px, 9vh, 88px) 24px 32px;
 }
 .login-pf .pf-v5-c-login__container {
   display: block;
-  width: min(34rem, 100%);
+  width: min(30rem, 100%);
   max-width: none;
   margin-inline: auto;
   padding: 0;
 }
-.login-pf .pf-v5-c-login__header { margin: 0 0 48px; }
-.login-pf .pf-v5-c-login__main { margin: 0; }
+.login-pf .pf-v5-c-login__header { margin: 0 0 24px; }
+.login-pf .pf-v5-c-login__main {
+  margin: 0;
+  box-shadow: 0 8px 28px rgb(24 52 59 / 8%);
+}
+.login-pf .pf-v5-c-login__main-header { padding: 24px 32px 16px; }
+.login-pf #kc-page-title { font-size: 24px; line-height: 1.5; }
+/* 保留父主题的输入、显隐和校验结构，只扩大实际可操作区域。 */
+.login-pf #kc-form-login input:not([type=hidden]):not([type=checkbox]),
+.login-pf #kc-form-login button { min-height: 44px; }
+@media (max-width: 600px) {
+  .login-pf .pf-v5-c-login { padding: 32px 16px; }
+  .login-pf #kc-header-wrapper { font-size: 20px; }
+  .login-pf .pf-v5-c-login__main-header { padding: 24px 24px 16px; }
+  .login-pf .pf-v5-c-login__main-body { padding: 0 24px 24px; }
+}

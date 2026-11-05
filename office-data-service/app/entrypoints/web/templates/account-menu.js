@@ -7,7 +7,7 @@
       if (menu.open && !menu.contains(event.target)) menu.open = false;
     });
     document.addEventListener('keydown', event => {
-      if (event.key !== 'Escape' || !menu.open) return;
+      if (event.key !== 'Escape' || event.defaultPrevented || !menu.open || document.querySelector('dialog[open]') || window.OfficeUI?.pickerOpen()) return;
       menu.open = false;
       trigger.focus();
       event.preventDefault();

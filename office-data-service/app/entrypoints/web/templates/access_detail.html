@@ -1,18 +1,14 @@
 {% extends 'base.html' %}{% from '_permissions.html' import permission_table %}{% from '_page_patterns.html' import fact %}
 {% block title %}{{ detail.name }} · 授权详情{% endblock %}
 {% block content %}{% set relation = 'roles' if kind == 'employees' else 'permission-sets' if kind == 'roles' else 'permissions' %}
-<div class="breadcrumb">
-<a href="/console/{{ kind }}">{{ access_labels[kind] }}列表</a>
-<span>/</span>
-<span>授权详情</span>
-</div>
 <header class="page-header">
 <div>
 <p class="eyebrow">{{ access_labels[kind] }}详情</p>
 <h1>{{ detail.name }}{% if detail.builtin_key %} <span class="badge neutral">内置角色</span>{% endif %}</h1>
 <p class="muted">查看授权内容、关联来源与使用情况。</p>
 </div>
-<a class="button {{ 'secondary' if not can_manage else '' }}" href="/console/links/{{ kind }}/{{ detail.id }}/{{ relation }}">{{ '配置' if can_manage else '查看' }}{{ access_labels[relation] }}</a>
+<div class="actions"><a class="button secondary" href="/console/{{ kind }}">返回{{ access_labels[kind] }}列表</a>
+<a class="button {{ 'secondary' if not can_manage else '' }}" href="/console/links/{{ kind }}/{{ detail.id }}/{{ relation }}">{{ '配置' if can_manage else '查看' }}{{ access_labels[relation] }}</a></div>
 </header>
 <dl class="overview-facts" aria-label="授权配置概览">
 {{ fact('直接关联', detail.links|length, '当前对象的配置关系') }}

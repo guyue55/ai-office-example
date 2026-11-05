@@ -1,13 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}配置{{ access_labels[relation] }} · {{ detail.name }}{% endblock %}
 {% block content %}
-<div class="breadcrumb">
-<a href="/console/{{ kind }}">{{ access_labels[kind] }}列表</a>
-<span>/</span>
-<a href="/console/access/{{ kind }}/{{ identifier }}">{{ detail.name }}详情</a>
-<span>/</span>
-<span>配置{{ access_labels[relation] }}</span>
-</div>
 <header class="page-header" data-panel-title="{{ detail.name }} · {{ '分配角色' if relation == 'roles' else '配置' ~ access_labels[relation] }}">
 <div>
 <p class="eyebrow">{{ access_labels[kind] }} · {{ detail.name }}</p>
@@ -45,8 +38,8 @@
 <input type="hidden" name="csrf" value="{{ csrf }}">
 <input type="hidden" name="version" value="{{ assoc.version }}">
 
-<div class="table-wrap">
-<table>
+{% include '_table_scroll_hint.html' %}
+<div class="table-wrap" role="region" aria-label="关联选项表格" tabindex="0"><table class="management-table">
 <thead>
 <tr>
 <th>{% if can_manage %}<label class="grant-bulk" hidden><input type="checkbox" data-select-page aria-label="选择本页全部选项"> 本页</label>{% else %}选择{% endif %}</th>
@@ -68,7 +61,7 @@
 </td>
 <td>{% if relation == 'permissions' %}{{ item.description }}{% else %}
 <span class="candidate-summary">{{ item.permission_count|default(0) }} 项配置权限{% if relation == 'roles' %} · {{ item.employee_count|default(0) }} 人使用{% else %} · {{ item.role_count|default(0) }} 个角色使用{% endif %}</span>
-<a href="/console/access/{{ relation }}/{{ item.id }}" data-workspace-preview>查看权限与使用范围</a>{% endif %}
+<a href="/console/access/{{ relation }}/{{ item.id }}" data-workspace-preview class="text-link">查看权限与使用范围</a>{% endif %}
 </td>
 </tr>{% else %}
 <tr>

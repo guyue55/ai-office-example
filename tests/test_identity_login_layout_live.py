@@ -17,6 +17,10 @@ def test_anonymous_identity_login_layout_and_reload_stability():
         pytest.skip("需显式OFFICE_UI_PUBLIC_URL和浏览器开关；只读取指定实例公开登录页")
     target = urlsplit(base)
     assert target.scheme in {"http", "https"} and not target.username and not target.password
+    # 分离部署必须显式指定受信身份realm，不从跳转结果自动扩大允许范围。
+    identity = urlsplit(os.environ.get("OFFICE_UI_IDENTITY_URL", base + "/identity/realms/"))
+    assert identity.scheme in {"http", "https"} and not identity.username and not identity.password
+    assert not identity.query and not identity.fragment
     proof = Path(__file__).resolve().parents[1] / "runtime/agent-research/identity-ui"
     proof.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
@@ -31,8 +35,8 @@ def test_anonymous_identity_login_layout_and_reload_stability():
             expect(page.locator("#username")).to_be_visible()
             expect(page.locator("#password")).to_have_value("")
             destination = urlsplit(page.url)
-            assert destination.netloc == target.netloc
-            assert destination.path.startswith("/identity/realms/")
+            assert (destination.scheme, destination.netloc) == (identity.scheme, identity.netloc)
+            assert destination.path.startswith(identity.path.rstrip("/") + "/")
             title = page.locator("#kc-page-title")
             assert re.search(r"[\u4e00-\u9fff]", title.inner_text())
             positions = []
@@ -46,14 +50,33 @@ def test_anonymous_identity_login_layout_and_reload_stability():
                 positions.append(round(title.bounding_box()["y"]))
             assert max(positions) - min(positions) <= 1
             for width in (1440, 1024, 768, 390, 320):
-                page.set_viewport_size({"width": width, "height": 1000})
+                page.set_viewport_size({"width": width, "height": 640})
                 assert page.locator("html").evaluate("node=>node.scrollWidth<=innerWidth")
                 for selector in ("#username", "#password", "#kc-login"):
                     box = page.locator(selector).bounding_box()
                     assert box and box["x"] >= 0 and box["x"] + box["width"] <= width
+                    assert box["height"] >= 44
+                    assert box["y"] + box["height"] <= 640
                 assert page.locator("#username").input_value() == ""
                 assert page.locator("#password").input_value() == ""
                 if width in (1440, 390):
                     page.screenshot(path=str(proof / f"login-{width}.png"), animations="disabled")
+            toggle = page.locator('button[aria-controls="password"]')
+            expect(toggle).to_be_visible()
+            assert toggle.get_attribute("aria-label")
+            toggle.click()
+            expect(page.locator("#password")).to_have_attribute("type", "text")
+            toggle.click()
+            expect(page.locator("#password")).to_have_attribute("type", "password")
+            # 无脚本仍呈现核心表单，不尝试提交凭据。
+            plain = browser.new_context(
+                java_script_enabled=False, viewport={"width": 320, "height": 640}
+            )
+            fallback = plain.new_page()
+            fallback.goto(base + "/console")
+            expect(fallback.locator("#username")).to_be_visible()
+            expect(fallback.locator("#kc-login")).to_be_visible()
+            assert fallback.locator("html").evaluate("node=>node.scrollWidth<=innerWidth")
+            plain.close()
         finally:
             browser.close()

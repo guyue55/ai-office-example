@@ -391,6 +391,7 @@ tbody tr:hover {
   margin-top:5px
 }
 details>summary {
+  min-height:24px;
   cursor:pointer;
   font-weight:600;
   color:var(--accent)
@@ -400,7 +401,7 @@ details[open]>summary {
 }
 .code {
   font:12px/1.5 ui-monospace,SFMono-Regular,monospace;
-  color:#718390;
+  color:var(--muted);
   overflow-wrap:anywhere
 }
 
@@ -462,7 +463,7 @@ details[open]>summary {
 }
 .trace {
   font-size:11px;
-  color:#8d9ca6;
+  color:var(--muted);
   margin:28px 0 0;
   overflow-wrap:anywhere
 }
@@ -604,7 +605,7 @@ details[open]>summary {
     font-size:15px;
   }
   .data-table .code {
-    white-space:nowrap;
+    white-space:normal;
   }
 }
 
@@ -977,3 +978,6 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 .description-list dt {color:var(--muted);}
 .description-list dd {margin:0;overflow-wrap:anywhere;min-width:0;}
 @media (max-width:540px) {.description-list {grid-template-columns:minmax(80px,110px) minmax(0,1fr);gap:10px 12px;}}
+
+/* 正文中的链接始终可辨识，不依赖色差或悬浮。 */
+.hint a, .empty a, .text-link {text-decoration:underline;text-underline-offset:3px}
