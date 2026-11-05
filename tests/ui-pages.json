@@ -213,6 +213,7 @@
     "_nav_icon.html",
     "_permissions.html",
     "_search.html",
+    "_table_scroll_hint.html",
     "_workspace.html",
     "account-menu.js",
     "assistant-content.js",

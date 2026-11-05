@@ -7,7 +7,8 @@
 </div></header>
 <section class="card">
   {% include '_search.html' %}
-  <div class="table-wrap">
+  {% include '_table_scroll_hint.html' %}
+  <div class="table-wrap" role="region" aria-label="审计记录表格" tabindex="0">
   <table class="management-table">
     <thead>
     <tr><th>时间</th><th>操作者</th><th>操作</th><th>对象</th><th>详情</th><th>追踪号</th></tr>

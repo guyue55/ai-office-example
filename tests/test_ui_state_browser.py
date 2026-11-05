@@ -73,6 +73,13 @@ def ui_state():
 
     @app.get("/console/accounts/new")
     async def new_account(request: Request):
+        if state.get("server_error"):
+            value = context("error.html")
+            value.update(
+                message="账号管理连接暂不可用，请联系管理员检查服务配置",
+                code="identity_unavailable",
+            )
+            return TEMPLATES.TemplateResponse(request, "error.html", value, status_code=503)
         return TEMPLATES.TemplateResponse(
             request,
             "account_new.html",
@@ -665,4 +672,19 @@ def test_compact_dialog_failure_has_visible_retry(ui_state, status):
     expect(page.locator("#workspace-feedback")).to_be_empty()
     expect(retry).to_be_hidden()
     page.get_by_role("button", name="关闭操作面板", exact=True).click()
+    assert state["writes"] == 0
+
+
+def test_compact_dialog_shows_bounded_server_reason_and_recovers(ui_state):
+    page, state = ui_state
+    state["server_error"] = True
+    page.get_by_role("link", name="新建员工", exact=True).click()
+    feedback = page.locator("#workspace-feedback")
+    expect(feedback).to_be_visible()
+    expect(feedback).to_contain_text("账号管理连接暂不可用")
+    expect(feedback).not_to_contain_text("工作台")
+    state["server_error"] = False
+    page.get_by_role("button", name="刷新配置", exact=True).click()
+    expect(page.locator('#workspace-content input[name="username"]')).to_be_visible()
+    expect(feedback).to_be_empty()
     assert state["writes"] == 0

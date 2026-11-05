@@ -5,6 +5,8 @@
 .assistant-launch:hover {box-shadow:0 8px 26px #172b3a40}
 .assistant-launch:focus-visible {outline:3px solid var(--focus-default);outline-offset:3px}
 body.assistant-open .assistant-launchbar {visibility:hidden}
+/* 给固定入口留出页面末尾的滚动空间，避免窄屏表单被覆盖。 */
+main.assistant-launch-main {padding-bottom:calc(120px + env(safe-area-inset-bottom))}
 @media (max-width:1200px) {.assistant-resize {display:none}}
 .assistant-panel {display:flex;flex-direction:column;position:fixed;right:0;top:0;bottom:0;width:var(--assistant-width,420px);background:#fff;border-left:1px solid var(--line);z-index:30;color:var(--ink)}
 .assistant-panel[hidden],.assistant-panel [hidden] {display:none!important}
@@ -92,7 +94,6 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-full {position:relative;inset:auto;width:100%;height:calc(100dvh - 90px);min-height:420px;border:1px solid var(--line);border-radius:10px;z-index:auto;overflow:hidden}
 .assistant-full .assistant-messages,.assistant-full .assistant-composer {padding-inline:max(20px,calc((100% - 800px)/2))}
 .assistant-full .assistant-welcome {padding-top:56px}
-.assistant-workspace-main {padding-top:22px}
 .assistant-resize {position:absolute;left:-4px;top:0;bottom:0;width:8px;cursor:col-resize;touch-action:none}
 .assistant-resize:focus-visible {outline:2px solid var(--focus-ring);outline-offset:-3px}
 .assistant-markdown {white-space:normal;line-height:1.7}

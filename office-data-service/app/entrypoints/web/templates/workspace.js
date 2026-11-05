@@ -86,7 +86,7 @@
       const main = parsePage(html);
       if (!response.ok) {
         const detail = main.querySelector('[role=alert],.error-feedback')?.textContent.trim();
-        const message = response.status === 403 ? '无权访问此内容，请核对当前权限。' : '页面暂时无法加载（HTTP ' + response.status + '），请刷新配置重试。';
+        const message = response.status === 403 ? '无权访问此内容，请核对当前权限。' : '页面暂时无法加载（HTTP ' + response.status + '），可刷新重试；如持续失败请联系管理员。';
         throw new Error(detail ? detail.slice(0, 500) : message);
       }
       if (push && currentURL) trail.push({url: currentURL, nodes: Array.from(content.childNodes)});

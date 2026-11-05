@@ -75,6 +75,15 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                 page = browser.new_page(viewport={"width": 1440, "height": 1000})
                 errors, visited = [], []
                 page.on("pageerror", lambda error: errors.append(str(error)))
+                # 普通页面与完整助手共享位置栏基线，避免切换时跳动。
+                for width in (1440, 1024, 768, 390, 320):
+                    page.set_viewport_size({"width": width, "height": 1000})
+                    positions = []
+                    for view in ("employees.html", "assistant_workspace.html"):
+                        page.goto(base + "/catalog/" + view)
+                        positions.append(page.locator(".shell-context").bounding_box())
+                    assert abs(positions[0]["y"] - positions[1]["y"]) < 1, (width, positions)
+                    assert abs(positions[0]["x"] - positions[1]["x"]) < 1, (width, positions)
                 for template in sorted(templates):
                     response = page.goto(base + "/catalog/" + template)
                     assert response.status == 200, template
@@ -96,6 +105,27 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                             for table in page.locator(".management-table").all():
                                 if table.is_visible():
                                     assert table.bounding_box()["width"] >= 680
+                                    assert table.evaluate(
+                                        "node => node.parentElement.tabIndex === 0 && node.parentElement.getAttribute('role') === 'region' && !!node.parentElement.getAttribute('aria-label')"
+                                    ), template
+                                    assert table.evaluate(
+                                        "node => node.parentElement.previousElementSibling?.classList.contains('table-scroll-hint')"
+                                    ), template
+                                    assert table.evaluate(
+                                        "node => getComputedStyle(node.parentElement.previousElementSibling).display === 'block'"
+                                    ), template
+                                    if width == 390:
+                                        table.evaluate(
+                                            "node => { node.parentElement.scrollLeft = 0; node.parentElement.focus(); }"
+                                        )
+                                        page.keyboard.press("ArrowRight")
+                                        page.wait_for_function(
+                                            "node => node.scrollLeft > 0",
+                                            arg=table.locator("xpath=..").element_handle(),
+                                        )
+                                        table.evaluate(
+                                            "node => { node.parentElement.scrollLeft = 0; node.parentElement.blur(); }"
+                                        )
                         if template == "account_link.html":
                             checkbox = page.locator('[name="default_role"]')
                             bounds = checkbox.bounding_box()
@@ -121,7 +151,28 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                             page.screenshot(
                                 path=str(proof / f"{template}-{width}.png"), animations="disabled"
                             )
+                        if template == "model_settings.html" and width == 390:
+                            page.set_viewport_size({"width": 390, "height": 844})
+                            page.evaluate("scrollTo(0, document.documentElement.scrollHeight)")
+                            overlap = page.evaluate("""() => {
+                                const field = document.querySelector('#model-extra-headers').getBoundingClientRect();
+                                const launch = document.querySelector('#assistant-launch').getBoundingClientRect();
+                                return Math.max(0, Math.min(field.right, launch.right) - Math.max(field.left, launch.left))
+                                    * Math.max(0, Math.min(field.bottom, launch.bottom) - Math.max(field.top, launch.top));
+                            }""")
+                            assert overlap == 0, overlap
+                            page.set_viewport_size({"width": 390, "height": 1000})
                     if template == "employees.html":
+                        primary = page.locator(".page-header .button").first
+                        brand_color = primary.evaluate(
+                            "node => getComputedStyle(node).backgroundColor"
+                        )
+                        primary.hover()
+                        hover_color = primary.evaluate(
+                            "node => getComputedStyle(node).backgroundColor"
+                        )
+                        assert hover_color != brand_color
+                        assert hover_color != "rgb(9, 94, 88)"
                         page.set_viewport_size({"width": 390, "height": 1000})
                         page.locator("#assistant-launch").click()
                         panel = page.locator("#assistant-panel")

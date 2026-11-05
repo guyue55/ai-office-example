@@ -37,6 +37,7 @@ def test_employee_dashboard_uses_real_capabilities(web, permissions):  # noqa: F
     assert response.status_code == 200
     assert "管理我的客户端授权" in response.text
     assert ("开始使用智能助手" in response.text) == ("agent.run" in permissions)
+    assert ('class="assistant-launch-main"' in response.text) == ("agent.run" in permissions)
     assert "业务操作通过客户端技能使用" not in response.text
     assert "查看人员及角色" not in response.text
 
