@@ -16,43 +16,63 @@ html.login-pf,
 .login-pf #kc-header-wrapper {
   color: #18343b !important;
   font-weight: 600;
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.5;
   letter-spacing: 0;
   text-transform: none;
   margin: 0;
   overflow-wrap: anywhere;
 }
-.pf-v5-c-login__main { border-radius: 12px; }
 
-/* 页面高度变化时不重新垂直居中；长表单仍允许自然滚动。 */
-html.login-pf { scrollbar-gutter: stable; }
+/* 固定顶部节奏，长表单自然滚动；两侧预留相同滚动槽保持水平居中。 */
+html.login-pf { scrollbar-gutter:stable both-edges; }
+.login-pf body { margin:0; font-family:var(--office-font-family); }
 .login-pf .pf-v5-c-login {
-  display: block;
-  box-sizing: border-box;
-  min-height: 100svh;
-  padding: clamp(32px, 9vh, 88px) 24px 32px;
+  display:block;
+  box-sizing:border-box;
+  min-height:100svh;
+  padding:clamp(40px,12vh,112px) 24px 32px;
 }
 .login-pf .pf-v5-c-login__container {
-  display: block;
-  width: min(30rem, 100%);
-  max-width: none;
-  margin-inline: auto;
-  padding: 0;
+  display:block;
+  width:min(28rem,100%);
+  max-width:none;
+  margin-inline:auto;
+  padding:0;
 }
-.login-pf .pf-v5-c-login__header { margin: 0 0 24px; }
+.login-pf #kc-header-wrapper { padding:0; }
+.login-pf .pf-v5-c-login__header { margin:0 0 28px; }
 .login-pf .pf-v5-c-login__main {
-  margin: 0;
-  box-shadow: 0 8px 28px rgb(24 52 59 / 8%);
+  margin:0;
+  border:1px solid #dce3eb;
+  border-radius:16px;
+  box-shadow:0 12px 36px rgb(24 52 59 / 6%);
 }
-.login-pf .pf-v5-c-login__main-header { padding: 24px 32px 16px; }
-.login-pf #kc-page-title { font-size: 24px; line-height: 1.5; }
-/* 保留父主题的输入、显隐和校验结构，只扩大实际可操作区域。 */
+/* 父主题正文默认48px，标题32px；统一二者的对齐轴。 */
+.login-pf .pf-v5-c-login__main-header {
+  padding:28px 32px 24px;
+  display:flex;
+  flex-direction:row;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.login-pf .pf-v5-c-login__main-body { padding:0 32px 32px; }
+.login-pf #kc-page-title { margin:0; font-size:24px; line-height:1.5; font-weight:600; color:#172b42; }
+.login-pf .pf-v5-c-login__main-header-utilities { margin:0; width:auto; max-width:100%; flex:0 0 auto; }
+.login-pf .pf-v5-c-form { row-gap:24px; }
+.login-pf .pf-v5-c-form__label { color:#344054; font-weight:500; }
+.login-pf .pf-v5-c-form-control,
+.login-pf .pf-v5-c-button { border-radius:6px; }
+/* 保留原生校验、自动填充和密码显隐，只扩大操作区域。 */
 .login-pf #kc-form-login input:not([type=hidden]):not([type=checkbox]),
-.login-pf #kc-form-login button { min-height: 44px; }
-@media (max-width: 600px) {
-  .login-pf .pf-v5-c-login { padding: 32px 16px; }
-  .login-pf #kc-header-wrapper { font-size: 20px; }
-  .login-pf .pf-v5-c-login__main-header { padding: 24px 24px 16px; }
-  .login-pf .pf-v5-c-login__main-body { padding: 0 24px 24px; }
+.login-pf #kc-form-login button { min-height:44px; }
+.login-pf .pf-v5-c-button.pf-m-primary { min-height:44px; font-weight:600; }
+@media (max-width:600px) {
+  .login-pf .pf-v5-c-login { padding:32px 16px; }
+  .login-pf .pf-v5-c-login__header { margin-bottom:24px; }
+  .login-pf .pf-v5-c-login__main-header { padding:24px; }
+  .login-pf .pf-v5-c-login__main-body { padding:0 24px 24px; }
+  .login-pf #kc-page-title { font-size:22px; }
 }

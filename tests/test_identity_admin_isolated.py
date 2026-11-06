@@ -5,6 +5,7 @@ import json
 import os
 import secrets
 import time
+from pathlib import Path
 from uuid import uuid4
 
 import httpx
@@ -29,6 +30,7 @@ def isolated_identity(tmp_path):
             {
                 "realm": realm,
                 "enabled": True,
+                "loginTheme": "office",
                 "clients": [
                     {
                         "clientId": "setup",
@@ -68,6 +70,8 @@ def isolated_identity(tmp_path):
             "JAVA_OPTS_KC_HEAP=-Xms128m -Xmx384m",
             "-v",
             f"{realm_file}:/opt/keycloak/data/import/realm.json:ro",
+            "-v",
+            f"{Path(__file__).resolve().parents[1] / 'deploy/identity/themes/office'}:/opt/keycloak/themes/office:ro",
             "quay.io/keycloak/keycloak:26.8.1",
             "start-dev",
             "--import-realm",

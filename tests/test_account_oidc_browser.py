@@ -160,6 +160,16 @@ def test_oidc_create_credential_first_login_and_disable(oidc_accounts):
             errors = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(base + "/console")
+            expect(page.locator("#username")).to_be_visible(timeout=15000)
+            assert (
+                page.locator(".pf-v5-c-login__main").evaluate("n=>getComputedStyle(n).borderRadius")
+                == "16px"
+            )
+            # 合成错误账号验证错误状态；不访问在用账号，也不记录凭证截图。
+            login(page, "isolated-missing-user", secrets.token_urlsafe(24))
+            expect(page.locator("#username")).to_have_attribute("aria-invalid", "true")
+            expect(page.locator("#input-error-username")).to_be_visible()
+            assert page.locator("html").evaluate("n=>n.scrollWidth<=innerWidth")
             login(page, "isolated-admin", oidc_accounts.password)
             expect(page).to_have_url(base + "/console/dashboard", timeout=20000)
             page.goto(base + "/console/accounts/new")
@@ -200,6 +210,10 @@ def test_oidc_create_credential_first_login_and_disable(oidc_accounts):
             login(member, username, temporary_password)
             del temporary_password
             expect(member.locator("#password-new")).to_be_visible(timeout=15000)
+            member.set_viewport_size({"width": 320, "height": 640})
+            assert member.locator("html").evaluate("n=>n.scrollWidth<=innerWidth")
+            member.locator('#kc-passwd-update-form [type="submit"]').scroll_into_view_if_needed()
+            expect(member.locator('#kc-passwd-update-form [type="submit"]')).to_be_in_viewport()
             replacement = secrets.token_urlsafe(24) + "Aa1!"
             member.locator("#password-new").fill(replacement)
             member.locator("#password-confirm").fill(replacement)

@@ -57,6 +57,11 @@ def test_anonymous_identity_login_layout_and_reload_stability():
                     assert box and box["x"] >= 0 and box["x"] + box["width"] <= width
                     assert box["height"] >= 44
                     assert box["y"] + box["height"] <= 640
+                card = page.locator(".pf-v5-c-login__main").bounding_box()
+                assert abs(card["x"] + card["width"] / 2 - width / 2) <= 1
+                heading = title.bounding_box()
+                username = page.locator("#username").bounding_box()
+                assert abs(heading["x"] - username["x"]) <= 2
                 assert page.locator("#username").input_value() == ""
                 assert page.locator("#password").input_value() == ""
                 if width in (1440, 390):
