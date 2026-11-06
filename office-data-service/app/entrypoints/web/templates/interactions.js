@@ -130,12 +130,14 @@
     tipTarget = null;
     if (tip.matches(':popover-open')) tip.hidePopover();
   }
+  document.addEventListener('office:navigation-resized',hideTip);
   function validTip(target) {
     return target?.dataset.tooltip && target.isConnected && !target.disabled && !dismissedTips.has(target) && !!target.getClientRects().length;
   }
   function placeTip(target) {
     const rect = target.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
     let left=rect.x+rect.width/2-width/2, top=rect.top-height-8;
+    if(target.dataset.tooltipPlacement==='right'){left=rect.right+8;top=rect.top+(rect.height-height)/2;}
     // 顶部工具栏上方不足时先放侧面，避免提示覆盖下一行按钮。
     if(top<8){
       if(rect.left-width-8>=8){left=rect.left-width-8;top=rect.top+(rect.height-height)/2;}

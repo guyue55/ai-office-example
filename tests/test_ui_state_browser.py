@@ -882,3 +882,86 @@ def test_help_has_explicit_entry_and_focus(ui_state):
     expect(page.get_by_role("link", name="外部身份接入", exact=True)).to_have_count(0)
     expect(page.locator('input[name="subject"]')).to_have_count(0)
     assert state["writes"] == 0
+
+
+def test_desktop_navigation_collapse_persistence_tooltip_and_mobile(ui_state):
+    page, state = ui_state
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    toggle = page.locator("[data-navigation-collapse]")
+    nav = page.locator(".shell-nav")
+    original_width = nav.bounding_box()["width"]
+    toggle.click()
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    assert nav.bounding_box()["width"] == 72
+    assert page.locator("main").bounding_box()["x"] == 72
+    link = nav.get_by_role("link", name="人员管理", exact=True)
+    link.focus()
+    tip = page.get_by_role("tooltip")
+    expect(tip).to_have_text("人员管理")
+    assert tip.bounding_box()["x"] >= link.bounding_box()["x"] + link.bounding_box()["width"]
+    tip.hover()
+    expect(tip).to_be_visible()
+    page.keyboard.press("Escape")
+    expect(tip).to_be_hidden()
+    menu = page.locator("[data-account-menu]")
+    menu.locator("summary").click()
+    panel = menu.locator(".account-panel")
+    expect(panel).to_be_visible()
+    assert panel.bounding_box()["x"] >= 72
+    assert panel.evaluate(
+        "n=>{const r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+20,r.y+20))}"
+    )
+    page.keyboard.press("Escape")
+    expect(menu.locator("summary")).to_be_focused()
+    page.reload()
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    assert nav.bounding_box()["width"] == 72
+    page.goto(page.url.rsplit("/console/", 1)[0] + "/console/dashboard")
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    proof = Path(__file__).resolve().parents[1] / "runtime/agent-research/navigation-ui"
+    proof.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(proof / "collapsed.png"))
+    page.set_viewport_size({"width": 390, "height": 800})
+    page.locator("[data-navigation-toggle]").click()
+    expect(link).to_be_visible()
+    assert link.locator("span").bounding_box()["width"] > 40
+    expect(toggle).to_be_hidden()
+    assert link.get_attribute("data-tooltip") is None
+    page.set_viewport_size({"width": 1440, "height": 1000})
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    toggle.click()
+    assert nav.bounding_box()["width"] == original_width
+    assert link.get_attribute("data-tooltip") is None
+    page.screenshot(path=str(proof / "expanded.png"))
+    page.locator("#assistant-launch").click()
+    expect(page.locator("#assistant-panel")).to_be_visible()
+    toggle.click()
+    assert page.locator("main").bounding_box()["x"] == 72
+    assert page.locator("html").evaluate("n=>n.scrollWidth<=innerWidth")
+    expect(page.locator("#assistant-panel")).to_be_visible()
+    assert state["writes"] == 0
+    assert not errors
+
+
+def test_navigation_storage_blocked_and_no_script_fallback(ui_state):
+    page, _ = ui_state
+    page.add_init_script(
+        "Object.defineProperty(window, 'localStorage', {get(){throw new Error('storage unavailable')}})"
+    )
+    page.reload()
+    toggle = page.locator("[data-navigation-collapse]")
+    toggle.click()
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    toggle.click()
+    expect(toggle).to_have_attribute("aria-expanded", "true")
+    plain = page.context.browser.new_context(java_script_enabled=False)
+    try:
+        fallback = plain.new_page()
+        fallback.goto(page.url)
+        expect(fallback.locator("[data-navigation-collapse]")).to_be_hidden()
+        expect(
+            fallback.locator(".shell-nav").get_by_role("link", name="人员管理", exact=True)
+        ).to_be_visible()
+    finally:
+        plain.close()

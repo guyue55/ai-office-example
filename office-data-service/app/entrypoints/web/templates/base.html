@@ -17,15 +17,15 @@ body { --brand: {{ product.primary_color }}; --primary: {{ product.primary_color
 {% if me and 'agent.run' in me.permissions and request.url.path != '/console/assistant/workspace' %}
 <script>try { if (innerWidth >= 1200 && JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').open) { document.documentElement.classList.add('assistant-preopen'); const value=Number(JSON.parse(sessionStorage.getItem('office-assistant:' + {{ me.id|default('current')|tojson }}) || '{}').width)||420; document.documentElement.style.setProperty('--assistant-width',Math.min(640,Math.max(360,Math.min(innerWidth-800,value)))+'px'); } } catch (_) {}</script>
 {% endif %}
-<script>document.documentElement.classList.add('js');</script>
+<script>document.documentElement.classList.add('js');try { if(localStorage.getItem('office-navigation-collapsed')==='true')document.documentElement.classList.add('navigation-collapsed'); } catch (_) {}</script>
 </head>
 <body>
 <a class="small skip-link" href="#main-content">跳到主要内容</a>
 {% from '_nav_icon.html' import icon %}
 <header class="mobile-shell"><strong>{{ product.short_name }}</strong><button type="button" data-navigation-toggle aria-expanded="false" aria-controls="primary-navigation">导航菜单</button></header>
 <nav class="shell-nav" id="primary-navigation" aria-label="主要导航">
-<div class="brand">{{ product.short_name }}<small>{{ product.organization }} · 管理工作台</small>
-</div>
+<div class="nav-heading"><div class="brand">{{ product.short_name }}<small>{{ product.organization }} · 管理工作台</small></div>
+<button class="nav-collapse" type="button" data-navigation-collapse aria-expanded="true" aria-controls="primary-navigation" aria-label="收起导航" data-tooltip="收起导航" data-tooltip-placement="right">{{ icon('M3 4h18v16H3ZM9 4v16M16 9l-3 3 3 3') }}</button></div>
 <a href="/console/dashboard" {% if location.section == 'dashboard' %}class="active" aria-current="page"{% endif %}>{{ icon('M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z') }}<span>仪表盘</span></a>
 {% if me and 'agent.run' in me.permissions %}<a href="/console/assistant/workspace" {% if location.section == 'assistant' %}class="active" aria-current="page"{% endif %}>{{ icon('M7 18 3 21V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3ZM8 8h8M8 12h5') }}<span>智能助手</span></a>{% endif %}
 {% if me and 'access.read' in me.permissions %}
