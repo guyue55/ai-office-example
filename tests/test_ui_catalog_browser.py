@@ -206,14 +206,40 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                             )
                         if template == "model_settings.html" and width == 390:
                             page.set_viewport_size({"width": 390, "height": 844})
+                            # 折叠区里的控件即使不可见也有坐标，必须先展开再量几何，否则量到的是隐藏元素。
+                            page.evaluate("() => document.querySelectorAll('main details').forEach(node => node.open = true)")
                             page.evaluate("scrollTo(0, document.documentElement.scrollHeight)")
-                            overlap = page.evaluate("""() => {
-                                const field = document.querySelector('#model-extra-headers').getBoundingClientRect();
-                                const launch = document.querySelector('#assistant-launch').getBoundingClientRect();
-                                return Math.max(0, Math.min(field.right, launch.right) - Math.max(field.left, launch.left))
-                                    * Math.max(0, Math.min(field.bottom, launch.bottom) - Math.max(field.top, launch.top));
+                            page.evaluate(
+                                "() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+                            )
+                            # 浮动按钮固定在视口右下，滚动途中经过它下方是正常行为；判定点是滚到最底部时
+                            # 是否仍有控件被压住——那才是用户无法靠继续滚动摆脱的遮挡。
+                            blocked = page.evaluate("""() => {
+                                const launch = document.querySelector('#assistant-launch');
+                                if (!launch) return [];
+                                const box = launch.getBoundingClientRect();
+                                const atBottom = scrollY + innerHeight >= document.documentElement.scrollHeight - 1;
+                                const hits = [];
+                                for (const node of document.querySelectorAll('main button,main a,main input,main select,main textarea')) {
+                                    if (node === launch || !node.checkVisibility()) continue;
+                                    const rect = node.getBoundingClientRect();
+                                    const area = Math.max(0, Math.min(rect.right, box.right) - Math.max(rect.left, box.left))
+                                        * Math.max(0, Math.min(rect.bottom, box.bottom) - Math.max(rect.top, box.top));
+                                    if (area > 0) hits.push([node.tagName, node.id || node.name || node.className, Math.round(area), atBottom]);
+                                }
+                                return {atBottom, hits};
                             }""")
-                            assert overlap == 0, overlap
+                            assert blocked["atBottom"], blocked
+                            assert blocked["hits"] == [], blocked
+                            # 浮层能压在内容上时，只有主区为它预留的高度保证「滚到底也读得到」。
+                            # 几何检查在内容够长时可能天然不重叠，因此同时锁住这条结构性前提。
+                            reserved = page.evaluate(
+                                "() => parseFloat(getComputedStyle(document.querySelector('main')).paddingBottom)"
+                            )
+                            launch_height = page.evaluate(
+                                "() => document.querySelector('#assistant-launch').getBoundingClientRect().height"
+                            )
+                            assert reserved >= launch_height + 40, (reserved, launch_height)
                             page.set_viewport_size({"width": 390, "height": 1000})
                     if template == "employees.html":
                         primary = page.locator(".page-header .button").first
