@@ -6,7 +6,8 @@
   if (!editor) return;
   const field = id => editor.querySelector('#model-' + id);
   const action = field('secret-action'), key = field('secret'), mode = field('auth-mode');
-  const status = page.querySelector('#model-edit-status'), output = field('inline-result');
+  // 状态徽标位于页头，可能在 #model-settings 之外，因此从整页查找。
+  const status = document.querySelector('#model-edit-status'), output = field('inline-result');
   const savedForms = Array.from(page.querySelectorAll('[data-saved-action]'));
   const picker = window.OfficeCombobox.create(field('name'), field('options'));
   let baseline, busy = false, generation = 0, catalogGeneration = 0, controller;
