@@ -28,6 +28,7 @@
 | 模型协议与管理员配置 | [三协议与文件格式](docs/AGENT_MODEL_CONFIGURATION.md)、[管理闭环复核方案](docs/MODEL_CONFIGURATION_MANAGEMENT.md)、[管理操作与恢复](docs/MODEL_CONFIGURATION_OPERATIONS.md)；协议、保存、应用与供应商可用分别验收；托管模式需迁移、独立秘密和允许出口 |
 | 追溯模板来源与实现 | [来源](docs/SOURCE.md)、[实现记录](docs/IMPLEMENTATION.md) |
 | 全仓架构与 Web 复核结论 | [双维度审查记录](docs/AUDIT_2026-11-12.md)；含被推翻的原判断、证据分级与未验范围，不要照抄历史报告定性 |
+| 以 deepseek-harness 为范本的对比与优化建议 | [DSH 对比审查](docs/DSH_REFERENCE_2026-11-12.md)；含可移植机制、明确不抄的部分与执行顺序 |
 | 通过 AI 操作真实服务 | [SKILL.md](office-skills/SKILL.md)、[RULES.md](office-skills/RULES.md)，再按情境读 references |
 
 历史验收记录不代表当前环境已通过；文档与代码冲突时先核对真实实现和测试，明确差异后同步修订，不能只改描述使检查显得通过。
