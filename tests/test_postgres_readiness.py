@@ -10,6 +10,7 @@ from uuid import uuid4
 
 import pytest
 import yaml
+from pg_image import image
 from test_query_postgres import docker
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,7 +54,7 @@ def test_compose_readiness_rejects_temporary_initialization_server(tmp_path):
             f"{gate}:/run/office-gate:ro",
             "--entrypoint",
             "sh",
-            "pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0",
+            image(),
             "-c",
             "cp /run/office-gate /docker-entrypoint-initdb.d/99-gate.sh; "
             "chmod 0644 /docker-entrypoint-initdb.d/99-gate.sh; "
