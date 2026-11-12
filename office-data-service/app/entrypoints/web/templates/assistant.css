@@ -19,8 +19,8 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-ai-label {font-size:10px;font-weight:600;color:var(--muted);border:1px solid var(--line);padding:0 4px;border-radius:4px}
 .assistant-tools {display:flex;gap:2px;align-items:center;flex-shrink:0}
 .assistant-tools .ui-text-action {font-size:12px;padding-inline:8px}
-.assistant-topicbar {margin-top:4px;min-height:28px;font-size:12px;color:var(--muted)}
-#assistant-topic {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.assistant-topicbar {margin-top:6px;min-height:24px;font-size:12px;color:var(--muted)}
+#assistant-topic {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500;color:var(--ink);letter-spacing:-.005em}
 .assistant-topicbar .ui-text-action {font-size:12px;padding:2px 4px;min-height:28px;color:var(--muted)}
 .assistant-feedback:not(.sr-only) {margin:8px 14px 0;padding:8px 12px;border-radius:var(--radius-control);background:var(--soft);font-size:12px;flex-shrink:0;overflow-wrap:anywhere}
 .assistant-feedback.is-error {background:#fff4ed;color:#8a3911}
