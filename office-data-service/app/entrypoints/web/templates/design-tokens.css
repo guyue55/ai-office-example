@@ -9,6 +9,13 @@
   --space-8:32px;
   --radius-control:6px;
   --radius-surface:10px;
+  /* 助手面板：卡片与气泡用更圆润的一档，胶囊类控件走 chip。 */
+  --radius-panel:16px;
+  --radius-bubble:14px;
+  --radius-chip:999px;
+  --shadow-float:0 8px 24px rgba(23,43,58,.08);
+  --shadow-panel:0 18px 48px rgba(23,43,58,.10);
+  --hairline:rgba(23,43,58,.10);
   --surface:#fff;
   --surface-subtle:#f8fafc;
   --surface-hover:#f1f5f9;

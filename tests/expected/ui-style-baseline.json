@@ -1,9 +1,9 @@
 {
   "files": {
     "assistant.css": {
-      "border_1px": 10,
-      "color_literal": 13,
-      "off_scale_radius": 9,
+      "border_1px": 4,
+      "color_literal": 9,
+      "off_scale_radius": 4,
       "unguarded_hover": 5
     },
     "page-patterns.css": {
