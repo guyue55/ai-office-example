@@ -1,6 +1,7 @@
 """本机基础环境管理：幂等建库和身份配置，不删除卷、不打印密钥。"""
 
 import argparse
+import base64
 import json
 import os
 import secrets
@@ -51,6 +52,13 @@ def prepare():
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(fd, "w") as stream:
                 stream.write(secrets.token_urlsafe(32))
+    # 托管模型配置的独立根密钥；Fernet 要求32字节的 urlsafe base64，
+    # 不能复用会话密钥（Settings 会拒绝同一路径）。缺失时设置页只能报 503。
+    key_path = directory / "model_encryption_key"
+    if not key_path.exists():
+        fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as stream:
+            stream.write(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())
     (RUNTIME / "foundation").mkdir(exist_ok=True)
     port = int(os.environ.get("OFFICE_DEV_PORT", "8800"))
     if not 1 <= port <= 65535:
@@ -72,6 +80,7 @@ def prepare():
         "web_client_id": PRODUCT["web_client_id"],
         "redirect_uri": "http://127.0.0.1:8765/callback",
         "web_session_secret_file": str(directory / "web_session_secret"),
+        "agent_secret_key_file": str(directory / "model_encryption_key"),
     }
     config = preserve_config(RUNTIME / "foundation/config.json", config)
     owner = {
