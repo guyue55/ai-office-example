@@ -75,14 +75,16 @@ body.assistant-open main,.assistant-preopen main {margin-right:var(--assistant-w
 .assistant-starters {display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
 .assistant-prompt {border:0.5px solid var(--line);border-radius:var(--radius-chip);background:#fff;padding:8px 12px;font-size:12px;color:var(--ink)}
 .assistant-prompt:hover {border-color:var(--accent);background:var(--soft)}
-.assistant-history-panel {width:360px}
+.assistant-history-panel {width:min(400px,calc(100vw - 24px))}
+/* 配置入口与列表分开，避免读成「会话列表最后一项」。 */
+.assistant-history-panel > a {display:block;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--hairline)}
 .assistant-popup-heading {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .assistant-popup-heading h3 {font-size:14px;margin:0}
 .assistant-search {display:flex;gap:6px;margin:0 0 8px;padding:0}
 .assistant-search input {min-width:0;flex:1;margin:0;padding:6px 9px}
 .assistant-history-filter {display:flex;align-items:center;gap:4px;font-size:12px;margin:0}
 .assistant-history-filter input {width:auto;margin:0}
-.assistant-conversations {max-height:min(400px,45dvh);overflow:auto;margin:4px 0;scrollbar-gutter:stable}
+.assistant-conversations {max-height:min(400px,45dvh);overflow:auto;margin:6px 0;padding:2px;display:grid;gap:2px;scrollbar-gutter:stable}
 .assistant-conversation {border:0;background:transparent;color:var(--ink);width:100%;display:flex;align-items:flex-start;flex-direction:column;gap:3px;text-align:left;padding:9px 11px;border-radius:var(--radius-control);font-size:12px}
 .assistant-conversation:hover,.assistant-conversation[aria-current] {background:var(--soft)}
 .assistant-conversation-title {display:block;overflow-wrap:anywhere;width:100%;line-height:1.5}

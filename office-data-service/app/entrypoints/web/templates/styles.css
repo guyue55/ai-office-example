@@ -945,7 +945,7 @@ button.danger:not(:disabled):hover,.button.danger:not(:disabled):hover {backgrou
 .ui-icon-button:not(:disabled):hover,.ui-text-action:not(:disabled):hover {background:var(--soft);color:var(--ink)}
 .ui-icon-button:focus-visible,.ui-text-action:focus-visible {outline:2px solid var(--focus-ring);outline-offset:2px}
 .ui-icon-button:disabled,.ui-text-action:disabled {opacity:.55;cursor:not-allowed}
-.ui-floating-panel {position:fixed;inset:auto;margin:0;box-sizing:border-box;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;color:var(--ink);box-shadow:0 12px 32px #172b3a20}
+.ui-floating-panel {position:fixed;inset:auto;margin:0;box-sizing:border-box;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;border:0.5px solid var(--line);border-radius:var(--radius-panel);padding:12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-panel)}
 .ui-floating-panel:not(:popover-open):not([data-floating-open]) {display:none}
 @media (pointer:coarse) {.ui-icon-button,.ui-enhanced .action-cell .icon-action {width:44px;height:44px;min-width:44px}.ui-text-action,button,.button,.list-filters button,.pagination-numbered button,.search-form button,.actions button {min-height:44px}.page-links>a,.page-links>span {min-width:44px;height:44px}}
 
