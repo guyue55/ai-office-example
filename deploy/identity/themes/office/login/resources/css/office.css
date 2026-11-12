@@ -1,11 +1,23 @@
-/* 继承身份产品的无障碍表单与安全流程，只统一品牌色和背景。 */
+/* 继承身份产品的无障碍表单与安全流程，只统一品牌色、圆角与背景。
+   父主题 keycloak.v2 自带几处硬编码外观（卡片顶部 4px 纯蓝条、控件直角边框），
+   它们不读品牌令牌，所以在下面逐条覆写，而不是只改 --pf-v5-global--primary-color。 */
 :root {
   /* 中文优先使用系统字体，避免远程字体替换造成文字基线闪动。 */
   --office-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --pf-v5-global--FontFamily--text: var(--office-font-family);
   --pf-v5-global--FontFamily--heading: var(--office-font-family);
-  --pf-v5-global--primary-color--100: #087c80;
-  --pf-v5-global--primary-color--200: #065e63;
+  /* 品牌主色的唯一来源是生成出来的 product.css（configure_template 按 template.toml 写入），
+     主题里不再硬编码第二份，避免换品牌后这里仍是旧色。
+     但 PatternFly 的浅底组件会把 primary-color--100 重绑到 primary-color--dark-100（内置 #06C），
+     只改 100 时聚焦边框仍会退回蓝色，所以这里让 dark-100 跟随品牌色。 */
+  --pf-v5-global--primary-color--dark-100: var(--pf-v5-global--primary-color--100);
+  /* 圆角刻度：控件 10px、卡片 18px，保持「控件小于容器」的单一比例关系。 */
+  --office-radius-control: 10px;
+  --office-radius-surface: 18px;
+  --office-ink: #172b42;
+  --office-muted: #526477;
+  --office-line: #dce3eb;
+  --office-surface-hover: #f6f8fb;
 }
 /* 与父主题选择器匹配，避免背景图延迟绘制时由浅色闪为深色。 */
 html.login-pf,
@@ -44,13 +56,17 @@ html.login-pf { scrollbar-gutter:stable both-edges; }
 .login-pf .pf-v5-c-login__header { margin:0 0 28px; }
 .login-pf .pf-v5-c-login__main {
   margin:0;
-  border:1px solid #dce3eb;
-  border-radius:16px;
+  border:1px solid var(--office-line);
+  border-radius:var(--office-radius-surface);
   box-shadow:0 12px 36px rgb(24 52 59 / 6%);
+  /* 卡片自身裁剪：父主题给 main-header 画的顶部色条与圆角不再互相顶出。 */
+  overflow:hidden;
 }
-/* 父主题正文默认48px，标题32px；统一二者的对齐轴。 */
+
+/* 父主题的 4px 纯蓝顶条是硬编码 #0066CC，与品牌色无关，会让卡片「方」在顶部。 */
 .login-pf .pf-v5-c-login__main-header {
-  padding:28px 32px 24px;
+  border-top:0;
+  padding:28px 32px 20px;
   display:flex;
   flex-direction:row;
   justify-content:space-between;
@@ -59,20 +75,92 @@ html.login-pf { scrollbar-gutter:stable both-edges; }
   flex-wrap:wrap;
 }
 .login-pf .pf-v5-c-login__main-body { padding:0 32px 32px; }
-.login-pf #kc-page-title { margin:0; font-size:24px; line-height:1.5; font-weight:600; color:#172b42; }
+.login-pf #kc-page-title { margin:0; font-size:24px; line-height:1.5; font-weight:600; color:var(--office-ink); }
 .login-pf .pf-v5-c-login__main-header-utilities { margin:0; width:auto; max-width:100%; flex:0 0 auto; }
-.login-pf .pf-v5-c-form { row-gap:24px; }
+.login-pf .pf-v5-c-form { row-gap:20px; }
 .login-pf .pf-v5-c-form__label { color:#344054; font-weight:500; }
+.login-pf .pf-v5-c-form__group-label { padding-bottom:6px; }
+
+/* PatternFly v5 的输入框边框由 ::before/::after 两个绝对定位伪元素画成，
+   只给容器写 border-radius 时内部伪元素仍是直角，视觉上「圆而不圆」。
+   三处同时设圆角才能对齐按钮。 */
 .login-pf .pf-v5-c-form-control,
-.login-pf .pf-v5-c-button { border-radius:6px; }
+.login-pf .pf-v5-c-form-control::before,
+.login-pf .pf-v5-c-form-control::after {
+  border-radius:var(--office-radius-control);
+}
+.login-pf .pf-v5-c-button { border-radius:var(--office-radius-control); }
+/* 父主题把控件聚焦底边固定在调色板 blue-400（#06C），不跟随品牌主色；
+   改为引用 primary 令牌，品牌换色时聚焦态一起变。 */
+.login-pf .pf-v5-c-form-control {
+  --pf-v5-c-form-control--focus--after--BorderBottomColor: var(--pf-v5-global--primary-color--100);
+  --pf-v5-c-form-control--hover--after--BorderBottomColor: var(--pf-v5-global--primary-color--100);
+}
+/* 浏览器默认焦点环是 1px 直角描边，落在 10px 圆角容器内侧会露出四个方角。
+   父主题的聚焦指示只加粗底边，视觉重心偏下。这里统一改成「整圈 2px 品牌描边 +
+   柔和光晕」，圆角与控件一致，键盘可达性比默认更明显。 */
+.login-pf .pf-v5-c-form-control > :is(input,select,textarea):focus-visible {
+  outline:none;
+}
+.login-pf .pf-v5-c-form-control:focus-within {
+  --pf-v5-c-form-control--after--BorderBottomWidth: 0;
+  box-shadow:0 0 0 2px rgb(37 99 235 / 24%);
+}
+.login-pf .pf-v5-c-form-control:focus-within::before {
+  border-block-start:2px solid var(--pf-v5-global--primary-color--100);
+  border-block-end:2px solid var(--pf-v5-global--primary-color--100);
+  border-inline-start:2px solid var(--pf-v5-global--primary-color--100);
+  border-inline-end:2px solid var(--pf-v5-global--primary-color--100);
+  border-radius:var(--office-radius-control);
+}
+/* 父主题下语言选择框落在 header utilities 里，默认无边框、直角，与其余控件不一致。 */
+.login-pf .pf-v5-c-login__main-header-utilities .pf-v5-c-form-control {
+  background:var(--office-surface-hover);
+  box-shadow:inset 0 0 0 1px var(--office-line);
+}
+.login-pf .pf-v5-c-login__main-header-utilities select {
+  color:var(--office-ink);
+  font-family:var(--office-font-family);
+}
+
+/* 密码区的输入框与显示按钮是拼接的：只保留外轮廓，避免中间出现一条缝。 */
+.login-pf .pf-v5-c-input-group > .pf-v5-c-input-group__item.pf-m-fill .pf-v5-c-form-control,
+.login-pf .pf-v5-c-input-group > .pf-v5-c-input-group__item.pf-m-fill .pf-v5-c-form-control::before,
+.login-pf .pf-v5-c-input-group > .pf-v5-c-input-group__item.pf-m-fill .pf-v5-c-form-control::after {
+  border-start-end-radius:0;
+  border-end-end-radius:0;
+}
+.login-pf .pf-v5-c-input-group > .pf-v5-c-input-group__item:last-child .pf-v5-c-button {
+  border-start-start-radius:0;
+  border-end-start-radius:0;
+}
+.login-pf .pf-v5-c-input-group > .pf-v5-c-input-group__item:last-child .pf-v5-c-button::before,
+.login-pf .pf-v5-c-input-group > .pf-v5-c-input-group__item:last-child .pf-v5-c-button::after {
+  border-start-start-radius:0;
+  border-end-start-radius:0;
+}
 /* 保留原生校验、自动填充和密码显隐，只扩大操作区域。 */
 .login-pf #kc-form-login input:not([type=hidden]):not([type=checkbox]),
 .login-pf #kc-form-login button { min-height:44px; }
 .login-pf .pf-v5-c-button.pf-m-primary { min-height:44px; font-weight:600; }
+/* 悬停只对真正的指针设备生效，触摸屏不会留下悬停态。 */
+@media (hover:hover) {
+  .login-pf #kc-login:not(:disabled):hover { filter:brightness(0.94); }
+  .login-pf #password-show-password:not(:disabled):hover { background:var(--office-surface-hover); }
+}
+.login-pf #kc-login { transition:filter 120ms ease, box-shadow 120ms ease; }
+.login-pf :focus-visible { outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) {
+  .login-pf #kc-login { transition:none; }
+}
 @media (max-width:600px) {
   .login-pf .pf-v5-c-login { padding:32px 16px; }
   .login-pf .pf-v5-c-login__header { margin-bottom:24px; }
-  .login-pf .pf-v5-c-login__main-header { padding:24px; }
+  .login-pf .pf-v5-c-login__main-header { padding:24px 24px 16px; }
   .login-pf .pf-v5-c-login__main-body { padding:0 24px 24px; }
   .login-pf #kc-page-title { font-size:22px; }
+  /* 窄屏下标题与语言选择各占一行，避免语言框挤在标题右侧压缩换行。 */
+  .login-pf .pf-v5-c-login__main-header { row-gap:16px; }
+  .login-pf .pf-v5-c-login__main-header-utilities { width:100%; }
+  .login-pf .pf-v5-c-login__main-header-utilities .pf-v5-c-form-control { width:100%; }
 }
