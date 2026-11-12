@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
 {% block title %}{{ detail.name }} · 账号详情{% endblock %}
 {% block content %}
-<header class="page-header"><div><p class="eyebrow">人员与账号</p><h1>{{ detail.name }}</h1><p class="muted">业务访问与登录账号状态分别核实；所有安全动作均保留操作记录。</p></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
+{% call page_header("人员与账号", detail.name, "业务访问与登录账号状态分别核实；所有安全动作均保留操作记录。") %}<a href="/console/employees" data-workspace-dismiss>返回人员列表</a>{% endcall %}
 <nav class="page-toc" aria-label="账号详情分区"><a href="#account-profile">基本资料</a><a href="#account-safety">账号安全</a><a href="#account-history">最近操作</a></nav>
 <div class="account-detail-grid">
 <section class="card page-section" id="account-profile"><h2>基本资料</h2>

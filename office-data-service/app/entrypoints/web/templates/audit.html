@@ -1,10 +1,8 @@
 {% extends "base.html" %}
+{% from '_page_header.html' import page_header %}
 {% block title %}审计 - {{ product.name }}{% endblock %}
 {% block content %}
-<header class="page-header"><div><p class="eyebrow">操作与追溯</p>
-  <h1>审计记录</h1>
-  <p class="muted">每行代表一次已提交的业务变更；失败或被拒绝的请求请通过追踪号查询服务运行日志。时间为北京时间。</p>
-</div></header>
+{{ page_header("操作与追溯", "审计记录", "每行代表一次已提交的业务变更；失败或被拒绝的请求请通过追踪号查询服务运行日志。时间为北京时间。") }}
 <section class="card">
   {% include '_search.html' %}
   {% include '_table_scroll_hint.html' %}

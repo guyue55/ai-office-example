@@ -11,7 +11,7 @@
 .page-header h1 {font-size:26px;line-height:1.4;letter-spacing:-.4px}
 .page-header .muted {line-height:1.8;max-width:760px}
 .table-wrap {border-radius:7px}
-@media(max-width:700px) {
+@media (max-width:700px) {
   /* 无脚本时仍展示原生导航；增强后菜单按需展开，不挤占整个首屏。 */
   .js .mobile-shell {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;background:var(--nav-surface);color:var(--ink);min-height:60px}
   .mobile-shell strong {font-size:16px}
@@ -27,13 +27,13 @@
   .shell-context {margin-bottom:16px}
   .page-header h1 {font-size:24px}
 }
-@media(prefers-reduced-motion:reduce) {.shell-nav * {transition:none!important}}
+@media (prefers-reduced-motion:reduce) {.shell-nav * {transition:none!important}}
 
 .list-empty {padding:24px 16px;text-align:center;color:var(--muted)}
 .list-empty strong {display:block;color:var(--ink);font-weight:600;font-size:14px}
 .list-empty p {font-size:13px;line-height:1.7;margin:7px auto 10px;max-width:440px}
 .list-empty a {font-size:13px}
-@media(prefers-reduced-motion:reduce) {.assistant-launch {transition:none!important}}
+@media (prefers-reduced-motion:reduce) {.assistant-launch {transition:none!important}}
 
 /* 错误摘要与就地提示共用，输入保留；不使用颜色作为唯一的错误标识。 */
 .form-errors {padding:14px 16px;border:1px solid #a83b35;border-left-width:4px;border-radius:8px;background:#fff7f6;color:#8c2923;margin-bottom:12px}
@@ -58,7 +58,7 @@
 .assistant-workspace-main > .assistant-full {height:auto;min-height:0;flex:1}
 .assistant-workspace-main > .shell-context,.assistant-workspace-main > .hint {flex-shrink:0}
 .assistant-workspace-main > .trace {display:none}
-@media(max-width:700px) {
+@media (max-width:700px) {
   .js .assistant-workspace-main {height:calc(100dvh - 60px)}
   html:not(.js) .assistant-workspace-main {height:auto}
 }
@@ -69,11 +69,11 @@
 .state-facts {display:grid;grid-template-columns:64px minmax(0,1fr);gap:6px 12px;font-size:12px;color:var(--muted);padding:14px 0;border-block:1px solid var(--line);margin:20px 0}
 .state-facts dd {margin:0;overflow-wrap:anywhere}
 .task-state {border-left:3px solid var(--control-border);padding:9px 12px;color:var(--muted);background:#fff;line-height:1.7}
-@media(max-width:700px) {.state-page {padding:24px 18px}}
+@media (max-width:700px) {.state-page {padding:24px 18px}}
 
 /* 多列管理表局部滚动，避免窄屏把姓名与状态压成逐字竖排。 */
 .table-scroll-hint {display:none}
-@media(max-width:700px) {
+@media (max-width:700px) {
   .table-scroll-hint {display:block;margin:0 0 8px;color:var(--muted);font-size:12px}
   .table-wrap > .management-table {min-width:680px}
 }
@@ -99,7 +99,7 @@
 .table-wrap:focus-visible {outline:2px solid var(--focus-ring);outline-offset:3px}
 tbody tr:focus-within {background:var(--surface-hover)}
 .form-stack,.form-grid {row-gap:var(--space-4)}
-@media(max-width:700px) {
+@media (max-width:700px) {
   .page-header > .actions {justify-content:flex-start}
   .page-header > div:first-child {flex-basis:100%}
   .card {padding:var(--space-4)}

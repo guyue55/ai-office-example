@@ -1,15 +1,12 @@
 {% extends 'base.html' %}{% from '_permissions.html' import permission_table %}{% from '_page_patterns.html' import fact %}
+{% from '_page_header.html' import page_header %}
 {% block title %}{{ detail.name }} · 授权详情{% endblock %}
 {% block content %}{% set relation = 'roles' if kind == 'employees' else 'permission-sets' if kind == 'roles' else 'permissions' %}
-<header class="page-header">
-<div>
-<p class="eyebrow">{{ access_labels[kind] }}详情</p>
-<h1>{{ detail.name }}{% if detail.builtin_key %} <span class="badge neutral">内置角色</span>{% endif %}</h1>
-<p class="muted">查看授权内容、关联来源与使用情况。</p>
-</div>
+{% set heading %}{{ detail.name }}{% if detail.builtin_key %} <span class="badge neutral">内置角色</span>{% endif %}{% endset %}
+{% call page_header(access_labels[kind] ~ '详情', heading, '查看授权内容、关联来源与使用情况。') %}
 <div class="actions"><a class="button secondary" href="/console/{{ kind }}">返回{{ access_labels[kind] }}列表</a>
 <a class="button {{ 'secondary' if not can_manage else '' }}" href="/console/links/{{ kind }}/{{ detail.id }}/{{ relation }}">{{ '配置' if can_manage else '查看' }}{{ access_labels[relation] }}</a></div>
-</header>
+{% endcall %}
 <dl class="overview-facts" aria-label="授权配置概览">
 {{ fact('直接关联', detail.links|length, '当前对象的配置关系') }}
 {{ fact('配置权限', detail.permissions|length, '去重后的能力，不等于当前有效访问') }}

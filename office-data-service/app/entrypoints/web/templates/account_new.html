@@ -1,8 +1,9 @@
 {% extends 'base.html' %}{% from '_page_patterns.html' import task_steps %}
+{% from '_page_header.html' import page_header %}
 {% block title %}新建员工 · {{ product.short_name }}{% endblock %}
 {% block content %}
 {% set values = form_values|default({}) %}
-<header class="page-header"><div><p class="eyebrow">人员与账号</p><h1>新建员工</h1><p class="muted">一次完成登录开户与初始角色选择，核对实际权限后开通。</p></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
+{% call page_header("人员与账号", "新建员工", "一次完成登录开户与初始角色选择，核对实际权限后开通。") %}<a href="/console/employees" data-workspace-dismiss>返回人员列表</a>{% endcall %}
 {{ task_steps(['填写资料', '核对影响', '处理回执'], 1) }}
 
 <section class="card form-card"><form class="form-stack" method="post" data-native-submit action="/console/accounts/new">

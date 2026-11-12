@@ -1,17 +1,11 @@
 {% extends "base.html" %}
+{% from '_page_header.html' import page_header %}
 {% from '_permissions.html' import permission_table %}
 {% block title %}仪表盘 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header">
-<div>
-<p class="eyebrow">工作台概览</p>
-<h1>仪表盘</h1>
-<p class="muted">你好，{{ me.name }}。在这里查看当前账号可用的能力。</p>
-</div>
 {# me() 已返回真实 active；沿用状态字段而非固定文案。缺失时代入 true，避免旧上下文误报停用。 #}
 {% set active = me.active|default(true) %}
-<span class="badge {{ 'on' if active else 'off' }}">{{ '账号已启用' if active else '账号已停用' }}</span>
-</header>
+{% call page_header("工作台概览", "仪表盘", "你好，" ~ me.name ~ "。在这里查看当前账号可用的能力。") %}<span class="badge {{ 'on' if active else 'off' }}">{{ '账号已启用' if active else '账号已停用' }}</span>{% endcall %}
 <section class="card dashboard-overview" aria-label="本人概览">
 <a class="metric-card" href="/console/security">
 <span class="muted">当前账号</span>

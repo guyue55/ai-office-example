@@ -1,18 +1,14 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
 {% from '_relation_summary.html' import relation_summary %}
 {% block title %}人员管理 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header">
-<div>
-<p class="eyebrow">人员与授权</p>
-<h1>人员管理</h1>
-<p class="muted">统一维护员工、登录账号与角色；新建员工可一次完成开户和基础授权。</p>
-</div>
+{% call page_header("人员与授权", "人员管理", "统一维护员工、登录账号与角色；新建员工可一次完成开户和基础授权。") %}
 <div class="actions">
 {% if accounts_enabled and 'identity.read' in me.permissions %}{% if 'identity.create' in me.permissions and can_manage %}<a class="button" href="/console/accounts/new">新建员工</a>{% endif %}{% if can_manage %}<a class="button secondary" href="/console/accounts/link">关联已有账号</a>{% endif %}{% endif %}
 
 </div>
-</header>
+{% endcall %}
 {% include '_access_flow.html' %}
 
 <section class="card">{% include '_search.html' %}

@@ -1,7 +1,8 @@
 {% extends 'base.html' %}{% from '_page_patterns.html' import task_steps %}
+{% from '_page_header.html' import page_header %}
 {% block title %}账号处理进度 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header"><div><p class="eyebrow">人员与账号</p><h1>账号处理进度</h1></div><a href="/console/employees" data-workspace-dismiss>返回人员列表</a></header>
+{% call page_header("人员与账号", "账号处理进度") %}<a href="/console/employees" data-workspace-dismiss>返回人员列表</a>{% endcall %}
 {{ task_steps(['准备操作', '核对影响', '处理回执'], 3) }}
 
 <section class="card receipt-panel" data-receipt-state="{{ operation.status }}" aria-live="polite">

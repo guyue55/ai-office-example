@@ -1,6 +1,7 @@
 {% extends 'base.html' %}{% block title %}智能助手 · {{ product.short_name }}{% endblock %}
+{% from '_page_header.html' import page_header %}
 {% block content %}
-<header class="page-header"><div><p class="eyebrow">我的工作</p><h1>智能助手</h1><p class="muted">用自然语言处理工作。助手沿用您的权限，写入前展示预览，由您确认。</p></div></header>
+{{ page_header("我的工作", "智能助手", "用自然语言处理工作。助手沿用您的权限，写入前展示预览，由您确认。") }}
 <section class="card form-card"><h2>发起任务</h2>
 {% if capability.ready %}
 <form method="post" class="form-stack" data-native-submit>

@@ -1,14 +1,8 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
 {% block title %}角色 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header">
-<div>
-<p class="eyebrow">人员与授权</p>
-<h1>角色</h1>
-<p class="muted">角色代表工作职责，组合已有权限集后分配给员工。同一员工可拥有多个角色。</p>
-</div>
-{% if can_manage %}<a class="button" href="#role-create" data-open-form="role-create">新建角色</a>{% endif %}
-</header>
+{% call page_header("人员与授权", "角色", "角色代表工作职责，组合已有权限集后分配给员工。同一员工可拥有多个角色。") %}{% if can_manage %}<a class="button" href="#role-create" data-open-form="role-create">新建角色</a>{% endif %}{% endcall %}
 <div class="hint">内置<a href="/console/roles?q=普通员工">普通员工角色</a>用于首次开通；<a href="/console/roles?q=人员与授权管理员">人员与授权管理员</a>需显式授予，能管理他人及自身授权，属于高信任职责。修改共享角色或权限集会影响所有关联员工，也影响之后的新员工；撤回员工角色后不会自动补回。</div>
 {% include '_access_flow.html' %}
 <section class="card">{% include '_search.html' %}

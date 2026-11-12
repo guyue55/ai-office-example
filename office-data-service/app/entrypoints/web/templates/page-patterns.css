@@ -21,7 +21,7 @@
 .page-toc {display:flex;gap:var(--space-3);flex-wrap:wrap;margin:0 0 var(--space-5);font-size:13px}
 .page-toc a {padding:var(--space-2) var(--space-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-control)}
 .page-section {scroll-margin-top:var(--space-5)}
-@media(max-width:700px) {.task-steps {gap:var(--space-3)}.task-steps li {font-size:12px}.account-profile {grid-template-columns:1fr;gap:var(--space-1)}.account-profile dd {margin-bottom:var(--space-3)}}
+@media (max-width:700px) {.task-steps {gap:var(--space-3)}.task-steps li {font-size:12px}.account-profile {grid-template-columns:1fr;gap:var(--space-1)}.account-profile dd {margin-bottom:var(--space-3)}}
 
 .event-time {white-space:nowrap;font-variant-numeric:tabular-nums}
 
@@ -61,7 +61,7 @@
 .dashboard-overview > .metric-card {margin:0;border:0;border-radius:0;padding:var(--space-5) 48px var(--space-5) var(--space-5);min-width:0}
 .dashboard-overview > .metric-card + .metric-card {border-left:1px solid var(--line)}
 .dashboard-overview > .metric-card:first-child .stat {font-size:20px;line-height:1.6}
-@media(max-width:700px) {
+@media (max-width:700px) {
   .dashboard-overview {grid-template-columns:1fr}
   .dashboard-overview > .metric-card + .metric-card {border-left:0;border-top:1px solid var(--line)}
 }

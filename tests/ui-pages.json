@@ -240,6 +240,7 @@
     "design-tokens.css",
     "_relation_summary.html",
     "_page_patterns.html",
+    "_page_header.html",
     "page-patterns.css",
     "_applied_filters.html"
   ]

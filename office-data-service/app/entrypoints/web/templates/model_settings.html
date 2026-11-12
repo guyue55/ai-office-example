@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
 {% set protocols = {'openai-completions':'OpenAI · Chat Completions','openai-responses':'OpenAI · Responses','anthropic-messages':'Anthropic · Messages'} %}
 {% block title %}智能助手配置 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header settings-header"><div><p class="eyebrow">系统设置</p><h1>智能助手配置</h1><p class="muted">填写连接，选择模型后测试并保存。员工不会获得模型密钥。</p></div><span class="badge {{ 'on' if configuration.ready else 'neutral' }}">{{ '助手已就绪' if configuration.ready else '助手已停用' if configuration.source == 'disabled' else '助手未就绪' }}</span></header>
+{% call page_header("系统设置", "智能助手配置", "填写连接，选择模型后测试并保存。员工不会获得模型密钥。", variant="settings-header") %}<span class="badge {{ 'on' if configuration.ready else 'neutral' }}">{{ '助手已就绪' if configuration.ready else '助手已停用' if configuration.source == 'disabled' else '助手未就绪' }}</span>{% endcall %}
 <nav class="page-toc" aria-label="模型配置分区"><a href="#connection-editor">编辑模型连接</a><a href="#model-edit-status">查看保存状态</a></nav><div class="settings-page"><div class="model-settings-layout" id="model-settings" data-saved-url="{{ configuration.draft.model_url if configuration.draft else '' }}" data-has-secret="{{ 'true' if configuration.secret_set else 'false' }}">
 <section class="card settings-editor page-section" id="connection-editor" aria-labelledby="model-editor-title">
 <div class="settings-heading"><h2 id="model-editor-title">模型连接</h2><span class="badge neutral" id="model-edit-status" role="status" aria-live="polite">{{ '已保存' if configuration.draft_revision else '尚未保存' }}</span></div>
