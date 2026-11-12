@@ -20,6 +20,8 @@ COMPOSE = [
     "-f",
     str(ROOT / "deploy/compose.dev.yaml"),
 ]
+# 自定义登录主题名，与 deploy/identity/themes/office 和安装器保持一致。
+LOGIN_THEME = "office"
 
 
 def command(args, **kwargs):
@@ -195,11 +197,18 @@ def provision():
                     "realm": "office",
                     "enabled": True,
                     "registrationAllowed": False,
+                    "loginTheme": LOGIN_THEME,
                     "internationalizationEnabled": True,
                     "supportedLocales": ["zh-CN", "en"],
                     "defaultLocale": "zh-CN",
                 },
             )
+            response.raise_for_status()
+        # 与生产安装器保持一致：已存在的 realm 也要补齐登录主题，否则开发者看到的是
+        # Keycloak 默认外观，而不是 deploy/identity/themes/office 里的品牌主题。
+        current = http.get(realm_path).json()
+        if current.get("loginTheme") != LOGIN_THEME:
+            response = http.put(realm_path, json={"loginTheme": LOGIN_THEME})
             response.raise_for_status()
         scopes = http.get(realm_path + "/client-scopes").json()
         scope = next((s for s in scopes if s["name"] == "office"), None)
