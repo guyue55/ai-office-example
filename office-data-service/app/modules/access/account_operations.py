@@ -162,7 +162,10 @@ class AccountOperations:
             )
         if command.get("mode") == "email":
             require(
-                self.email_enabled, 422, "invalid_request", "邮件功能尚未配置，请使用临时密码方式"
+                self.email_enabled,
+                422,
+                "unsupported_operation",
+                "邮件功能尚未配置，请使用临时密码方式",
             )
             if kind == "create":
                 require(

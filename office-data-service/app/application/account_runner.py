@@ -354,13 +354,11 @@ class AccountRunner:
                 require(
                     self.settings.identity_management.email_enabled,
                     422,
-                    "invalid_request",
+                    "unsupported_operation",
                     "邮件未配置，请确认后改用临时密码",
                 )
                 account = await self.provider.get(op.remote_id)
-                require(
-                    bool(account.email), 422, "invalid_request", "账号未登记邮箱，请改用临时密码"
-                )
+                require(bool(account.email), 422, "invalid_input", "账号未登记邮箱，请改用临时密码")
                 if kind == "reset":
                     require(
                         op.request.get("was_enabled"),
