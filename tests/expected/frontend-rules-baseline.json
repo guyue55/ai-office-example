@@ -1,0 +1,12 @@
+{
+  "note": "前端规则存量基线。数量增加即失败，减少也必须同步收紧；更新命令：uv run --frozen python scripts/check_frontend_rules.py --update",
+  "rules": {
+    "breakpoint": 0,
+    "inline_handler": 0,
+    "inline_style": 0,
+    "inner_html": 0,
+    "media_spacing": 0,
+    "native_dialog": 0
+  },
+  "version": 1
+}
