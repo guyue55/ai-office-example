@@ -242,3 +242,81 @@ assert outputs == set(OPERATION_INPUTS), ("输出契约与输入契约不一致"
 | `OFFICE_AGENT_BROWSER_TESTS=1 pytest tests/test_ui_catalog_browser.py` | 1 passed |
 
 未运行：远程 CI、Docker 构建、真实 OIDC／模型、移动真机与读屏器。
+
+## 十、反向筛查：本项目手写板块 vs DSH（2026-11-12 夜间）
+
+前九节是「把 DSH 的机制移植成门禁」（横切面）。本节换方向：按**能力板块**盘点本项目自己手写了什么，再逐项看 DSH 是否有更完整的实现。证据分级同前：**【实跑】**指本轮真跑过命令或脚本，**【源码】**指只读代码得出的判断。
+
+### 10.1 本项目手写板块的体量【实跑】
+
+| 板块 | 文件数 / 行数 |
+|---|---|
+| `office-data-service/app/application/` | 20 文件 2755 行 |
+| `office-data-service/app/modules/` | 38 文件 4612 行（access 18/2645、agent 8/942、data 7/714、query 4/311） |
+| `office-data-service/app/entrypoints/` | 26 文件 3730 行 |
+| `office-data-service/app/infrastructure/` | 13 文件 1416 行 |
+| `office-data-service/app/common/` | 11 文件 362 行 |
+| `clients/agent` | 1624 行（`runtime` 446、`gateway` 225、`toolsets` 211 最大） |
+| `clients/python` | 2138 行（`client` 473、`cli` 326 最大） |
+
+DSH 侧对应 `docs/subsystems/` 共 **57 篇**：agent-team、approval、attachment、boot、browser-use、client-modules、client-resources、commands、compaction、computer-use、conversation、core、credentials、deliverables、extensions、feedback、filesystem、forge、goal、jobs、liveshare、llm-streaming、lsp、mcp、office-kit、otel、permission-presets、persistence、plan、product-telemetry、ptc-runtime、sandbox、schedule、scope、session-projection、session-query、session-reference、session-telemetry、session-title、session、settings、shell、sidebar-right、skills、slots、spill、ssh、storage、subagent、subprocess、system-prompt、terminal、todo、token-meter、tools、translation、typert、user-questions、voice-input、web-client、web-server、web、webhook、workflow、working-directory、workspace、worktrees。
+
+### 10.2 已定位并修复的三处（本轮已落地，各自都有旧实现红验证）
+
+#### A. 会话标题：会被截断代理对 + 可被方向符伪造
+
+**缺陷【实跑】**：`assistant-shell.js` 用 `prompt.slice(0,40)` 按 UTF-16 码元截断。`('A'+'🎉'.repeat(25)).slice(0,40)` 末尾得到孤立高位代理项 `d83c`，该 JSON 到达服务端后 Pydantic 直接拒绝（`unable to parse raw data as a unicode string`），**首条消息含 emoji 且落在切点时新建会话变成 422**。同时标题原样入库：`ConversationCreate(title="测试\x1b[31m红色\x1b[0m\u202e反转")` 通过校验，ANSI 转义与 U+202E 方向符可让标题视觉反转。
+
+**DSH 做法【源码】**：`packages/session/session-title/src/normalize.ts` 依次剥离 OSC／CSI／ESC／控制符／方向控制符，再 `\s+` 压成单空格；截断按**码点**累加字节预算，绝不切断字符；`SessionTitleSource` 区分 `fallback`／`provider`／`user`，用户显式改名即 pin 标题、停止自动生成。
+
+**本轮落地**：新增 `app/common/text.py`（清洗 + 按码点截断 + 空标题回退「新会话」），schema 在 `mode="before"` 阶段清洗并拒绝纯不可见标题，会话首条消息由服务端派生标题（用户改名后不覆盖），前端改用 `Array.from(prompt).slice(0,40).join('')`。落在 `common` 层而非 `modules/agent` 下，是因为结构门禁不允许 `schemas` 依赖同模块的非白名单兄弟文件——这条规则本身是对的。
+
+#### B. 模型用量：原样倾倒 JSON
+
+**缺陷【实跑】**：任务详情把 `turn.result.usage` 整个 JSON 塞进 `<details>`；会话流里只有一句「模型服务未返回完整用量」，用户无法判断**哪些请求**没被计量。
+
+**DSH 做法【源码】**：`token-meter` 的 `TokenMeasurement{logRevision, baseline{kind:'usage'|'estimated'}, surfaceDeltaTokens, totalTokens, surfaceTokens, nodes[]}`，区分「有提供方锚点」与「无锚点自估」。
+
+**本轮落地**：按字段展示请求次数、输入／输出 Token、工具调用次数，明确标注未返回用量的请求数，无用量时也不留空。**只呈现已有五字段，不声称能做位置级计量**——本项目的 usage 由运行时一次性汇总写入，没有 per-node 数据。
+
+#### C. 敏感信息清洗：键名变体与文本凭证大面积漏出
+
+**缺陷【实跑】**：原 `SECRET_KEYS` 只有 9 个精确键名，`sanitize()` 只替换 `Bearer`。实测 10 个真实形状中 **8 个原样外发**：`apiKey`、`X-Api-Key`、`token`、`db_password`、`private_key`、`session_token`、URL 里的 `?access_token=`、`sk-` 前缀密钥。
+
+**本轮落地**：键名先归一 camelCase／短横线再判定，按 `_password`／`_token`／`_secret`／`_key`／`_credential` 后缀兜底；`max_tokens`、`input_tokens`、`token_limit` 等预算计数**显式放行**（误伤会让成本信息失真）；文本清洗扩展到 `Basic` 头、URL 查询参数、`sk-`／`AKIA`／`ghp_` 前缀与 PEM 私钥块。服务端三处（`agent_service.py`、`agent_runner.py` 两处）都调同一个函数，因此自动生效。
+
+仍需说明边界：这是**本地兜底**，不承诺识别全部个人信息或提示注入；不符合已知形状的裸凭证仍可能漏出，外发仍须企业批准目的地与范围。
+
+### 10.3 确认存在但本轮未做的（附判断依据）
+
+| 缺口 | 现状【源码】 | DSH 对应 | 为什么本轮不做 |
+|---|---|---|---|
+| 会话历史过短 | `agent_history.py` 只取最近 **3 轮**、每轮各 1000 字符，总预算 `min(6000, limit//2)`，超限从头丢；无摘要、无 token 计量 | `compaction` 三事件（start/summary/end）+ 摘要挂 `surfaceOp:{op:'replace'}`，锁括住整个操作 | 摘要压缩需要新的模型调用与持久化契约（迁移 + 契约导出 + 计费边界），是独立设计题，不能在对比轮顺手改 |
+| 缺少 todo / plan / subagent / schedule | `grep 'todo\|subagent\|schedule'` 在两个源码目录只命中 UI 文案 | 各自有独立 subsystem 与工具 | 属新增产品能力，不是「更优实现」；需先定产品范围 |
+| 无跨会话引用 | `Conversations` 只有 owned/create/listing/detail/ensure_idle/attach/archive/rename | `session-reference` 有候选、规范 mention、`capturedThroughSeq` | 同上；且要连带设计历史可见性与权限指纹 |
+| 无 `/` 斜杠命令 | 无命令注册表 | `commands` 的 `CommandDefinition` 直接对 agent 执行、不创建模型消息 | 属交互形态扩展，需与既有原生表单提交通路统一 |
+| 审批只有一条审计 | `service.py` 仅 `audit("agent.decided", ...)` | `approval/asked` + `approval/decided` 事件对，非 `allowed-once` 一律拒绝 | 改审计事件结构会影响既有审计读取方与契约快照，需单独立项 |
+
+### 10.4 本项目做得好、不建议照抄 DSH 的部分
+
+- `progress.py` 的单槽最新投影 + `asyncio.timeout(1)` 隔离，比「排无限队列」更稳；观察失败只停观察，不取消业务。
+- `gateway.py` 的一次性 ticket：`proposal()` 拒重放与过期，`execute()` **先消耗再执行**，失败也不自动重放。
+- `agent_history.py` 的权限指纹校验：权限变化即断绝旧历史并明确告知，而不是静默继续喂旧上下文。
+- `common/errors.py` 的 `validation_error()` 只回传 `path` 与 `code`（`include_input=False, include_context=False`），不把用户输入回显到错误里。
+
+### 10.5 本轮门禁证据【实跑】
+
+| 门禁 | 结果 |
+|---|---|
+| `pytest -m 'not live' -q` | **777 passed, 147 deselected**（本轮 +16） |
+| `pytest --project clients/agent clients/agent/tests` | **104 passed** |
+| `ruff check` / `ruff format --check` | All checks passed / 全部已格式化 |
+| `mypy office-data-service/app clients/python/src clients/agent/src` | Success: no issues in **138** source files |
+| `check_architecture` / `check_capability_coverage` | `ARCHITECTURE_BOUNDARIES_OK` / `CAPABILITY_COVERAGE_OK operations=60` |
+| `export_contracts.py --check` | `CONTRACT_SNAPSHOTS_OK` |
+| `check_ui_styles` / `check_frontend_rules` | 与第九节一致，无新增违规 |
+
+红验证：标题测试在旧 schema 上 **4 failed**、前端 `slice` 断言失败；用量测试在旧 shell 上失败；脱敏测试在旧键名逻辑上 **2 failed**。
+
+未运行：真实 OIDC／模型供应商、Docker 构建、移动真机与读屏器、远程 CI。
+
