@@ -43,7 +43,7 @@ class AgentRecords:
             # 局部导入避免模块环；同会话锁与全局权限锁一起保证受理串行。
             from app.modules.agent.conversations import Conversations
 
-            await Conversations(self.access).attach(conversation_id)
+            await Conversations(self.access).attach(conversation_id, prompt)
         active = select(AgentRun).where(AgentRun.status.in_(ACTIVE))
         own = await self.db.scalar(
             select(func.count()).select_from(

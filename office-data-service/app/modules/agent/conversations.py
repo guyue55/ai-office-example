@@ -7,10 +7,14 @@ from office_contracts import Budget, ProtocolError, encode
 from sqlalchemy import func, or_, select
 
 from app.common.errors import require
+from app.common.text import fallback_title
 from app.infrastructure.models import AgentConversation, AgentRun
 from app.infrastructure.pagination import numbered_rows
 from app.modules.agent.outputs import RunView
 from app.modules.agent.state import ACTIVE, run_view
+
+#: 未命名会话的占位标题；一旦被真实消息派生或用户改名即不再回退。
+DEFAULT_TITLE = "新会话"
 
 TURN_BUDGET = Budget(max_bytes=128000, max_nodes=4000, max_depth=24)
 
@@ -43,7 +47,7 @@ class Conversations:
         require(row is not None, 404, "not_found", "会话不存在或不属于当前员工")
         return row
 
-    async def create(self, title):
+    async def create(self, title=DEFAULT_TITLE):
         count = await self.db.scalar(
             select(func.count())
             .select_from(AgentConversation)
@@ -175,9 +179,14 @@ class Conversations:
         require(active is None, 409, "constraint_conflict", "此会话仍有活动任务，请等待或先停止")
         return row
 
-    async def attach(self, identifier):
+    async def attach(self, identifier, prompt=""):
         row = await self.ensure_idle(identifier)
         require(not row.archived, 409, "constraint_conflict", "会话已归档，请先恢复或新建会话")
+        # 仍用占位标题时，从本轮消息派生一次；已有真实标题（含用户改名）不再覆盖。
+        if prompt and row.title == DEFAULT_TITLE:
+            derived = fallback_title(prompt)
+            if derived != DEFAULT_TITLE:
+                row.title = derived
         row.version += 1
         row.updated_at = datetime.now(UTC)
         return row
