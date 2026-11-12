@@ -8,7 +8,9 @@
 <h1>仪表盘</h1>
 <p class="muted">你好，{{ me.name }}。在这里查看当前账号可用的能力。</p>
 </div>
-<span class="badge on">账号已启用</span>
+{# me() 已返回真实 active；沿用状态字段而非固定文案。缺失时代入 true，避免旧上下文误报停用。 #}
+{% set active = me.active|default(true) %}
+<span class="badge {{ 'on' if active else 'off' }}">{{ '账号已启用' if active else '账号已停用' }}</span>
 </header>
 <section class="card dashboard-overview" aria-label="本人概览">
 <a class="metric-card" href="/console/security">
@@ -52,7 +54,7 @@
 </div>
 <span class="badge neutral">{{ my_roles|length }} 个</span>
 </div>{% if my_roles %}
-<div class="table-wrap">
+<div class="table-wrap" role="region" aria-label="我的角色表格" tabindex="0">
 <table class="data-table">
 <thead>
 <tr>

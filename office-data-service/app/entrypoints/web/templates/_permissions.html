@@ -1,6 +1,6 @@
 {% macro permission_table(entries, empty_message='暂无权限。需要使用相关功能时，请联系管理员配置角色。') -%}
 {% if entries %}
-<div class="table-wrap">
+<div class="table-wrap" role="region" aria-label="权限明细表格" tabindex="0">
 <table class="data-table" role="table">
 <thead>
 <tr>
