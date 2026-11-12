@@ -207,7 +207,9 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                         if template == "model_settings.html" and width == 390:
                             page.set_viewport_size({"width": 390, "height": 844})
                             # 折叠区里的控件即使不可见也有坐标，必须先展开再量几何，否则量到的是隐藏元素。
-                            page.evaluate("() => document.querySelectorAll('main details').forEach(node => node.open = true)")
+                            page.evaluate(
+                                "() => document.querySelectorAll('main details').forEach(node => node.open = true)"
+                            )
                             page.evaluate("scrollTo(0, document.documentElement.scrollHeight)")
                             page.evaluate(
                                 "() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
