@@ -166,6 +166,26 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
                                         table.evaluate(
                                             "node => { node.parentElement.scrollLeft = 0; node.parentElement.blur(); }"
                                         )
+                        # 任何可滚动的表格容器都必须可聚焦，否则键盘用户无法读到被裁掉的内容。
+                        # 只测 .management-table 会漏掉 .data-table 与无类裸 table（本轮补齐）。
+                        if width <= 390:
+                            wrappers = page.locator(".table-wrap").evaluate_all(
+                                """nodes => nodes.filter(n => {
+                                    const box = n.getBoundingClientRect();
+                                    if (box.width === 0 && box.height === 0) return false;
+                                    return true;
+                                }).map(n => ({
+                                    scrollable: n.scrollWidth > n.clientWidth,
+                                    role: n.getAttribute('role'),
+                                    tabIndex: n.tabIndex,
+                                    label: n.getAttribute('aria-label'),
+                                    table: n.querySelector('table')?.className || '(bare)'
+                                }))"""
+                            )
+                            for wrapper in wrappers:
+                                assert wrapper["role"] == "region", (template, wrapper)
+                                assert wrapper["tabIndex"] == 0, (template, wrapper)
+                                assert wrapper["label"], (template, wrapper)
                         if template in ("account_new.html", "account_link.html"):
                             expect(page.locator('[name="default_role"]')).to_have_count(0)
                             expect(page.locator("main")).to_contain_text("内置普通员工角色")

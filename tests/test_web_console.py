@@ -187,6 +187,29 @@ def test_dashboard_shows_my_roles_above_permissions(web):
     assert response.text.index('id="my-roles"') < response.text.index('id="my-permissions"')
 
 
+@pytest.mark.parametrize(
+    "active,label,badge",
+    [(True, "账号已启用", "on"), (False, "账号已停用", "off")],
+)
+def test_dashboard_account_status_follows_real_state(web, active, label, badge):
+    """状态徽标必须取 me() 的真实 active，不能写死启用文案。"""
+    original = web.application.call.side_effect
+
+    async def operation(principal, name, payload, trace):
+        if name == "me":
+            return {"name": "普通员工", "active": active, "permissions": ["record.create"]}
+        return await original(principal, name, payload, trace)
+
+    web.application.call.side_effect = operation
+    response = web.client.get("/console/dashboard")
+    assert response.status_code == 200
+    header = response.text[response.text.index('<header class="page-header"') :]
+    header = header[: header.index("</header>")]
+    assert f'class="badge {badge}"' in header
+    assert label in header
+    assert ("账号已停用" in header) is (not active)
+
+
 def test_dashboard_role_table_marks_custom_role_and_admin_action(web):
     original = web.application.call.side_effect
 
