@@ -5,7 +5,7 @@
   const labels = JSON.parse(document.getElementById('assistant-labels').textContent);
   const active = new Set(['queued','running','awaiting_confirmation']);
   const outcomes=Object.fromEntries(Object.entries(labels.outcomes).filter(([phase])=>!active.has(phase)));
-  const names = {name:'名称', username:'登录账号', email:'工作邮箱', mode:'凭证方式', role_ids:'角色标识', kind:'操作类型', identifier:'目标标识', remote_id:'登录账号标识', id:'编号', version:'版本', before:'变更前', after:'变更后', values:'字段值', operation:'操作', status:'状态', schema_revision:'字段定义版本', project_id:'数据容器编号', complete:'覆盖完整', next:'下一页', count:'数量', total:'总数', archived:'已归档', permissions:'权限', items:'数据项', warning:'提示', warnings:'提示', message:'说明', active:'启用'};
+  const names = {name:'名称', username:'登录账号', email:'工作邮箱', mode:'凭证方式', role_ids:'角色标识', kind:'操作类型', identifier:'目标标识', remote_id:'登录账号标识', id:'编号', version:'版本', before:'变更前', after:'变更后', values:'字段值', operation:'操作', status:'状态', schema_revision:'字段定义版本', project_id:'数据容器编号', complete:'覆盖完整', next:'下一页', count:'数量', total:'总数', archived:'已归档', permissions:'权限', items:'数据项', warning:'提示', warnings:'提示', message:'说明', active:'启用', requests:'模型请求次数', unmeasured_requests:'未返回用量的请求', tool_calls:'工具调用次数', input_tokens:'输入 Token', output_tokens:'输出 Token'};
   function el(tag, text, cls) {const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (cls) node.className = cls; return node;}
   function button(text, action, kind='secondary') {const node = el('button', text, kind); node.type='button'; node.addEventListener('click', action); return node;}
   function fields(value) {
@@ -47,6 +47,16 @@
     return fields(value);
   }
   function detail(title, value) {const node=el('details'); node.append(el('summary',title),el('pre',JSON.stringify(value,null,2))); return node;}
+  // 用量按字段给出可核对的口径；未返回用量的请求数不清零，也不冒充完整预算。
+  function usage(value){
+    if(!value||typeof value!=='object')return el('p','本轮没有可用的模型用量。','small muted');
+    const box=el('div');
+    box.append(fields({requests:value.requests,input_tokens:value.input_tokens,output_tokens:value.output_tokens,tool_calls:value.tool_calls}));
+    if(value.unmeasured_requests>0)box.append(el('p','其中 '+value.unmeasured_requests+' 次请求未返回用量；Token 统计与预算判断可能不完整。','assistant-warning'));
+    else box.append(el('p','本轮请求均返回了用量。','small muted'));
+    box.append(detail('完整用量原始值',value));
+    return box;
+  }
   const impacts={access:'权限配置变更：以服务端预览的对象、关联及版本为准。',account:'登录账号操作：请核对目标人员与账号；此处不展示密码。',account_resume:'继续原账号操作：只处理本次预览允许的步骤。',data:'数据管理变更：请核对容器、字段定义和版本。',submit_record:'提交候选数据：提交成功不等于业务已确认。',confirm_record:'确认当前版本：确认后冻结，更正需生成新版本。',correct_record:'创建更正候选：不覆盖原确认历史，需要重新确认。',describe_device:'登记当前授权设备备注，不改变授权权限。',change_authorization:'变更客户端授权：停用后旧凭证不可重新激活，请核对目标设备。'};
   function preview(pending){
     const box=el('div');box.append(el('p',impacts[pending.operation]||'请核对完整预览；摘要不能替代服务端校验。','small muted'));
@@ -128,5 +138,5 @@
     if(outcomes[outcome]&&outcome!=='completed')section.append(el('p',outcomes[outcome],outcome==='cancelled'?'small muted':'assistant-warning'));
     return section;
   }
-  api.view={el,button,renderTurn,renderWelcome,active,labels,fields,detail,outcomes,preview};
+  api.view={el,button,renderTurn,renderWelcome,active,labels,fields,detail,usage,outcomes,preview};
 })();
