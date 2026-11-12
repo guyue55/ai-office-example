@@ -17,7 +17,7 @@
 <label>您的决定 <select name="decision" required><option value="">请选择</option><option value="deny">拒绝本次操作</option><option value="approve">批准本次操作</option></select></label><div><button type="submit">提交决定</button></div></form>
 {% else %}<p role="status">决定已记录或停止请求已提交，等待执行器处理。</p>{% endif %}</section>{% endif %}
 {% if task.result %}{% include '_assistant_result.html' %}{% endif %}
-{% if task.status in ['queued','running','awaiting_confirmation'] and not task.cancel_requested %}<section class="card"><form method="post" action="/console/assistant/{{ task.id }}/cancel" data-native-submit data-confirm-message="停止后不会撤回已完成的操作，是否继续？"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ task.version }}"><button class="secondary" type="submit">停止任务</button></form></section>{% endif %}
+{% if task.status in ['queued','running','awaiting_confirmation'] and not task.cancel_requested %}<p class="muted small">{{ '页面每 5 秒核对一次任务进度。' if task.status in ['queued','running'] else '请核对预览后提交决定。' }}离开本页不会停止任务，结果仍会保存。</p><section class="card"><form method="post" action="/console/assistant/{{ task.id }}/cancel" data-native-submit data-confirm-message="停止后不会撤回已完成的操作，是否继续？"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ task.version }}"><button class="secondary" type="submit">停止任务</button></form></section>{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -27,4 +27,20 @@
   if(host&&data&&window.OfficeAssistant?.view)host.append(window.OfficeAssistant.view.preview(JSON.parse(data.textContent)));
 })();
 </script>
+{% if task.status in ['queued','running'] and not task.cancel_requested %}
+<script>
+// 任务详情本身不自动更新，用户会一直看到「正在处理」；按固定间隔复核一次实际状态。
+// 只在 queued/running 时输出：awaiting_confirmation 正等本人核对预览，刷新会打断阅读与决定。
+(() => {
+  let asking = false;
+  const timer = setInterval(async () => {
+    // 上一轮刷新仍在确认或导航中时不再叠加，否则会连续弹出多个确认框。
+    if (asking || document.visibilityState !== 'visible') return;
+    asking = true;
+    try {await window.OfficeUI?.reloadPage?.();} finally {asking = false;}
+  }, 5000);
+  window.addEventListener('pagehide', () => clearInterval(timer));
+})();
+</script>
+{% endif %}
 {% endblock %}
