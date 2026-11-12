@@ -70,11 +70,21 @@ def guarded_spans(css):
 def unguarded_hover(css):
     plain = strip_comments(css)
     spans = guarded_spans(plain)
-    return [
-        line_of(plain, match.start())
-        for match in HOVER_RULE.finditer(plain)
-        if not any(start < match.start() < end for start, end in spans)
-    ]
+    rows = []
+    for match in HOVER_RULE.finditer(plain):
+        whole = match.group(0)
+        selector = whole.lstrip().rstrip("{").strip()
+        # `@media (hover:hover)` 的条件本身就含 `:hover`，它不是样式规则；
+        # 把它算进来会凭空记一笔违规，也会掩盖「该文件真的没有 hover 规则」。
+        if selector.startswith("@"):
+            continue
+        # 边界取闭区间：规则紧跟在 `{` 后同一行时匹配起点正好等于区间起点
+        # （`[^{}]*` 允许零个字符），开区间会把合规写法误报成违规。
+        if any(start <= match.start() < end for start, end in spans):
+            continue
+        # 行号指向 `:hover` 本身，而不是它前面那段空白。
+        rows.append(line_of(plain, match.start() + whole.index(":hover")))
+    return rows
 
 
 def color_literals(css):
@@ -199,10 +209,14 @@ def main():
         totals = {rule: sum(row[rule] for row in actual.values()) for rule in sorted(RULES)}
         print("UI_STYLE_BASELINE_UPDATED", json.dumps(totals, ensure_ascii=False))
         return
+    if arguments.json:
+        # 只报告当前命中明细，不受基线是否已收紧影响：基线漂移时仍需能查看实际计数，
+        # 否则「看数字」也会被断言挡住，排查时只能先改基线。
+        files = measure()
+        print(json.dumps(files, ensure_ascii=False, indent=2))
+        return
     files = check()
     totals = {rule: sum(len(row[rule]) for row in files.values()) for rule in sorted(RULES)}
-    if arguments.json:
-        print(json.dumps(files, ensure_ascii=False, indent=2))
     print("UI_STYLES_OK", json.dumps(totals, ensure_ascii=False))
 
 

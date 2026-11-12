@@ -28,7 +28,7 @@
       "border_1px": 23,
       "color_literal": 68,
       "off_scale_radius": 21,
-      "unguarded_hover": 15
+      "unguarded_hover": 12
     }
   },
   "note": "样式规范存量基线。数量增加即失败，减少也必须同步收紧；更新命令：uv run --frozen python scripts/check_ui_styles.py --update",
