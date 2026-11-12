@@ -6,6 +6,12 @@
 2. 标题原样入库，ANSI 转义与方向控制符（U+202E）可伪造视觉顺序，形成欺骗性标题。
 """
 
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+TEMPLATES = ROOT / "office-data-service/app/entrypoints/web/templates"
+
+
 import pytest
 from app.application.commands import validate_command
 from app.common.text import (
@@ -89,25 +95,15 @@ def test_rename_still_requires_visible_text():
 
 def test_browser_slice_is_code_point_safe():
     """前端不得再按 UTF-16 码元截断；这里守护模板里的实现方式。"""
-    from pathlib import Path
-
-    source = Path("office-data-service/app/entrypoints/web/templates/assistant-shell.js").read_text(
-        encoding="utf-8"
-    )
+    source = (TEMPLATES / "assistant-shell.js").read_text(encoding="utf-8")
     assert "title:Array.from(prompt).slice(0,40).join('')" in source
     assert "title:prompt.slice(0,40)" not in source
 
 
 def test_usage_is_rendered_as_structured_fields():
     """用量必须以可核对字段展示，且未返回用量的请求数不得被隐藏。"""
-    from pathlib import Path
-
-    view = Path("office-data-service/app/entrypoints/web/templates/assistant-view.js").read_text(
-        encoding="utf-8"
-    )
-    shell = Path("office-data-service/app/entrypoints/web/templates/assistant-shell.js").read_text(
-        encoding="utf-8"
-    )
+    view = (TEMPLATES / "assistant-view.js").read_text(encoding="utf-8")
+    shell = (TEMPLATES / "assistant-shell.js").read_text(encoding="utf-8")
     # 五个字段都有中文标签，避免界面直接暴露 JSON 键名
     for label in (
         "requests:'模型请求次数'",
