@@ -11,8 +11,14 @@ def bounded_response(response, *, wire_limit, decoded_limit):
     class Stream(httpx2.AsyncByteStream):
         def __init__(self):
             self.closed = False
+            self.consumed = False
 
         async def __aiter__(self):
+            # 底层传输流只能消费一次。SDK 在流式响应结束后会再次迭代同一响应以丢弃残余字节，
+            # 若第二次仍新建解码器，就会从压缩流量中间重放并以「未到 EOF」误判为截断响应。
+            if self.consumed:
+                return
+            self.consumed = True
             wire = decoded = 0
             encoding = response.headers.get("content-encoding", "identity").strip().lower()
             decoder = None
