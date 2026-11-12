@@ -1,5 +1,7 @@
 # 聊天视觉与交互：实施及验收账本
 
+> **状态：阶段历史记录（2026-10-26，起点 `d0703de`）。** 文中数字（如 mypy 109 源文件、53 项能力覆盖）是该轮快照；当前真值为 mypy 137 源文件、60 项操作覆盖，以 `docs/ACCEPTANCE.md` 的复核记录为准。
+
 日期：2026-10-26；分支codex/agent；起点d0703de。依据：AGENT_CHAT_VISUAL_DESIGN v0.3、AGENT_CHAT_EXPERIENCE_RESEARCH。
 
 ## 本轮交付与边界

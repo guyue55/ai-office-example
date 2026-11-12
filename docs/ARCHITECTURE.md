@@ -37,3 +37,21 @@ project是通用数据容器：每容器有版本化字段定义，记录关联�
 产品内部数据库账号、realm、权限码和API路径采用稳定中立协议名称，不随着展示品牌变化；OAuth客户端和本机凭证命名空间由distribution.namespace派生。固定内部标识不影响不同企业独立部署；修改协议标识可能需要迁移，不能做成任意运行时开关。
 
 扩展先判断是否可由字段定义、权限组合或现有查询满足；只有新规则才新增模块。保持应用层与传输适配分离，业务模块不反向依赖Web／HTTP／MCP。未来模板更新为源码升级，不提供自动覆盖企业代码；来源记录用于逐项合并。
+
+## 新行为的归属位置
+
+新增能力先落到已有扩展点，不要另造并行注册表。下面每行都是**已核实**的实际改动面，改动循环本身时本表随之更新。
+
+| 目标 | 必须同时改动的位置 |
+|---|---|
+| 新增一个应用操作 | `application/commands.py` 的 `OPERATION_INPUTS`（输入模型，当前 60 个）→ `application/contracts.py` 的 `OPERATION_OUTPUTS`（输出模型）→ `application/service.py` 的 `operations` 字典（28 个直连键）或三个前缀分发分支（`service.py:171` 的 `agent.`、`:180` 的 `session.`、`:190` 的 `account.`）→ `application/capability_map.json`（60 条，MCP/SDK/CLI 名字与 mode）→ `entrypoints/http/routes.py`（HTTP 路由）→ `entrypoints/mcp/server.py` + `entrypoints/mcp/validation.py` 的 `TOOL_INPUTS`（MCP 工具）→ `scripts/recovery_drill.py`（如涉及演练） |
+| 新增权限码 | `modules/access/catalog.py` 的 `DEFINITIONS`（当前 24 个）→ 新建 Alembic 迁移补种 `office.permission` 与角色关联，并 `UPDATE access_revision SET revision=revision+1`（参考 `0014_model_configuration.py:45-58`）→ 需要时同步 `scripts/check_capability_coverage.py` |
+| 新增业务码 | `application/codebook.json`（业务侧）或 `packages/api-contracts/src/office_contracts/core_codes.json`（通用侧）→ 运行 `scripts/export_contracts.py` 重新导出 `contracts/business-codes.json` 与 `contracts/openapi.json` → 以 `--check` 确认无漂移 |
+| 新增 Web 页面 | `entrypoints/web/templates/<page>.html` → `entrypoints/web/console.py` 的 `@router.get` 路由 → `entrypoints/web/navigation.py` 的 `SECTIONS`／`TEMPLATE_TITLES`（位置栏与无 JS 导航）→ `tests/ui-pages.json` 的 `pages` 数组 → 运行页面清单完整性检查 |
+| 新增模板片段或同目录脚本 | `tests/ui-pages.json` 的 `components` 数组；不登记会导致清单闭合检查失败 |
+| 新增数据库迁移 | `office-data-service/migrations/versions/NNNN_<name>.py`，`down_revision` 指向当前 head（现为 `0017`）；升级已有库不能只改建表模型 |
+| 新增 Agent 工具 | `clients/agent/src/office_agent/toolsets.py` 的分组表（只读组全常驻，变更组按意图预载）；工具可见性不替代服务端权限 |
+| 新增模型供应商 | `application/model_*` 与 `infrastructure/model_*`；托管出口需同步域名策略、允许出口与恢复说明 |
+| 新增导出制品或契约快照 | `scripts/export_contracts.py` 的导出清单 + 提交产物；不得手改生成指纹 |
+
+**验证**：改动任一行后，至少运行 `scripts/check_capability_coverage.py`（操作/MCP/SDK/CLI 集合与输出契约一致）、`scripts/export_contracts.py --check`（快照无漂移）与相关回归；涉及模板或前端脚本时加 `scripts/check_frontend_rules.py`（内联样式/内联处理器/innerHTML/原生弹窗/断点），涉及样式表时加 `scripts/check_ui_styles.py`。这四项均在 CI 的 `quality` job 中。

@@ -20,7 +20,7 @@ DSH 是 TypeScript/pnpm 的 agent harness，本仓库是 Python/FastAPI + Jinja 
 
 | 类别 | 本仓库现状 | DSH 做法 | 判断 |
 |---|---|---|---|
-| 设计规范执行力 | 规范在文档与 `AGENTS.md` | 20+ 个 spec 测试扫描样式表，违规即失败 | **值得移植**（已落地 1 项） |
+| 设计规范执行力 | 规范在文档与 `AGENTS.md` | 20+ 个 spec 测试扫描样式表，违规即失败 | **值得移植**（已落地 2 项） |
 | 门禁组织 | CI 里逐个 `run:` 调用 10 个检查 | 统一 `scripts/run-gates.ts`（1762 行）+ 85 个 `check:`/`verify:` 脚本 | 可部分移植 |
 | 新增能力的登记方式 | 同一操作名散在 7 个文件 | 能力 seam 三角色 + 一张「新行为归属位置」映射表 | **值得移植（先做映射表）** |
 | 覆盖率 | 无覆盖率工具 | 每文件 100% 门槛 | 不建议照抄，见 §4.2 |
@@ -80,13 +80,15 @@ DSH 的四个 spec 测试都有明确的判据实现，可直接对照：
 - `color-tokens.client.spec.ts`（113 行）：扫全部 css/ts，`EXEMPT_PROPERTIES` 只放行 mask 与 box-shadow，`transparentLiteral()` 放行 alpha=0。
 - DSH **没有** `toHaveScreenshot` 视觉基线——这印证本仓库「不引入像素快照」的选择是对的。
 
-### 3.2 「新行为归属位置」映射表（值得移植，尚未做）
+### 3.2 「新行为归属位置」映射表（已落地，2026-11-12 晚）
 
 DSH `docs/architecture.zh.md` 末节是一张 22 行的表，每行形如「添加模型提供方 → 在 `ctx.llm` 上注册其适配器」。本仓库 `docs/ARCHITECTURE.md` **只有 39 行 2 节**，没有这一节。
 
 本仓库对应的真实缺口（【实跑】）：新增一个操作（以 `project.list` 为线索）要改动 **7 个文件**——`entrypoints/mcp/server.py`、`entrypoints/http/routes.py`、`application/service.py`、`application/contracts.py`、`application/commands.py`、`application/capability_map.json`、`scripts/recovery_drill.py`。这套「改哪里」的知识目前只存在于维护者脑中，没写成表。
 
-**建议**：在 `docs/ARCHITECTURE.md` 增加一节「新行为的归属位置」，至少覆盖——新增操作、新增权限码、新增业务码、新增 Web 页、新增迁移、新增 Agent 工具、新增 MCP 工具。这是纯文档工作，零风险，收益是让接手者不必反向工程。
+**已落地**：`docs/ARCHITECTURE.md` 新增「新行为的归属位置」一节（9 行表），覆盖新增应用操作／权限码／业务码／Web 页面／模板片段或脚本／数据库迁移／Agent 工具／模型供应商／导出制品与契约快照，并在末尾写明验证命令。
+
+撰写时发现并修正了本文档一处数字错误：初稿写「32 个差集走前缀分支，见 `service.py:172-202`」，实测 `grep -c 'operation.startswith' service.py` = **5**，其中真正的分发分支只有 3 个（`service.py:171` 的 `agent.`、`:180` 的 `session.`、`:190` 的 `account.`）；`:158` 的 `data.change.` 与 `:159` 的 `access.` 是 `exclusive` 判定，不是分发。§6.3 中的相同表述一并按下述更正。
 
 ### 3.3 决策记录四态（值得轻量移植）
 
@@ -124,57 +126,97 @@ DSH 717 篇文档（356 篇中文），本仓库 49 篇 4699 行。体量差距�
 
 ## 五、未被验证的部分（不得当作已通过）
 
-- **远程 CI 未运行**：本轮只改了本地 `.github/workflows/ci.yml` 并做 YAML 解析，未推送、未触发。远端 `dev` 已 ahead 44 个提交。
-- **设计规范门禁只覆盖静态文本**：`check_ui_styles.py` 不渲染页面，因此无法发现「规则合规但视觉错误」的情况。DSH 同样如此（它也无像素基线），但两者都不构成视觉验收。
+- **远程 CI 未运行**：本轮只改了本地 `.github/workflows/ci.yml` 并做 YAML 解析，未推送、未触发。远端 `dev` ahead 数见 §九。
+- **两个门禁都只覆盖静态文本**：`check_ui_styles.py` 与 `check_frontend_rules.py` 都不渲染页面，因此无法发现「规则合规但视觉错误」的情况。DSH 同样如此（它也无像素基线），但两者都不构成视觉验收。
+- **`page_header` 宏的等价性靠渲染摘要，不是像素比对**：验证的是 HTML 结构归一化后的 sha256 一致，未在浏览器中逐页复核视觉。逻辑上结构相同即视觉相同，但本轮未做浏览器取证。
+- **断点收敛未做**（§6.5）：700–760px 区间无浏览器覆盖，因此不敢改，也就无法声称该区间布局正确。
 - **DSH 的 `test:expected`、`test:snapshot`、`test:bench` 机制未细读**：仅在 `package.json` 见到脚本名，未研究其实现，因此不构成移植建议。
 - **`docs/subsystems/*`（138 篇）未逐篇阅读**，只读了 `architecture.zh.md`、`testing.zh.md`、`web-styling.zh.md`、`ui-radius.zh.md`、`ui-design-review-cases.zh.md`、`cookbook/reviewing-ui-design.zh.md`。
 
 ## 六、值得做但本轮未做的（按性价比排序）
 
-### 6.1 把「无 JS 可读」变成可机检约束（P1，高性价比）
+### 6.1 把「无 JS 可读」变成可机检约束（P1，**已完成**）
 
 `AGENTS.md` 有多条关于无 JS 回退、禁止 `innerHTML` 的要求，但全仓 `tests/*.py` 中 `innerHTML` 引用 **0** 处、`axe` **0** 处 → **没有任何回归能因违规而失败**。这正是 DSH `testing.zh.md` 说的「一个守卫只有在回归能让它失败时才有效」。
 
-**建议**：仿照本次样式门禁的做法，加 `scripts/check_frontend_rules.py`，扫描模板与 JS：`innerHTML` 直接赋值、未加 `type="button"` 的裸 `<button>`、`onclick=` 内联处理器、无 `aria-label` 的图标按钮。同样用基线锁定存量。
+**已落地**：新增 `scripts/check_frontend_rules.py` + `tests/expected/frontend-rules-baseline.json`，扫描模板目录下全部 html/js/css，六条规则：`inline_style`、`inline_handler`、`inner_html`、`native_dialog`、`media_spacing`、`breakpoint`。基线同样**双向锁定**，当前六项全 **0**（即硬门禁，无存量豁免）——因为本轮同时清掉了存量：`links.html:29`/`:85` 两处内联样式改为语义 class（`.unbulleted`／`.selection-note`），20 处 `@media(` 补上空格。
 
-### 6.2 能力清单的三份真相收敛（P1，需设计）
+两处实现要点（否则会误判）：
+- `native_dialog` **不能匹配裸 `confirm(`**：`templates/interactions.js:197` 自己定义了共享的 `function confirm(message, options = {})`，裸调用是那个组件而非浏览器弹窗。第一版因此误报 2 处。
+- 基线里 `breakpoint` 规则只阻止**新增**档位，见 §6.5 的冻结决定。
 
-【实跑】当前同一个操作名存在于三处且互相独立：`application/capability_map.json`（60 条）、`application/commands.py` 的 `OPERATION_INPUTS`、`application/contracts.py` 的 `OPERATION_OUTPUTS`。`check_capability_coverage.py` 会断言 `set(rows) == set(OPERATION_INPUTS)`，所以集合一致有保障，但**内容没有单一来源**。
+红绿验证：注入 `style="color:red"`／`el.innerHTML = bad;`／`alert("x")`／`@media (max-width:880px)` 四次分别失败并给出新增计数与行号，还原后 `FRONTEND_RULES_OK` 全 0。已接入 CI `quality` job。
+
+### 6.2 能力清单的三份真相收敛（P1，**部分收窄：两份已被门禁约束**）
+
+【实跑】当前同一个操作名存在于三处：`application/capability_map.json`（60 条）、`application/commands.py` 的 `OPERATION_INPUTS`、`application/contracts.py` 的 `OPERATION_OUTPUTS`。`check_capability_coverage.py` 会断言 `set(rows) == set(OPERATION_INPUTS)`，所以集合一致有保障，但**内容没有单一来源**。
+
+**本轮修正**：原表述「三处互相独立」不准确。实测 `check_capability_coverage.py` 已交叉校验 MCP 工具名（`TOOL_INPUTS`）、`OfficeClient` 方法、CLI action、`Change`/`DataChange` 预览集合与 `capability_map` 的一致性 → 输入侧早已被门禁约束。真正**从未被校验**的是 `OPERATION_OUTPUTS`，见 §7 第 8 步。
 
 更重要的一处**纠正**：我最初记录「`capability_map.json` 只被检查脚本读取」是**错的**。实测它有运行时消费者——`application/service.py:214` 把 `transport_coverage()` 放进 `capabilities` 输出，`application/agent_tools.py:21` 用它构造内部 Agent 的工具目录（`row["sdk"]` → 操作名，按 `row["mode"] == "direct"` 过滤）。所以它是**真实的运行时契约**，不是装饰性文件。（先前错误源于只 grep 了 `capability_map` 字面量，漏掉了经 `capability_catalog.transport_coverage()` 的间接引用。）
 
 ### 6.3 应用层缺少统一操作常量（P2）
 
-`application/service.py:229-260` 的 `operations` 字典只有 **28** 个键，而 `OPERATION_INPUTS` 有 **60** 个；差集 32 个走前缀分支（`agent.` → `agent_service().request`、`session.` → `Sessions(...).request`、`account.` → `account_service().request`，见 `service.py:172-202`）。**没有** `OPERATIONS` 统一常量。
+`application/service.py:229-260` 的 `operations` 字典只有 **28** 个键，而 `OPERATION_INPUTS` 有 **60** 个；差集 32 个走前缀分支。**没有** `OPERATIONS` 统一常量。
+
+**更正**：本文早前把前缀分支写作「见 `service.py:172-202`」，并暗示有 22 个分支。实测 `grep -c 'operation.startswith' service.py` = **5**，其中真正的分发分支只有 3 个——`service.py:171` 的 `agent.`（→ `agent_service().request`）、`:180` 的 `session.`（→ `Sessions(...).request`）、`:190` 的 `account.`（→ `account_service().request`）；`:158` 的 `data.change.` 与 `:159` 的 `access.` 是 `exclusive` 判定，不是分发。
 
 DSH 的对应解法是「能力 seam 三角色 + 注册表」。本仓库要收敛，建议先加一个只读的 `OPERATIONS` 常量（名字 + 输入模型 + 输出模型 + 分发方式），再让 `service.py`/`commands.py`/`contracts.py`/`capability_map.json` 从它派生。**这是较大重构，需单独立项**，不宜与本次混做。
 
-### 6.4 `capabilities` 输出硬编码 `bulk: False`（P2）
+### 6.4 `capabilities` 输出硬编码 `bulk: False`（P2，**二次分析后否决**）
 
-`application/service.py:226` 写死 `"bulk": False`，`modules/access/outputs.py:130` 类型是 `bulk: Literal[False]`。这不是 bug（当前确实不支持批量），但把「当前不支持」写成了类型层面的不可变事实，未来开启批量要改类型定义。建议改为普通的 `bool` 并保留说明。
+原建议：`application/service.py:226` 写死 `"bulk": False`、`modules/access/outputs.py:130` 类型是 `bulk: Literal[False]`，建议改成普通 `bool`。
 
-### 6.5 断点不统一（P2）
+**否决理由（本轮实测）**：`contracts/openapi.json` 现在生成的是 `"bulk": {"type": "boolean", "const": false}`。改成 `bool` 会让 OpenAPI 从 `const: false` 退化为无约束的 `boolean` —— **契约精度下降、零行为收益**。原判断「未来开启批量要改类型定义」确实成立，但改类型定义正是一次有意识的契约变更，不应为「以后可能改」提前弱化当前契约。
 
-【实跑】`@media` 共 25 条、9 种宽度：540/600/650/700/701/760/1000/1100/1200px。且 700px 有 `@media(max-width:700px)`（13 处）与 `@media (max-width:700px)`（4 处）两种写法。
+若真要支持批量，正确顺序是：先实现批量语义并让 `capability_map.json` 出现批量操作（当前 60 个操作中无 batch/bulk 类），再一并放类型与 OpenAPI。**结论：不改，保留 `Literal[False]`。**
 
-DSH 用令牌化的六档圆角 + spec 强制。本仓库可先把断点收敛到 3 档（如 700／1000／1200），并把写法统一（加不加空格）。可并入 §6.1 的检查脚本。
+### 6.5 断点不统一（P2，**收敛被否决，改为冻结现状**）
 
-### 6.6 统一 `page-header` 与按钮宏（P3）
+【实跑】`@media` 共 25 条、9 种宽度：540/600/650/700/701/760/1000/1100/1200px。700px 曾有 `@media(max-width:700px)`（13 处）与 `@media (max-width:700px)`（4 处）两种写法——**空格写法已统一**（20 处 `@media(` 全部补齐）。`git diff -w` 为空，属纯空白改动。
+
+**档位收敛原计划 9 → 5（600/650/760→700、1100→1000），试做后全部回退**，理由逐条核实：
+- `styles.css` 的 `@media (max-width:760px) { .workspace { width:100vw } }` 作用在 `.workspace{width:min(840px,95vw)}`（`styles.css:620-626`）之上。并入 700 会让 700–760px 区间的助手抽屉从 95vw 变 100vw；700px 视口实测差 **35px**、760px 差 **38px**。
+- 650/600 归并同样改变筛选区与弹窗的折行时机。
+- 现有浏览器回归只测 `1440/1024/768/390/320`（`tests/test_ui_catalog_browser.py:80,139`），**700–760px 区间没有覆盖**，改完无法证伪。
+
+**最终决定**：`BREAKPOINTS = (540, 600, 650, 700, 701, 760, 1000, 1100, 1200)` 作为冻结清单写进 `check_frontend_rules.py`，只阻止新增档位；归并留给有视觉取证的后续工作。这是本轮**唯一**「发现问题但因无法验证而主动不做」的项。
+
+### 6.6 统一 `page-header` 与按钮宏（P3，**page-header 已完成**）
 
 20 个页面手写 `<header class="page-header">` 四件套（eyebrow/h1/muted/actions），3 种变体；`<button` 66 个、`<a class="button` 16 个，而提供的 `field()` 宏只被调用 13 次。**无 button/card/input 宏**。
 
-Jinja 宏是低成本抽象，不像 DSH 的 `ui-primitives` 需要打包系统。建议先抽 `{% macro page_header(eyebrow, title, muted=None, actions=None) %}`，风险极低。
+**已落地**：新增 `templates/_page_header.html`，签名 `{% macro page_header(eyebrow, title, summary=None, variant="", panel_title=None) %}`，20 个页面全部改用，另 4 个（`assistant_workspace`/`error`/`login_recovery`/`signed_out`）本就没有该结构。右侧动作区由调用方 `{% call %}` 传入而**不代为包裹 `.actions`**，保留各页原有布局语义；`panel_title` 专供 `links.html` 的 `data-panel-title`。
 
-## 七、建议执行顺序
+等价性用渲染摘要验证：渲染全部 24 个模板、抽取 `<header class="page-header[^>]*>.*?</header>`、归一化空白后比对 sha256，**前后不等价模板数 0**。
 
-1. **已完成**：样式门禁 + 重复 token 清理 + CI 接入。
-2. 补 `docs/ARCHITECTURE.md` 的「新行为归属位置」表（§3.2，纯文档，零风险）。
-3. 给计划类文档加状态标注（§3.3，纯文档）。
-4. 加 `scripts/check_frontend_rules.py`（§6.1，与本次样式门禁同一套基线机制，可复制）。
-5. 断点收敛（§6.5，可并入第 4 步）。
-6. `page-header` 宏（§6.6，独立小 PR）。
-7. `capabilities.bulk` 类型放开（§6.4）。
-8. 能力清单单一来源重构（§6.2/§6.3，需立项设计）。
+一个踩过的坑：最初把 `data-panel-title` 用字符串拼进属性区，Jinja 自动转义把引号变成 `&#34;`（实测输出 `<header class="page-header" data-panel-title=&#34;…&#34;>`）→ 改为专用参数后消失。
+
+新模板片段必须登记 `tests/ui-pages.json` 的 `components`（否则 `test_browser_page_inventory_is_complete` 失败，本轮正是它先抓到的），39 → 40 项。
+
+**按钮宏仍不做**：`<button>` 66 处、`<a class="button">` 16 处，但按钮只有 3 种 class 组合，抽象收益低于 Jinja 宏能表达的差异（图标、确认属性、`data-*` 载荷），本轮不强行统一。
+
+## 七、执行顺序与最终状态
+
+| 步 | 事项 | 状态 |
+|---|---|---|
+| 1 | 样式门禁 + 重复 token 清理 + CI 接入（§2.1–2.3） | **已完成** |
+| 2 | `docs/ARCHITECTURE.md`「新行为归属位置」表（§3.2） | **已完成** |
+| 3 | 计划类文档加状态标注（§3.3） | **已完成**（6 篇，+28 行） |
+| 4 | `scripts/check_frontend_rules.py`（§6.1） | **已完成**（六项全 0） |
+| 5 | 断点收敛（§6.5） | **收敛否决，改为冻结现状**；写法已统一 |
+| 6 | `page-header` 宏（§6.6） | **已完成**（20 页，输出等价） |
+| 7 | `capabilities.bulk` 放开类型（§6.4） | **二次分析后否决**（会降低 OpenAPI 精度） |
+| 8 | 能力清单单一来源重构（§6.2/§6.3） | **未做**，需单独立项；本轮只补了缺的那条交叉校验 |
+
+第 8 步的修正：原判断「三份真相互相独立」不准确。`check_capability_coverage.py` 早已断言 `set(capability_map) == set(OPERATION_INPUTS)`，并校验 MCP 工具名／SDK 方法／CLI action。真正的缺口是 **`OPERATION_OUTPUTS` 从未与输入清单交叉校验**。已补：
+
+```python
+outputs = set(OPERATION_OUTPUTS) | ({"access.list"} if "access.list" in OPERATION_INPUTS else set())
+assert outputs == set(OPERATION_INPUTS), ("输出契约与输入契约不一致", ...)
+```
+
+`access.list` 的差集是**合理的**：`contracts.validate_output()` 按 `payload["kind"]` 从 `ACCESS_PAGES`（employees/roles/permission-sets/permissions/audit）动态取模型，不进静态表。红验证：从 `contracts.py` 删掉 `"record.history"` 一项 → `AssertionError: ('输出契约与输入契约不一致', ['record.history'], [])`。
 
 ## 八、与既有审查记录的关系
 
@@ -183,3 +225,20 @@ Jinja 宏是低成本抽象，不像 DSH 的 `ui-primitives` 需要打包系统�
 - 本文件（11-12 晚间）是在**已知 DSH 做法**的前提下，判断「哪些机制能解决本仓库的真实弱点」。
 
 两份文件都遵循同一纪律：区分实跑与源码阅读，未验证项显式声明，不把历史验收数字当作当前证据。
+
+## 九、本轮全部改动的门禁证据（【实跑】）
+
+| 门禁 | 结果 |
+|---|---|
+| `pytest -m 'not live' -q` | **761 passed, 147 deselected** |
+| `ruff check .` / `ruff format --check .` | All checks passed / 479 files already formatted |
+| `mypy office-data-service/app clients/python/src clients/agent/src` | Success: no issues in **137** source files |
+| `scripts/check_architecture.py` | `ARCHITECTURE_BOUNDARIES_OK` |
+| `scripts/check_capability_coverage.py` | `CAPABILITY_COVERAGE_OK operations=60`（新增输出契约交叉校验） |
+| `scripts/export_contracts.py --check` | `CONTRACT_SNAPSHOTS_OK` |
+| `scripts/configure_template.py --check` | `{"status": "verified", "changed": []}` |
+| `scripts/check_ui_styles.py` | `{"border_1px": 58, "color_literal": 101, "off_scale_radius": 38, "unguarded_hover": 26}` |
+| `scripts/check_frontend_rules.py` | 六项全 `0` |
+| `OFFICE_AGENT_BROWSER_TESTS=1 pytest tests/test_ui_catalog_browser.py` | 1 passed |
+
+未运行：远程 CI、Docker 构建、真实 OIDC／模型、移动真机与读屏器。
