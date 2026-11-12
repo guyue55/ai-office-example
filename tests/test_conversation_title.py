@@ -124,3 +124,45 @@ def test_usage_is_rendered_as_structured_fields():
     # 任务详情不得再原样倾倒 JSON
     assert "view.detail('模型用量',turn.result.usage)" not in shell
     assert "view.usage(turn.result?.usage)" in shell
+
+
+def _attached(title):
+    """在不起数据库的前提下驱动真实的 attach() 分支。"""
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.modules.agent.conversations import Conversations
+
+    row = SimpleNamespace(title=title, version=0, archived=False, updated_at=datetime.now(UTC))
+    instance = object.__new__(Conversations)
+
+    async def ensure_idle(identifier):
+        return row
+
+    instance.ensure_idle = ensure_idle
+    return instance, row
+
+
+@pytest.mark.parametrize(
+    "initial,prompt,expected",
+    [
+        # 占位标题：首条消息派生真实标题
+        ("新会话", "统计本月各部门的报销金额", "统计本月各部门的报销金额"),
+        # 派生时同样要清洗，不能把控制符写进库
+        ("新会话", "查询\x1b[31m待认领\x1b[0m身份", "查询待认领身份"),
+        # 清洗后为空：不得把标题变成空串，保留占位
+        ("新会话", "\x1b[31m\x1b[0m\u202e", "新会话"),
+        # 用户已改名：首条消息不得覆盖用户显式命名
+        ("部门报销汇总", "统计本月各部门的报销金额", "部门报销汇总"),
+        # 没有消息：保持原样
+        ("新会话", "", "新会话"),
+    ],
+)
+def test_attach_derives_title_only_while_placeholder(initial, prompt, expected):
+    import asyncio
+
+    instance, row = _attached(initial)
+    asyncio.run(instance.attach("conversation-one", prompt))
+    assert row.title == expected
+    # 派生标题同样受字符上限约束
+    assert len(row.title) <= TITLE_MAX_CHARS
