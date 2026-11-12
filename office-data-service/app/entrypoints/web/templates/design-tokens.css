@@ -21,6 +21,7 @@
   --focus-default:#2563eb;
   --focus-ring:var(--focus-default);
   --focus-halo:rgba(37,99,235,.12);
+  --danger:#a83b35;
   --soft:#eff5ff;
   --bg:#f7f8fa;
   --nav-surface:#fff;
