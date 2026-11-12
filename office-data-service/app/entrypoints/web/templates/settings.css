@@ -32,10 +32,10 @@
 .settings-side h2 {margin:0 0 16px;}
 .settings-side .settings-heading {margin-bottom:0;}
 .settings-facts {grid-template-columns:90px minmax(0,1fr);gap:10px 12px;font-size:13px;}
-.settings-summary {display:grid;gap:6px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.6;}
+.settings-summary {display:grid;gap:6px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-control);font-size:12px;line-height:1.6;}
 .settings-summary strong {font-size:14px;overflow-wrap:anywhere;}
 .settings-address {overflow-wrap:anywhere;}
-.settings-inline-note {background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7;margin:12px 0 0;color:var(--ink);}
+.settings-inline-note {background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-control);padding:10px 12px;font-size:12px;line-height:1.7;margin:12px 0 0;color:var(--ink);}
 .settings-inline-note[hidden] {display:none;}
 .settings-action-form {display:grid;gap:12px;margin-top:16px;}
 .settings-action-form button {justify-self:start;}
@@ -63,9 +63,9 @@
 .model-input-actions > input,.model-combobox {flex:1;min-width:0;}
 .model-input-actions > button {flex:0 0 auto;white-space:nowrap;min-height:40px;}
 .model-combobox {position:relative;}
-.model-options {position:absolute;inset:calc(100% + 6px) 0 auto;z-index:30;max-height:280px;overflow-y:auto;background:var(--surface,var(--bg));border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgb(0 0 0 / 10%);padding:4px;}
+.model-options {position:absolute;inset:calc(100% + 6px) 0 auto;z-index:30;max-height:280px;overflow-y:auto;background:var(--surface,var(--bg));border:1px solid var(--line);border-radius:var(--radius-surface);box-shadow:var(--shadow-float);padding:4px;}
 .model-options[hidden] {display:none;}
-.model-options [role=option] {padding:10px 12px;border-radius:6px;cursor:pointer;overflow-wrap:anywhere;font-size:13px;}
+.model-options [role=option] {padding:10px 12px;border-radius:var(--radius-control);cursor:pointer;overflow-wrap:anywhere;font-size:13px;}
 .model-options [role=option]:hover,.model-options [aria-selected=true] {background:var(--soft);}
 .model-inline-result {min-height:24px;font-size:13px;line-height:1.7;overflow-wrap:anywhere;}
 .model-inline-result[data-state=error] {color:var(--danger,#b42318);}

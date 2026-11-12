@@ -3,8 +3,8 @@
     "assistant.css": {
       "border_1px": 4,
       "color_literal": 9,
-      "off_scale_radius": 4,
-      "unguarded_hover": 5
+      "off_scale_radius": 0,
+      "unguarded_hover": 4
     },
     "page-patterns.css": {
       "border_1px": 9,
@@ -14,20 +14,20 @@
     },
     "settings.css": {
       "border_1px": 7,
-      "color_literal": 3,
-      "off_scale_radius": 4,
+      "color_literal": 2,
+      "off_scale_radius": 0,
       "unguarded_hover": 1
     },
     "shell.css": {
       "border_1px": 9,
       "color_literal": 13,
-      "off_scale_radius": 4,
+      "off_scale_radius": 0,
       "unguarded_hover": 4
     },
     "styles.css": {
       "border_1px": 22,
-      "color_literal": 66,
-      "off_scale_radius": 20,
+      "color_literal": 65,
+      "off_scale_radius": 0,
       "unguarded_hover": 12
     }
   },

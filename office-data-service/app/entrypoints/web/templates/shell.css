@@ -10,7 +10,7 @@
 .mobile-shell {display:none}
 .page-header h1 {font-size:26px;line-height:1.4;letter-spacing:-.4px}
 .page-header .muted {line-height:1.8;max-width:760px}
-.table-wrap {border-radius:7px}
+.table-wrap {border-radius:var(--radius-control)}
 @media (max-width:700px) {
   /* 无脚本时仍展示原生导航；增强后菜单按需展开，不挤占整个首屏。 */
   .js .mobile-shell {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;background:var(--nav-surface);color:var(--ink);min-height:60px}
@@ -36,7 +36,7 @@
 @media (prefers-reduced-motion:reduce) {.assistant-launch {transition:none!important}}
 
 /* 错误摘要与就地提示共用，输入保留；不使用颜色作为唯一的错误标识。 */
-.form-errors {padding:14px 16px;border:1px solid #a83b35;border-left-width:4px;border-radius:8px;background:#fff7f6;color:#8c2923;margin-bottom:12px}
+.form-errors {padding:14px 16px;border:1px solid #a83b35;border-left-width:4px;border-radius:var(--radius-control);background:#fff7f6;color:#8c2923;margin-bottom:12px}
 .form-errors strong {font-size:14px}
 .form-errors ul {margin:8px 0 0;padding-left:18px}
 .field-error-link {display:inline;background:transparent;border:0;color:#8c2923;text-align:left;padding:2px 0;font-size:13px;font-weight:400;text-decoration:underline}
@@ -64,7 +64,7 @@
 }
 
 .state-page {max-width:720px;padding:32px}
-.state-mark {display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--soft);color:var(--ink);margin-bottom:20px}
+.state-mark {display:grid;place-items:center;width:52px;height:52px;border-radius:var(--radius-surface);background:var(--soft);color:var(--ink);margin-bottom:20px}
 .state-error .state-mark {background:#fff1ef;color:#a83b35}
 .state-facts {display:grid;grid-template-columns:64px minmax(0,1fr);gap:6px 12px;font-size:12px;color:var(--muted);padding:14px 0;border-block:1px solid var(--line);margin:20px 0}
 .state-facts dd {margin:0;overflow-wrap:anywhere}
@@ -126,7 +126,7 @@ tbody tr:focus-within {background:var(--surface-hover)}
 .nav-heading .brand { padding:0 14px; overflow-wrap:anywhere; }
 .nav-collapse { display:none; }
 .js .nav-heading .brand { padding-right:38px; }
-.js .nav-collapse { display:flex; align-items:center; justify-content:center; position:absolute; right:0; top:0; width:36px; height:36px; padding:0; background:transparent; color:var(--muted); border:1px solid transparent; border-radius:7px; }
+.js .nav-collapse { display:flex; align-items:center; justify-content:center; position:absolute; right:0; top:0; width:36px; height:36px; padding:0; background:transparent; color:var(--muted); border:1px solid transparent; border-radius:var(--radius-control); }
 .nav-collapse:hover { background:var(--soft); color:var(--ink); }
 @media (min-width:701px) {
   .js.navigation-collapsed { --nav-width:72px; }
