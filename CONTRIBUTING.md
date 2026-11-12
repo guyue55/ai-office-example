@@ -40,6 +40,8 @@ uv run pytest -m 'not live' -q
 
 安装可选依赖后运行`uv run --extra agent --frozen pytest -m 'not live' -q`，独立模型协议运行`uv run --project clients/agent --frozen pytest clients/agent/tests -q`。会话／审批变更还须分别执行下列隔离检查；不得指向在用企业库或用户浏览器会话：
 
+隔离数据库默认使用与`deploy/compose.dev.yaml`同一摘要的镜像，`tests/test_pg_image.py`会校验两处一致。网络受限的机器可用`OFFICE_TEST_PG_IMAGE`指向本机已有镜像跑同一套用例（如`OFFICE_TEST_PG_IMAGE=pgvector/pgvector:pg16`）；这种运行只补充证据，不能替代发布前用默认摘要镜像得到的结论。
+
 ```sh
 OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_conversations_postgres.py tests/test_agent_records_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_postgres_readiness.py -q
 OFFICE_AGENT_BROWSER_TESTS=1 uv run --extra agent --frozen pytest tests/test_assistant_workspace_browser.py tests/test_agent_browser.py -q
