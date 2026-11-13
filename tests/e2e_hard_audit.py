@@ -17,9 +17,17 @@ import sys
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get("OFFICE_TEST_URL", "http://127.0.0.1:18890")
-PASSWORD = pathlib.Path("runtime/secrets/operator_password").read_text().strip()
 OUT = pathlib.Path("/tmp/audit-hard")
-OUT.mkdir(parents=True, exist_ok=True)
+
+
+def operator_password() -> str:
+    """只在真正运行探针时读口令；CI 无实例足迹，导入本模块不能因此失败。"""
+    return (
+        (pathlib.Path(__file__).resolve().parents[1] / "runtime/secrets/operator_password")
+        .read_text()
+        .strip()
+    )
+
 
 PAGES = [
     ("dashboard", "/console/dashboard"),
@@ -80,6 +88,8 @@ PROBE = """() => {
 
 def main() -> int:
     rows, problems = [], []
+    OUT.mkdir(parents=True, exist_ok=True)
+    password = operator_password()
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         context = browser.new_context(viewport={"width": 1440, "height": 1000})
@@ -88,7 +98,7 @@ def main() -> int:
         page.on("pageerror", lambda exc: errors.append(str(exc)))
         page.goto(f"{BASE}/console", wait_until="domcontentloaded")
         page.fill("#username", "operator")
-        page.fill("#password", PASSWORD)
+        page.fill("#password", password)
         page.click("#kc-login")
         page.wait_for_url("**/console/**", timeout=30_000)
 
