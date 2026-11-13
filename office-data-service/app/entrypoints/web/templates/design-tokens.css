@@ -1,0 +1,59 @@
+/* 工作台设计变量：基础、外壳与组件共享；品牌仍由产品配置注入。 */
+:root {
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-8:32px;
+  --radius-control:8px;
+  --radius-surface:10px;
+  --radius-card:12px;
+  /* 助手面板：卡片与气泡用更圆润的一档，胶囊类控件走 chip。 */
+  --radius-panel:16px;
+  --radius-bubble:14px;
+  --radius-chip:999px;
+  /* 动效：统一时长与缓动，避免各处 120/140/160/180ms 混用；压力反馈单独更快一档。 */
+  --motion-press:80ms;
+  --motion-fast:140ms;
+  --motion-base:180ms;
+  --motion-slow:240ms;
+  /* 循环旋转不是交互反馈，单独一档，避免被交互节奏收紧后变得抖动。 */
+  --motion-spin:800ms;
+  --motion-ease:cubic-bezier(.2,.8,.3,1);
+  --motion-ease-out:cubic-bezier(.16,1,.3,1);
+  --shadow-float:0 8px 24px rgba(23,43,58,.08);
+  --shadow-panel:0 18px 48px rgba(23,43,58,.10);
+  --hairline:rgba(23,43,58,.10);
+  --surface:#fff;
+  --surface-subtle:#f8fafc;
+  --surface-hover:#f1f5f9;
+  --ink:#172b3a;
+  --muted:#526477;
+  --control-border:#7c8d99;
+  --line:#dde5ed;
+  --accent:#2563eb;
+  --accent-hover:var(--accent);
+  --focus-default:#2563eb;
+  --focus-ring:var(--focus-default);
+  --focus-halo:rgba(37,99,235,.12);
+  --danger:#a83b35;
+  --soft:#eff5ff;
+  --bg:#f7f8fa;
+  --nav-surface:#fff;
+  --nav-hover:#edf2f8;
+  --nav-text:#334155;
+  --nav-muted:#526477;
+  --nav-width:232px;
+  --page-inset:32px;
+  --shadow-surface:none;
+}
+@supports (color:color-mix(in srgb,red,black)) {
+  :root {
+    --accent-hover:color-mix(in srgb,var(--accent) 82%,#000);
+    --soft:color-mix(in srgb,var(--accent) 7%,white);
+  }
+}
+@media (max-width:1000px) {:root {--nav-width:190px;--page-inset:24px}}
+@media (max-width:700px) {:root {--page-inset:16px}}

@@ -1,27 +1,16 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
 {% block title %}配置{{ access_labels[relation] }} · {{ detail.name }}{% endblock %}
 {% block content %}
-<div class="breadcrumb">
-<a href="/console/{{ kind }}">{{ access_labels[kind] }}列表</a>
-<span>/</span>
-<a href="/console/access/{{ kind }}/{{ identifier }}">{{ detail.name }}详情</a>
-<span>/</span>
-<span>配置{{ access_labels[relation] }}</span>
-</div>
-<header class="page-header" data-panel-title="{{ detail.name }} · {{ '分配角色' if relation == 'roles' else '配置' ~ access_labels[relation] }}">
-<div>
-<p class="eyebrow">{{ access_labels[kind] }} · {{ detail.name }}</p>
-<h2>授权关联</h2>
-<p class="muted">为「{{ detail.name }}」{{ '分配' if relation == 'roles' else '选择' }}{{ access_labels[relation] }}。先查看内容，再勾选并保存。</p>
-</div>
-<a class="button secondary" href="/console/access/{{ kind }}/{{ identifier }}">查看详情与配置效果</a>
-</header>
+{% set panel_title = detail.name ~ ' · ' ~ ('分配角色' if relation == 'roles' else '配置' ~ access_labels[relation]) %}
+{% set link_summary %}为「{{ detail.name }}」{{ '分配' if relation == 'roles' else '选择' }}{{ access_labels[relation] }}。先查看内容，再勾选并保存。{% endset %}
+{% call page_header(access_labels[kind] ~ ' · ' ~ detail.name, "授权关联", link_summary, panel_title=panel_title) %}<a class="button secondary" href="/console/access/{{ kind }}/{{ identifier }}">查看详情与配置效果</a>{% endcall %}
 {% include '_access_flow.html' %}
 {% if kind != 'employees' %}
 <div class="hint">这是共享配置。保存后会影响使用此{{ access_labels[kind] }}的角色或员工；请先在详情页检查使用情况。</div>{% endif %}
 <section class="card">
 <div class="section-head">
-<h3>当前已关联{{ access_labels[relation] }}</h3>
+<h2>当前已关联{{ access_labels[relation] }}</h2>
 <span class="badge neutral">{{ assoc.ids|length }} 项</span>
 </div>{% if detail.links %}
 <ul class="pill-list">{% for item in detail.links %}
@@ -33,23 +22,23 @@
 <p class="muted">尚未配置。新建对象不会自动关联任何权限。</p>{% endif %}{% if preserved_items %}
 <hr class="divider">
 <p class="muted">其他页或筛选外已选择（取消后保存即可移除）</p>
-<ul class="subtle-list" style="list-style:none;padding-left:0">{% for item in preserved_items %}
+<ul class="subtle-list unbulleted">{% for item in preserved_items %}
 <li>
 <label>
 <input type="checkbox" form="grant-form" name="id_{{ item.id }}" value="{{ item.id }}" checked {% if not can_manage %}disabled{% endif %}> {{ item.name }}</label>
 </li>{% endfor %}
 </ul>{% endif %}
 </section>
-<section class="card">{% include '_search.html' %}
+<section class="card"><p class="muted">{% if can_manage %}选择要保留的关联项，再保存授权。搜索与翻页前请先保存当前修改。{% else %}查看当前配置与可关联项；当前账号仅可查阅。{% endif %}</p>{% include '_search.html' %}
 <form data-grant-editor id="grant-form" method="post" action="/console/links/{{ kind }}/{{ identifier }}/{{ relation }}">
 <input type="hidden" name="csrf" value="{{ csrf }}">
 <input type="hidden" name="version" value="{{ assoc.version }}">
 
-<div class="table-wrap">
-<table>
+{% include '_table_scroll_hint.html' %}
+<div class="table-wrap" role="region" aria-label="关联选项表格区域" tabindex="0"><table class="management-table" aria-label="关联选项表格">
 <thead>
 <tr>
-<th>选择</th>
+<th>{% if can_manage %}<label class="grant-bulk" hidden><input type="checkbox" data-select-page aria-label="选择本页全部选项"> 本页</label>{% else %}选择{% endif %}</th>
 <th>{{ access_labels[relation] }}名称</th>
 <th>内容与说明</th>
 </tr>
@@ -68,7 +57,7 @@
 </td>
 <td>{% if relation == 'permissions' %}{{ item.description }}{% else %}
 <span class="candidate-summary">{{ item.permission_count|default(0) }} 项配置权限{% if relation == 'roles' %} · {{ item.employee_count|default(0) }} 人使用{% else %} · {{ item.role_count|default(0) }} 个角色使用{% endif %}</span>
-<a href="/console/access/{{ relation }}/{{ item.id }}" data-workspace-preview>查看权限与使用范围</a>{% endif %}
+<a href="/console/access/{{ relation }}/{{ item.id }}" data-workspace-preview class="text-link">查看权限与使用范围</a>{% endif %}
 </td>
 </tr>{% else %}
 <tr>
@@ -79,8 +68,9 @@
 </div>
 <hr class="divider">
 <div class="grant-footer">
+<p class="muted small" data-selection-count role="status" aria-live="polite"></p>
 <div class="actions">{% if can_manage %}
-<button type="submit">保存授权</button>{% else %}
+<button type="submit">保存授权</button><button type="reset" class="secondary" data-grant-reset hidden>撤销本次修改</button>{% else %}
 <span class="muted">当前账号只可查看，不能修改。</span>{% endif %}
 <a href="/console/access/{{ kind }}/{{ identifier }}">返回详情</a>
 </div>
@@ -88,10 +78,7 @@
 </div>
 </form>
 {% include 'pagination.html' %}
-<p class="muted small" style="margin:14px 0 0">保存保留其他页及筛选外已选择的关联项；切换页面或搜索前请先保存当前修改。取消勾选并保存会撤销对应关联。</p>
-<details style="margin-top:14px">
-<summary class="small">并发保护信息</summary>
-<span class="muted">当前版本 {{ assoc.version }}；若配置已被他人更新，保存将提示冲突，请刷新后重新核对。</span>
-</details>
+<p class="muted small selection-note">保存保留其他页及筛选外已选择的关联项；切换页面或搜索前请先保存当前修改。取消勾选并保存会撤销对应关联。</p>
+<p class="muted small configuration-meta">当前版本 {{ assoc.version }}；若配置已被他人更新，保存将提示冲突，请刷新后重新核对。</p>
 </section>
 {% endblock %}

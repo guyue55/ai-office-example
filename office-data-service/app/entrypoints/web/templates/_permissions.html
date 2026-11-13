@@ -1,10 +1,11 @@
 {% macro permission_table(entries, empty_message='暂无权限。需要使用相关功能时，请联系管理员配置角色。') -%}
 {% if entries %}
-<div class="table-wrap">
-<table class="data-table" role="table">
+<div class="table-wrap" role="region" aria-label="权限明细表格区域" tabindex="0">
+<table class="data-table" role="table" aria-label="权限明细表格">
 <thead>
 <tr>
 <th>权限名称</th>
+<th>权限编码</th>
 <th>用途与范围</th>
 <th>类别</th>
 </tr>
@@ -14,9 +15,10 @@
 <tr>
 <td>
 <span class="cell-title">{{ p.name }}</span>
-<span class="code block-code">{{ p.code }}</span>
+
 </td>
-<td>{{ p.description }}</td>
+<td><span class="code">{{ p.code }}</span></td>
+<td><span class="permission-description" tabindex="0" data-tooltip="{{ p.description }}">{{ p.description }}</span></td>
 <td>
 <span class="badge neutral">{{ p.group }}</span>
 </td>

@@ -373,8 +373,10 @@ class OfficeClient:
             json={"change": change, "confirmation_digest": confirmation_digest},
         )
 
-    def pending_identities(self):
-        return self.request("GET", "/api/v2/pending-identities")
+    def pending_identities(self, *, page: int = 1, limit: int = 50, q: str = ""):
+        return self.request(
+            "GET", "/api/v2/pending-identities", params={"page": page, "limit": limit, "q": q}
+        )
 
     def aggregate(self, identifier, revision, query, *, scope="own"):
         """只读受控聚合；不重试，不接受原始SQL，返回覆盖和列类型。"""

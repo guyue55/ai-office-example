@@ -47,14 +47,15 @@
     full.href = url;
     full.hidden = false;
     reload.hidden = new URL(url).pathname === '/console/accounts/new';
-    title.textContent = main.querySelector('[data-panel-title]')?.dataset.panelTitle || main.querySelector('h2')?.textContent.trim() || '管理操作';
+    title.textContent = main.querySelector('[data-panel-title]')?.dataset.panelTitle || main.querySelector('h1,h2')?.textContent.trim() || '管理操作';
     // 服务端页面中的 ?q / ?after 相对链接必须以抽屉页面为基准，
     // 不能错误解析成背后人员列表的 URL。
     main.querySelectorAll('a[href]').forEach(link => {
       link.href = new URL(link.getAttribute('href'), url).href;
     });
     content.replaceChildren(...Array.from(main.childNodes));
-    content.querySelector('.page-header h2')?.setAttribute('class', 'workspace-section-title');
+    content.removeAttribute('aria-hidden');
+    content.querySelector('.page-header h1')?.setAttribute('class', 'workspace-section-title');
     panel.classList.toggle('is-compact', new URL(url).pathname === '/console/accounts/new');
     back.hidden = !trail.length;
     setup(content);
@@ -86,7 +87,7 @@
       const main = parsePage(html);
       if (!response.ok) {
         const detail = main.querySelector('[role=alert],.error-feedback')?.textContent.trim();
-        const message = response.status === 403 ? '无权访问此内容，请核对当前权限。' : '页面暂时无法加载（HTTP ' + response.status + '），请刷新配置重试。';
+        const message = response.status === 403 ? '无权访问此内容，请核对当前权限。' : '页面暂时无法加载（HTTP ' + response.status + '），可刷新重试；如持续失败请联系管理员。';
         throw new Error(detail ? detail.slice(0, 500) : message);
       }
       if (push && currentURL) trail.push({url: currentURL, nodes: Array.from(content.childNodes)});
@@ -149,7 +150,7 @@
         .find(link => link.getAttribute('href') === focusHref);
       window.OfficeUI?.enhance(document);
       if (!panel.open && !window.OfficeUI?.restoreFocus()) {
-        const restored = target || document.querySelector('main h2');
+        const restored = target || document.querySelector('main h1');
         if (restored) { restored.tabIndex = restored.tabIndex < 0 ? -1 : restored.tabIndex; restored.focus({preventScroll: true}); }
       }
     } catch {
@@ -168,6 +169,9 @@
     if (local) local.holder.querySelectorAll('form').forEach(form => form.reset());
     controller?.abort();
     panel.close();
+    // 关闭事件是异步任务，而退出动效会让面板继续渲染；此处同步摘掉无障碍暴露，
+    // 否则关闭瞬间旧内容仍能被读屏器与自动化定位到，与背后页面重名。
+    content.setAttribute('aria-hidden', 'true');
   }
   panel.querySelector('[data-workspace-close]').addEventListener('click', closePanel);
   panel.addEventListener('cancel', event => { event.preventDefault(); closePanel(); });
@@ -194,7 +198,7 @@
     const view = trail.pop();
     content.replaceChildren(...view.nodes);
     currentURL = view.url; full.href = view.url;
-    title.textContent = content.querySelector('[data-panel-title]')?.dataset.panelTitle || content.querySelector('h2')?.textContent.trim() || '管理操作';
+    title.textContent = content.querySelector('[data-panel-title]')?.dataset.panelTitle || content.querySelector('h1,h2')?.textContent.trim() || '管理操作';
     back.hidden = !trail.length;
     showFeedback('');
     title.focus();
@@ -378,7 +382,7 @@
         const errorText = main.querySelector('.card')?.textContent.trim() || '操作未成功，请核对后重试。';
         throw new Error(errorText);
       }
-      if (main.querySelector('h2')?.textContent.trim() === '登录授权已结束') { leaving = true; location.assign('/console/signed-out'); return; }
+      if (main.querySelector('h1,h2')?.textContent.trim() === '登录授权已结束') { leaving = true; location.assign('/console/signed-out'); return; }
       if (!main.querySelector('.notice')) throw new Error('未取得保存确认。请重新登录或刷新核对，勿重复提交。');
       // 已取得保存回执的当前表单不再是未保存草稿；发送期间禁止继续修改。
       remember(form);

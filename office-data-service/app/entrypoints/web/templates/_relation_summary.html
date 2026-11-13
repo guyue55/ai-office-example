@@ -1,0 +1,6 @@
+{% macro relation_summary(names, total, empty='暂无关联') -%}
+{% if total %}
+<span class="relation-summary" tabindex="0" data-tooltip="{{ names|join('、') }}">{{ names|join('、') if names else '详情待展开' }}</span>
+<span class="small muted">（{% if total > names|length %}前 {{ names|length }} 项 / {% endif %}共 {{ total }} 项）</span>
+{% else %}<span class="muted">{{ empty }}</span>{% endif %}
+{%- endmacro %}

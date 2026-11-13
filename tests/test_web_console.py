@@ -62,8 +62,36 @@ def web(tmp_path, monkeypatch, request):
                         "first_seen_at": datetime.fromisoformat("2026-10-18T09:00:00+00:00"),
                         "last_seen_at": datetime.fromisoformat("2026-10-18T10:00:00+00:00"),
                     }
-                ]
+                ],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "pages": 1,
+                    "start": 1,
+                    "end": 1,
+                },
             }
+        if name == "access.change.preview":
+            change = payload["change"]
+            return {
+                "change": change,
+                "before": {
+                    "display_name": "新同事",
+                    "issuer": "https://identity.test",
+                    "subject": "kc-subject-value",
+                },
+                "after": {
+                    "name": change["payload"].get(
+                        "name", change["payload"].get("body", {}).get("name")
+                    ),
+                    "assigned_role": None,
+                    "permissions": [],
+                },
+                "confirmation_digest": "a" * 64,
+            }
+        if name == "access.change.apply":
+            return {"id": "claimed-new", "version": 1}
         if name == "access.identity.claim":
             return {"id": "claimed-new", "version": 1}
         if name == "access.list":
@@ -157,6 +185,29 @@ def test_dashboard_shows_my_roles_above_permissions(web):
     # 无 access.read 时不给「查看配置」入口，避免点了跳到无权页面
     assert "查看配置" not in roles_html
     assert response.text.index('id="my-roles"') < response.text.index('id="my-permissions"')
+
+
+@pytest.mark.parametrize(
+    "active,label,badge",
+    [(True, "账号已启用", "on"), (False, "账号已停用", "off")],
+)
+def test_dashboard_account_status_follows_real_state(web, active, label, badge):
+    """状态徽标必须取 me() 的真实 active，不能写死启用文案。"""
+    original = web.application.call.side_effect
+
+    async def operation(principal, name, payload, trace):
+        if name == "me":
+            return {"name": "普通员工", "active": active, "permissions": ["record.create"]}
+        return await original(principal, name, payload, trace)
+
+    web.application.call.side_effect = operation
+    response = web.client.get("/console/dashboard")
+    assert response.status_code == 200
+    header = response.text[response.text.index('<header class="page-header"') :]
+    header = header[: header.index("</header>")]
+    assert f'class="badge {badge}"' in header
+    assert label in header
+    assert ("账号已停用" in header) is (not active)
 
 
 def test_dashboard_role_table_marks_custom_role_and_admin_action(web):
@@ -572,26 +623,6 @@ def test_callback_wait_does_not_block_other_requests(web, monkeypatch):
     asyncio.run(run())
 
 
-def test_pending_card_renders_real_datetime_and_escaped_name(web):
-    response = web.client.get("/console/employees")
-    assert response.status_code == 200
-    assert "待认领登录" in response.text and "新同事" in response.text
-    assert "2026-10-18 17:00" in response.text
-    assert 'action="/console/employees/claim"' in response.text
-
-
-def test_claim_requires_csrf_and_returns_to_employee_list(web):
-    form = {"pending_id": "pending-1", "name": "新同事"}
-    response = web.client.post("/console/employees/claim", data=form)
-    assert response.status_code == 403
-    assert all(
-        call.args[1] != "access.identity.claim" for call in web.application.call.call_args_list
-    )
-    response = web.client.post("/console/employees/claim", data={**form, "csrf": "form-csrf"})
-    assert response.status_code == 303
-    assert response.headers["location"] == "/console/employees"
-
-
 def test_audit_renders_readable_data_and_beijing_time(web):
     original = web.application.call.side_effect
 
@@ -660,20 +691,6 @@ def test_employee_rename_keeps_state_and_version_contract(web):
         if call.args[1] == "access.employee.update"
     )
     assert call.args[2]["body"] == {"version": 2, "name": "新姓名", "active": True}
-
-
-@pytest.mark.parametrize("assign_default", [True, False])
-def test_employee_binding_forwards_explicit_default_choice(web, assign_default):
-    form = {"csrf": "form-csrf", "name": "开通测试", "subject": "real-subject"}
-    if assign_default:
-        form["assign_default_role"] = "on"
-    response = web.client.post("/console/employees/new", data=form)
-    assert response.status_code == 303
-    assert response.headers["location"] == "/console/employees"
-    creation = next(
-        call for call in web.application.call.call_args_list if call.args[1] == "access.create"
-    )
-    assert creation.args[2]["body"]["assign_default_role"] is assign_default
 
 
 def test_revoked_session_does_not_reenter_old_sso(web):
@@ -775,3 +792,37 @@ def test_list_empty_state_distinguishes_filters(web, path, title):
     assert "没有匹配结果" in filtered.text
     assert "清除筛选" in filtered.text
     assert f"/console/{path}?limit=20" in filtered.text
+
+
+def test_personnel_does_not_read_or_advertise_external_onboarding(web):
+    response = web.client.get("/console/employees")
+    assert response.status_code == 200
+    for value in (
+        "未开通访问记录",
+        "/console/employees/pending",
+        "/console/employees/external",
+        'name="subject"',
+    ):
+        assert value not in response.text
+    assert all(
+        call.args[1] != "access.identity.pending" for call in web.application.call.call_args_list
+    )
+
+
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("get", "/console/employees/pending"),
+        ("get", "/console/employees/external"),
+        ("post", "/console/employees/new"),
+        ("post", "/console/employees/claim"),
+        ("post", "/console/employees/identity-confirm"),
+    ],
+)
+def test_removed_identity_web_routes_cannot_write(web, method, path):
+    response = getattr(web.client, method)(path)
+    assert response.status_code == 404
+    assert all(
+        call.args[1] not in {"access.create", "access.identity.claim", "access.change.apply"}
+        for call in web.application.call.call_args_list
+    )

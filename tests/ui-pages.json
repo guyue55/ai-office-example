@@ -173,6 +173,7 @@
       "coverage": "本人助手受理、预览与决定页面",
       "tests": [
         "test_agent_web.py",
+        "test_assistant_task_refresh.py",
         "test_ui_catalog_browser.py"
       ]
     },
@@ -205,6 +206,7 @@
   "components": [
     "_access_flow.html",
     "_account_menu.html",
+    "_account_role_select.html",
     "_assistant_panel.html",
     "_assistant_result.html",
     "_filters.html",
@@ -213,8 +215,10 @@
     "_nav_icon.html",
     "_permissions.html",
     "_search.html",
+    "_table_scroll_hint.html",
     "_workspace.html",
     "account-menu.js",
+    "account-role-select.js",
     "assistant-content.js",
     "assistant-shell.js",
     "assistant-transport.js",
@@ -233,6 +237,12 @@
     "shell.js",
     "styles.css",
     "workspace.js",
-    "editable-combobox.js"
+    "editable-combobox.js",
+    "design-tokens.css",
+    "_relation_summary.html",
+    "_page_patterns.html",
+    "_page_header.html",
+    "page-patterns.css",
+    "_applied_filters.html"
   ]
 }

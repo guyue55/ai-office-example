@@ -7,6 +7,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import instance_cookie
@@ -79,8 +80,7 @@ def test_assistant_real_browser_confirmation_layout_and_escape(web):  # noqa: F8
             )
             try:
                 page = browser.new_page(viewport={"width": 1440, "height": 1000})
-                errors = []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                errors = browser_errors.collect(page)
                 base = f"http://127.0.0.1:{port}"
                 page.context.add_cookies(
                     [

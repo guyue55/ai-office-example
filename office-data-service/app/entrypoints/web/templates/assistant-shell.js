@@ -48,7 +48,7 @@
   ui.decorateIcon(latest,'down','回到最新消息');
   const historyPopup=ui.floating($('[data-assistant-history]'),$('#assistant-history-panel'),{initialFocus:()=>query});
   const optionsPopup=ui.floating($('[data-assistant-menu]'),$('#assistant-options-panel'));
-  function save(){try{sessionStorage.setItem(storeKey,JSON.stringify({id:state.id,open:full||!root.hidden,width}));}catch(_){}}
+  function save(){try{const previous=JSON.parse(sessionStorage.getItem(storeKey)||'{}');sessionStorage.setItem(storeKey,JSON.stringify({id:state.id,open:full?previous.open===true:!root.hidden,width:full?(previous.width||width):width}));}catch(_){}}
   function say(text,{visible=false,error=false,retry=false,key=''}={}){
     if(feedback.textContent!==text||key&&key!==lastAnnouncement)feedback.replaceChildren(document.createTextNode(text));
     lastAnnouncement=key;
@@ -222,7 +222,7 @@
   const controls={
     pageName:code=>pages[code]||'未关联页面',
     async fillDraft(prompt){if(input.value.trim()&&!await ui.confirm('替换当前尚未发送的草稿？',{title:'填入示例',accept:'替换草稿'}))return;input.value=prompt;rememberDraft();sizeInput();updateControls();input.focus();},
-    showDetails(turn){const box=view.el('div');box.append(view.fields({status:view.labels.statuses[turn.status]||turn.status,created_at:turn.created_at,updated_at:turn.updated_at,version:turn.version}));if(turn.result?.usage)box.append(view.detail('模型用量',turn.result.usage));const link=view.el('a','打开完整任务记录');link.href='/console/assistant/'+encodeURIComponent(turn.id);box.append(link);ui.present('任务详情',box);},
+    showDetails(turn){const box=view.el('div');box.append(view.fields({status:view.labels.statuses[turn.status]||turn.status,created_at:turn.created_at,updated_at:turn.updated_at,version:turn.version}));box.append(view.el('h3','模型用量'));box.append(view.usage(turn.result?.usage));const link=view.el('a','打开完整任务记录');link.href='/console/assistant/'+encodeURIComponent(turn.id);box.append(link);ui.present('任务详情',box);},
     async refreshBusiness(){await ui.reloadPage();},
     async decide(turn,approve){if(!await ui.confirm(approve?'请核对本次完整预览。批准仅适用于此操作，后续写入仍需确认。':'拒绝本次操作？助手不会执行该提案。',{title:approve?'批准本次操作？':'拒绝操作',accept:approve?'批准本次操作':'拒绝操作'}))return;await withAction(()=>api.action('decide',{identifier:turn.id,version:turn.version,proposal_id:turn.pending.ticket,approve}));},
     async stop(turn){if(!await ui.confirm('已完成的操作不会撤回，在途写入可能需要核对实际数据。',{title:'停止任务？',accept:'停止任务'}))return;await withAction(()=>api.action('cancel',{identifier:turn.id,version:turn.version}));}
@@ -232,7 +232,7 @@
     if(state.intent?.prompt!==prompt||state.intent?.id!==state.id)state.intent={prompt,id:state.id,key:Array.from(crypto.getRandomValues(new Uint8Array(16)),value=>value.toString(16).padStart(2,'0')).join(''),page:context.checked?page:''};
     const request_key=state.intent.key;
     await withAction(async()=>{
-      if(!state.id){const item=await api.action('create',{title:prompt.slice(0,40)}),intent=state.intent,draft=input.value;resetConversation(item.id);input.value=draft;rememberDraft();sizeInput();state.intent=intent;state.intent.id=item.id;}
+      if(!state.id){const item=await api.action('create',{title:Array.from(prompt).slice(0,40).join('')}),intent=state.intent,draft=input.value;resetConversation(item.id);input.value=draft;rememberDraft();sizeInput();state.intent=intent;state.intent.id=item.id;}
       await api.action('start',{prompt,request_key,conversation_id:state.id,context_page:state.intent.page});
       if(input.value.trim()===prompt){input.value='';drafts.delete(state.id);}else rememberDraft();drafts.delete('');sizeInput();state.intent=null;state.polls=0;say('任务已受理。');
     });

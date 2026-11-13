@@ -1,6 +1,7 @@
 """本机基础环境管理：幂等建库和身份配置，不删除卷、不打印密钥。"""
 
 import argparse
+import base64
 import json
 import os
 import secrets
@@ -20,6 +21,8 @@ COMPOSE = [
     "-f",
     str(ROOT / "deploy/compose.dev.yaml"),
 ]
+# 自定义登录主题名，与 deploy/identity/themes/office 和安装器保持一致。
+LOGIN_THEME = "office"
 
 
 def command(args, **kwargs):
@@ -49,10 +52,20 @@ def prepare():
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(fd, "w") as stream:
                 stream.write(secrets.token_urlsafe(32))
+    # 托管模型配置的独立根密钥；Fernet 要求32字节的 urlsafe base64，
+    # 不能复用会话密钥（Settings 会拒绝同一路径）。缺失时设置页只能报 503。
+    key_path = directory / "model_encryption_key"
+    if not key_path.exists():
+        fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as stream:
+            stream.write(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())
     (RUNTIME / "foundation").mkdir(exist_ok=True)
     port = int(os.environ.get("OFFICE_DEV_PORT", "8800"))
     if not 1 <= port <= 65535:
         raise ValueError("OFFICE_DEV_PORT超出范围")
+    identity_port = int(os.environ.get("OFFICE_DEV_IDENTITY_PORT", "8081"))
+    if not 1 <= identity_port <= 65535:
+        raise ValueError("OFFICE_DEV_IDENTITY_PORT超出范围")
     public_url = "http://127.0.0.1:" + str(port)
     config = {
         "database_user": "office_app",
@@ -60,13 +73,14 @@ def prepare():
         "database_host": "127.0.0.1",
         "database_port": 55432,
         "database_name": "office",
-        "issuer": "http://127.0.0.1:8081/realms/office",
+        "issuer": f"http://127.0.0.1:{identity_port}/realms/office",
         "audience": public_url + "/mcp",
         "public_url": public_url,
         "client_id": PRODUCT["client_id"],
         "web_client_id": PRODUCT["web_client_id"],
         "redirect_uri": "http://127.0.0.1:8765/callback",
         "web_session_secret_file": str(directory / "web_session_secret"),
+        "agent_secret_key_file": str(directory / "model_encryption_key"),
     }
     config = preserve_config(RUNTIME / "foundation/config.json", config)
     owner = {
@@ -108,6 +122,14 @@ def wait_for(url, seconds=600):
 
 def up():
     prepare()
+    from urllib.parse import urlsplit
+
+    config = json.loads((RUNTIME / "foundation/config.json").read_text())
+    issuer = urlsplit(config["issuer"])
+    if issuer.hostname != "127.0.0.1" or issuer.scheme != "http" or issuer.path != "/realms/office":
+        raise RuntimeError("开发栈仅支持本机身份服务")
+    # 既有配置决定端口，不因环境变量改变而静默迁址。
+    os.environ["OFFICE_DEV_IDENTITY_PORT"] = str(issuer.port or 80)
     command(COMPOSE + ["up", "-d", "postgres"])
     for _ in range(30):
         ready = subprocess.run(
@@ -144,12 +166,27 @@ def up():
             stdout=subprocess.DEVNULL,
         )
     command(COMPOSE + ["up", "-d", "identity"])
-    wait_for("http://127.0.0.1:8081/realms/master/.well-known/openid-configuration")
+    wait_for(f"http://{issuer.netloc}/realms/master/.well-known/openid-configuration")
 
 
 def provision():
     """只管理专用开发 realm，不覆盖已有用户密码或业务授权。"""
-    with httpx.Client(base_url="http://127.0.0.1:8081", timeout=90) as http:
+    config_path = Path(os.environ.get("OFFICE_CONFIG", RUNTIME / "foundation/config.json"))
+    config = json.loads(config_path.read_text())
+    from urllib.parse import urlsplit
+
+    issuer = urlsplit(config["issuer"])
+    if (
+        issuer.scheme != "http"
+        or issuer.hostname != "127.0.0.1"
+        or issuer.path != "/realms/office"
+        or issuer.username
+        or issuer.password
+        or issuer.query
+        or issuer.fragment
+    ):
+        raise RuntimeError("仅允许独立本机开发realm")
+    with httpx.Client(base_url=f"http://{issuer.netloc}", timeout=90, trust_env=False) as http:
         token_response = http.post(
             "/realms/master/protocol/openid-connect/token",
             data={
@@ -169,11 +206,18 @@ def provision():
                     "realm": "office",
                     "enabled": True,
                     "registrationAllowed": False,
+                    "loginTheme": LOGIN_THEME,
                     "internationalizationEnabled": True,
                     "supportedLocales": ["zh-CN", "en"],
                     "defaultLocale": "zh-CN",
                 },
             )
+            response.raise_for_status()
+        # 与生产安装器保持一致：已存在的 realm 也要补齐登录主题，否则开发者看到的是
+        # Keycloak 默认外观，而不是 deploy/identity/themes/office 里的品牌主题。
+        current = http.get(realm_path).json()
+        if current.get("loginTheme") != LOGIN_THEME:
+            response = http.put(realm_path, json={"loginTheme": LOGIN_THEME})
             response.raise_for_status()
         scopes = http.get(realm_path + "/client-scopes").json()
         scope = next((s for s in scopes if s["name"] == "office"), None)
@@ -190,7 +234,6 @@ def provision():
             scope = next(
                 s for s in http.get(realm_path + "/client-scopes").json() if s["name"] == "office"
             )
-        config = json.loads((RUNTIME / "foundation/config.json").read_text())
         for client_id, redirect in (
             (config["client_id"], config["redirect_uri"]),
             (config.get("web_client_id", "office-web"), config["public_url"] + "/auth/callback"),
@@ -226,7 +269,10 @@ def provision():
             identities[username] = {"subject": users[0]["id"], "name": "本地测试" + username}
         (RUNTIME / "foundation/identities.json").write_text(json.dumps(identities, indent=2))
         (RUNTIME / "foundation/operator.json").write_text(json.dumps(identities["operator"]))
-    print("开发身份配置完成；凭证仅保留在忽略目录。")
+    from configure_token_introspection import configure
+
+    configure(config_path)
+    print("开发身份配置完成；在线校验已验证，凭证仅保留在忽略目录。")
 
 
 def migrate():

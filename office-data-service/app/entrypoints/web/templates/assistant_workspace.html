@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}智能助手 · {{ product.short_name }}{% endblock %}
 {% block content %}
+{# 完整工作区直接复用会话组件，保留阅读位置和输入区可见性，不重复增加页头。 #}
 {% set assistant_full = true %}{% include '_assistant_panel.html' %}
 <noscript><p class="hint">会话工作区需要启用JavaScript。您仍可使用<a href="/console/assistant">独立任务页面</a>。</p></noscript>
 {% endblock %}

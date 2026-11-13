@@ -6,6 +6,7 @@ import threading
 import time
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import instance_cookie
@@ -75,9 +76,13 @@ def test_global_assistant_sidebar_workspace_navigation_and_decision(web):  # noq
                     ]
                 )
                 page = context.new_page()
-                errors = []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/dashboard")
+                # 完整页面的可见性不能改变侧栏打开偏好。
+                page.goto(base + "/console/assistant/workspace")
+                expect(page.locator("#assistant-panel")).to_be_visible()
+                page.goto(base + "/console/dashboard")
+                expect(page.locator("#assistant-panel")).to_be_hidden()
                 page.get_by_role("button", name="打开智能助手", exact=True).click()
                 expect(page.locator("#assistant-panel")).to_be_visible()
                 expect(history(page).locator("[data-conversation]")).to_have_count(1)
@@ -292,8 +297,7 @@ def test_chat_composer_drafts_markdown_copy_and_keyed_reading(web):  # noqa: F81
                     "Object.defineProperty(navigator,'clipboard',{value:undefined});Object.defineProperty(crypto,'randomUUID',{value:undefined})"
                 )
                 page = context.new_page()
-                errors = []
-                page.on("pageerror", lambda e: errors.append(str(e)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/dashboard")
                 page.locator("#assistant-launch").click()
                 # 浮层Esc只关闭当前层，并把焦点还给触发器，不收起整个助手。

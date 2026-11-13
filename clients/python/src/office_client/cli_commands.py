@@ -32,7 +32,10 @@ def configure(sub):
     export = sub.add_parser("export-confirmed", help="单项目有界导出已确认数据，不包含未确认候选")
     export.add_argument("project_id")
     export.add_argument("--max-records", type=int, default=1000)
-    sub.add_parser("pending-identities", help="查询待认领身份，最多50项")
+    pending = sub.add_parser("pending-identities", help="分页搜索未开通访问记录")
+    pending.add_argument("--page", type=int, default=1)
+    pending.add_argument("--limit", type=int, default=50)
+    pending.add_argument("--q", default="")
     command = sub.add_parser(
         "project-preview", help="生成带创建请求标识的项目预览，保存返回change后确认"
     )
@@ -103,7 +106,7 @@ def execute(client, args):
     if action == "export-confirmed":
         return True, client.export_confirmed(args.project_id, args.max_records)
     if action == "pending-identities":
-        return True, client.pending_identities()
+        return True, client.pending_identities(page=args.page, limit=args.limit, q=args.q)
     if action == "project-preview":
         return True, client.preview_project(args.name, idempotency_key=args.idempotency_key)
     if action in {"data-preview", "data-apply"}:

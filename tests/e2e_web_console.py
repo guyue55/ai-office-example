@@ -69,7 +69,7 @@ def main() -> None:
                     if continuation.count() == 1:
                         continuation.click()
                         pages[index].wait_for_load_state("domcontentloaded")
-                    expect(pages[index].locator("main h2")).to_have_text("仪表盘")
+                    expect(pages[index].locator("main h1")).to_have_text("仪表盘")
             finally:
                 concurrent.close()
         print("MULTI_TAB_LOGIN_OK")
@@ -162,7 +162,7 @@ def main() -> None:
         try:
             removed.uncheck()
             save_links(page, save)
-            expect(page.locator("main h2")).to_have_text("授权关联")
+            expect(page.locator("main h1")).to_have_text("授权关联")
             assert selected(page) == before - {removed_id}
             # 旧页面不能覆盖刚刚生效的授权。
             with stale.expect_response(lambda r: r.request.method == "POST") as result:
@@ -186,7 +186,7 @@ def main() -> None:
         page.locator('form[action="/console/permission-sets/new"] button').click()
         expect(page.locator("#workspace #grant-form")).to_be_visible()
         page.goto(page.locator("[data-workspace-full]").get_attribute("href"))
-        expect(page.locator("main h2")).to_have_text("授权关联")
+        expect(page.locator("main h1")).to_have_text("授权关联")
         expect(page.locator("body")).to_contain_text(name)
         bundle_id = urlsplit(page.url).path.split("/")[-2]
         search = page.get_by_role("search")
@@ -206,7 +206,7 @@ def main() -> None:
         page.locator('form[action="/console/roles/new"] button').click()
         expect(page.locator("#workspace #grant-form")).to_be_visible()
         page.goto(page.locator("[data-workspace-full]").get_attribute("href"))
-        expect(page.locator("main h2")).to_have_text("授权关联")
+        expect(page.locator("main h1")).to_have_text("授权关联")
         role_id = urlsplit(page.url).path.split("/")[-2]
         search = page.get_by_role("search")
         search.locator("input[name=q]").fill(name)
@@ -214,14 +214,14 @@ def main() -> None:
         page.locator(f'input[type=checkbox][value="{bundle_id}"]').check()
         save_links(page, save)
         page.goto(f"{BASE}/console/access/roles/{role_id}")
-        expect(page.locator("main h2")).to_have_text(role_name)
+        expect(page.locator("main h1")).to_have_text(role_name)
         expect(page.get_by_text("上报项目数据", exact=True)).to_be_visible()
         page.goto(f"{BASE}/console/access/permission-sets/{bundle_id}")
         expect(page.locator("body")).to_contain_text(role_name)
         page.screenshot(path=str(proof / "permission-detail.png"), full_page=True)
         detail_link = page.get_by_role("link", name="查看角色授权详情", exact=True)
         page.goto(BASE + detail_link.get_attribute("href"))
-        expect(page.locator("main h2")).to_have_text(role_name)
+        expect(page.locator("main h1")).to_have_text(role_name)
         # 修改共享权限集后，角色详情立即反映撤销；不调整真实员工授权。
         page.goto(f"{BASE}/console/links/permission-sets/{bundle_id}/permissions")
         search = page.get_by_role("search")

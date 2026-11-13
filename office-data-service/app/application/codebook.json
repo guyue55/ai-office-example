@@ -292,7 +292,7 @@
     "definition": "待认领登录已被其他管理员绑定到人员。",
     "recovery_hint": "query_operation",
     "availability": "current-source",
-    "legacy_aliases": []
+    "legacy_aliases": [{"symbol": "identity_claimed", "status": 409}]
   },
   {
     "code": 410001,

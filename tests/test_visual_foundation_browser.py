@@ -6,6 +6,7 @@ import threading
 import time
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import instance_cookie
@@ -90,13 +91,11 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                     ]
                 )
                 page = context.new_page()
-                errors = []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/employees")
-                queue = page.locator(".pending-queue")
-                expect(queue).not_to_have_attribute("open", "")
-                expect(queue.locator("summary")).to_contain_text("1 人")
-                expect(page.locator(".flow-guide")).not_to_have_attribute("open", "")
+                expect(page.locator(".pending-queue")).to_have_count(0)
+                expect(page.get_by_role("link", name="核对并处理")).to_have_count(0)
+                expect(page.locator(".flow-guide")).to_be_hidden()
                 expect(page.locator("a.permission-name")).to_have_count(10)
                 expect(page.locator("a.permission-name").first).to_be_in_viewport()
 
@@ -108,6 +107,7 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 muted = color(".page-header .muted", "color")
                 assert contrast(muted, color("body", "backgroundColor")) >= 4.5
                 assert contrast(muted, "rgb(255, 255, 255)") >= 4.5
+                assert contrast(color(".trace", "color"), color("body", "backgroundColor")) >= 4.5
                 field = page.locator("input[type=search]").first
                 assert (
                     contrast(
@@ -140,7 +140,7 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                     )
                     >= 3
                 )
-                page.locator(".page-header h2").click()
+                page.locator(".page-header h1").click()
                 # 详情以共享抽屉导入时，不得复制全局助手入口和位置栏。
                 page.locator("a.permission-name").first.click()
                 expect(page.locator("#workspace")).to_be_visible()
@@ -148,12 +148,9 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                 expect(page.locator("#workspace #assistant-launch")).to_have_count(0)
                 expect(page.locator("#workspace .shell-context")).to_have_count(0)
                 page.get_by_role("button", name="关闭操作面板", exact=True).click()
-                queue.locator("summary").click()
-                expect(queue.get_by_role("button", name="认领并开通", exact=True)).to_be_visible()
-                queue.locator("summary").click()
-                page.locator(".flow-guide > summary").click()
-                expect(page.locator(".flow")).to_be_visible()
-                page.locator(".flow-guide > summary").click()
+                page.get_by_role("link", name="授权配置帮助", exact=True).click()
+                expect(page.locator("#record-dialog .flow")).to_be_visible()
+                page.get_by_role("button", name="关闭详情", exact=True).click()
                 page.get_by_role("link", name="下一页", exact=True).click()
                 assert calls[-1] == 2
                 expect(page.locator("a.permission-name").first).to_contain_text("10")

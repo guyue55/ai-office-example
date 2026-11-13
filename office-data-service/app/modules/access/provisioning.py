@@ -16,9 +16,8 @@ async def default_role(db: AsyncSession) -> Role:
     return role
 
 
-async def assign_role(db: AsyncSession, employee_id: str, enabled: bool) -> dict | None:
-    if not enabled:
-        return None
+async def assign_role(db: AsyncSession, employee_id: str, enabled: bool) -> dict:
+    require(enabled, 422, "invalid_input", "首次开通必须关联普通员工角色")
     role = await default_role(db)
     db.add(EmployeeRole(employee_id=employee_id, role_id=role.id))
     return {"id": role.id, "name": role.name, "description": "首次开通关联的默认角色"}

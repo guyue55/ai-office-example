@@ -93,9 +93,7 @@ class KeycloakAdmin:
         if response.status_code == 409:
             raise DomainError(409, "constraint_conflict", "登录账号已存在，请核对或关联已有账号")
         if response.status_code in (400, 422):
-            raise DomainError(
-                422, "invalid_request", "身份服务拒绝此操作，请核对账号资料或安全策略"
-            )
+            raise DomainError(422, "invalid_input", "身份服务拒绝此操作，请核对账号资料或安全策略")
         if response.status_code in (401, 403):
             self._token, self._deadline = "", 0
             raise DomainError(503, "identity_unavailable", "账号管理连接权限不足，请联系管理员")

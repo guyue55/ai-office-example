@@ -39,7 +39,7 @@ READS = {
     "access_links": Operation(
         "access_links", ("kind", "identifier", "relation"), ("kind", "identifier", "relation")
     ),
-    "pending_identities": Operation("pending_identities"),
+    "pending_identities": Operation("pending_identities", ("page", "limit", "q")),
     "account_capabilities": Operation("account_capabilities"),
     "search_accounts": Operation("search_accounts", ("q",), ("q",)),
     "employee_account": Operation("employee_account", ("identifier",), ("identifier",)),

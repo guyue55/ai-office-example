@@ -1,0 +1,27 @@
+{#
+  页面标题区。20 个页面使用；assistant_workspace / error / login_recovery / signed_out
+  四个页面没有标题区，不要为了统一而硬加。
+
+  参数：
+  - eyebrow：上方小标签，必填
+  - title：主标题，必填。含标签（如「内置角色」徽标）时先 {% set %} 捕获再传入，
+    否则标记会被转义成文本
+  - summary：下方说明，可省略
+  - variant：追加的 header 类名，如设置页的 "settings-header"
+  - panel_title：工作区抽屉标题（links.html 使用），渲染为 data-panel-title 属性
+
+  右侧动作区由调用方通过 {% call %} 传入，包裹方式保持各自原样：
+  需要横排按钮组时自行包一层 <div class="actions">，单个链接直接放 <a>，
+  状态徽标直接放 <span class="badge">。这里不代为包裹，避免把已有的布局语义
+  藏进宏里。
+#}
+{% macro page_header(eyebrow, title, summary=None, variant="", panel_title=None) %}
+<header class="page-header{% if variant %} {{ variant }}{% endif %}"{% if panel_title is not none %} data-panel-title="{{ panel_title }}"{% endif %}>
+<div>
+<p class="eyebrow">{{ eyebrow }}</p>
+<h1>{{ title }}</h1>
+{% if summary %}<p class="muted">{{ summary }}</p>{% endif %}
+</div>
+{% if caller is defined %}{{ caller() }}{% endif %}
+</header>
+{% endmacro %}

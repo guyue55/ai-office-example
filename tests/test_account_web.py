@@ -15,6 +15,51 @@ from pydantic import ValidationError
 pytest_plugins = ("test_web_console",)  # 复用真实路由与会话夹具
 
 
+@pytest.mark.parametrize("role_id, expected", [("", None), ("custom-role", ["custom-role"])])
+def test_onboarding_forwards_role_selection_without_extra_grants(web, role_id, expected):
+    original = web.application.call.side_effect
+
+    async def call(principal, operation, payload, trace):
+        if operation == "account.preview":
+            assert payload["request"]["role_ids"] == expected
+            return {"request": payload["request"], "effects": [], "confirmation_digest": "digest"}
+        return await original(principal, operation, payload, trace)
+
+    web.application.call.side_effect = call
+    response = web.client.post(
+        "/console/accounts/new",
+        data={"csrf": "form-csrf", "name": "测试人员", "username": "person01", "role_id": role_id},
+    )
+    assert response.status_code == 200
+
+
+def test_role_options_use_bounded_authorized_listing(web):
+    original = web.application.call.side_effect
+
+    async def allowed(principal, operation, payload, trace):
+        if operation == "me":
+            return {
+                "name": "管理员",
+                "permissions": ["access.read", "access.manage", "identity.read"],
+            }
+        return await original(principal, operation, payload, trace)
+
+    web.application.call.side_effect = allowed
+    response = web.client.get("/console/accounts/role-options?q=财务")
+    assert response.status_code == 200
+    call = next(c for c in web.application.call.call_args_list if c.args[1] == "access.list")
+    assert call.args[2] == {"kind": "roles", "limit": 100, "q": "财务"}
+    assert web.client.get("/console/accounts/role-options?q=" + "字" * 101).status_code == 422
+
+    async def denied(principal, operation, payload, trace):
+        if operation == "me":
+            return {"name": "普通人员", "permissions": ["access.read"]}
+        return await original(principal, operation, payload, trace)
+
+    web.application.call.side_effect = denied
+    assert web.client.get("/console/accounts/role-options").status_code == 403
+
+
 @pytest.fixture
 def accounts(web):
     principal = SimpleNamespace(subject="operator", claims={}, issuer="https://identity.invalid")
@@ -201,7 +246,8 @@ def test_create_preview_error_restores_nonsecret_values(accounts, status):
     assert 'value="person01"' in response.text
     assert 'value="person@example.invalid"' in response.text
     assert '<img src=x onerror="alert(1)">' not in response.text
-    assert 'name="default_role" checked' not in response.text
+    assert 'name="default_role"' not in response.text
+    assert "内置普通员工角色" in response.text
     assert all(
         call.args[1] != "account.submit" for call in accounts.application.call.call_args_list
     )
@@ -229,3 +275,52 @@ def test_create_preview_does_not_recover_security_or_service_failure(accounts, s
     assert all(
         call.args[1] != "account.submit" for call in accounts.application.call.call_args_list
     )
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        {"kind": "create", "name": "人员", "username": "person01", "role_ids": []},
+        {"kind": "link", "name": "人员", "remote_id": "remote", "role_ids": []},
+    ],
+)
+def test_onboarding_contract_rejects_empty_roles(command):
+    with pytest.raises(ValidationError):
+        validate_command("account.preview", {"request": command})
+    with pytest.raises(ValidationError):
+        validate_command(
+            "account.submit",
+            {
+                "request": command,
+                "confirmation_digest": "a" * 64,
+                "idempotency_key": "onboard-test",
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    "operation,payload",
+    [
+        (
+            "access.create",
+            {
+                "kind": "employees",
+                "body": {
+                    "name": "人员",
+                    "issuer": "https://identity.invalid",
+                    "subject": "remote",
+                    "assign_default_role": False,
+                },
+            },
+        ),
+        (
+            "access.identity.claim",
+            {"name": "人员", "pending_id": "pending", "assign_default_role": False},
+        ),
+    ],
+)
+def test_external_onboarding_cannot_opt_out_of_default_role(operation, payload):
+    from app.modules.access.schemas import normalize_access_command
+
+    with pytest.raises(ValidationError):
+        normalize_access_command(operation, payload)

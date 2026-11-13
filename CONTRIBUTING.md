@@ -24,7 +24,7 @@ uv run pytest -m 'not live' -q
 
 ## 独立活体验收
 
-避免占用其他项目的默认端口。首次开发环境可设置`OFFICE_DEV_PORT=18890 uv run python scripts/dev_stack.py up`；随后provision、migrate，按owner配置执行bootstrap，再用运行配置启动`office-service serve --port 18890`。既有配置保留，不因环境变量改变而迁址。
+避免占用其他项目的默认端口。首次开发环境可设置`OFFICE_DEV_PORT=18890 uv run python scripts/dev_stack.py up`；随后provision、migrate，按owner配置执行bootstrap，再用运行配置启动`office-service serve --port 18890`。既有配置保留，不因环境变量改变而迁址。首次可用 OFFICE_DEV_IDENTITY_PORT 指定空闲身份端口；后续启动以配置中的 issuer 为准。provision 自动建立最小权限在线校验客户端并用合成无效令牌检查凭据，重复执行不轮换客户端秘密。通过 OFFICE_CONFIG 可指定本机开发配置；秘密按配置文件隔离保存。客户端配置异常会停止，不自动改权限或重置用户。
 
 真实测试设置`OFFICE_LIVE_TESTS=1 OFFICE_TEST_URL=http://127.0.0.1:18890`，入口必须与专用config.json一致。先`uv run playwright install chromium`，也可用PLAYWRIGHT_CHROMIUM_EXECUTABLE明确指定已安装浏览器路径。测试辅助仅允许本机HTTP根地址，不探测、停用或接管其他应用。
 
@@ -39,6 +39,8 @@ uv run pytest -m 'not live' -q
 ## 可选Agent会话与工作区回归
 
 安装可选依赖后运行`uv run --extra agent --frozen pytest -m 'not live' -q`，独立模型协议运行`uv run --project clients/agent --frozen pytest clients/agent/tests -q`。会话／审批变更还须分别执行下列隔离检查；不得指向在用企业库或用户浏览器会话：
+
+隔离数据库默认使用与`deploy/compose.dev.yaml`同一摘要的镜像，`tests/test_pg_image.py`会校验两处一致。网络受限的机器可用`OFFICE_TEST_PG_IMAGE`指向本机已有镜像跑同一套用例（如`OFFICE_TEST_PG_IMAGE=pgvector/pgvector:pg16`）；这种运行只补充证据，不能替代发布前用默认摘要镜像得到的结论。
 
 ```sh
 OFFICE_QUERY_PG_TESTS=1 uv run --extra agent --frozen pytest tests/test_agent_conversations_postgres.py tests/test_agent_records_postgres.py tests/test_agent_runner_postgres.py tests/test_agent_hosted_postgres.py tests/test_postgres_readiness.py -q
@@ -74,6 +76,8 @@ OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome OFFICE_UI_PUBLIC
 
 该入口仅打开登录页，不填写或读取凭证，不创建账号；检查刷新后布局位置和五种宽度，不能据此宣称所有瞬态布局偏移为零。开户／关联／授予角色流程使用隔离替身验证，不修改真实用户授权。
 
+身份服务分离部署时额外显式设置`OFFICE_UI_IDENTITY_URL`为受信realm根地址；默认仍校验本站`/identity/realms/`。检查还覆盖640px短屏、空白表单显隐和无JS，不自动允许跳转到任意来源。完整设计审查范围与自动扫描边界见[全站设计审阅](docs/WEBSITE_DESIGN_AUDIT.md)。
+
 
 模型管理变更额外验收（仅创建临时PG，不使用已有实例）：
 
@@ -93,3 +97,20 @@ OFFICE_QUERY_PG_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL
 ```
 
 该组合只用临时PG、隔离浏览器和合成模型，不连接在用实例。订阅、断线恢复不得增加模型调用或写入；流式文本验收使用事件握手，不用短sleep赌瞬态。构建和PG验收前核对磁盘；磁盘I/O或Docker故障应单列环境失败，恢复后重跑，不静默删掉断言。
+
+## 临时真实身份服务与开户闭环
+
+以下入口仅使用本轮创建的容器、随机本机端口和合成账号，不读取开发实例配置或本人凭证。需Docker和已下载的Keycloak 26.8.1镜像（quay.io/keycloak/keycloak:26.8.1）；测试使用--pull=never，缺失时报环境失败，不自动下载。初始化客户端只用于临时realm配置，产品管理客户端限定query-users／view-users／manage-users及对应scope mappings。
+
+```sh
+OFFICE_IDENTITY_CONTAINER_TESTS=1 uv run --extra agent --frozen pytest tests/test_identity_admin_isolated.py -q
+OFFICE_QUERY_PG_TESTS=1 OFFICE_IDENTITY_CONTAINER_TESTS=1 uv run --extra agent --frozen pytest tests/test_account_identity_postgres.py -q
+```
+
+第一项验证真实Keycloak管理接口及越权拒绝；第二项执行正式PG迁移和真实身份端口，覆盖预览零创建、提交去重、临时凭证准备及重复领取拒绝、最终启用、已有账号关联和撤权后启停不补权。授权主体仍为合成Principal，执行器由测试显式驱动；不证明浏览器OIDC登录、再次认证、首次改密、后台轮询或邮件投递完成。相关浏览器回归应独立运行，不能据分层通过声称同一真实端到端链路全部通过。临时容器和秘密在夹具收尾清理；失败不自动重放真实人员操作。
+
+真实浏览器闭环命令：
+
+    OFFICE_QUERY_PG_TESTS=1 OFFICE_IDENTITY_CONTAINER_TESTS=1 OFFICE_AGENT_BROWSER_TESTS=1 OFFICE_TEST_BROWSER_CHANNEL=chrome uv run --extra agent --frozen pytest tests/test_account_oidc_browser.py -q
+
+该浏览器验收使用独立PG、Keycloak和随机回环应用端口，覆盖真实OIDC登录、管理员再次认证、后台执行器轮询、临时密码一次性显示、员工首次改密、停用拒绝、重新启用后的新登录，以及旧会话不复活。失效会话可能由Web层返回403或重定向到/console／身份服务，均须确认没有继续返回受保护页面；仍不覆盖邮件投递、异常中断恢复和在用实例。

@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.common.outputs import AccessPage, Output, Versioned
+from app.common.outputs import AccessPage, Output, Pagination, Versioned
 from app.modules.access.change_contracts import Change
 
 
@@ -35,6 +35,7 @@ class NamedOutput(Versioned):
 
 
 class EmployeeListOutput(EmployeeOutput):
+    role_names: list[str] = Field(default_factory=list, max_length=3)
     role_count: int
     login_name: str | None = None
     account_status: str = ""
@@ -49,6 +50,8 @@ class RoleOutput(NamedOutput):
 
 
 class PermissionSetOutput(NamedOutput):
+    role_names: list[str] = Field(default_factory=list, max_length=3)
+    permission_names: list[str] = Field(default_factory=list, max_length=3)
     permission_count: int
     role_count: int
 
@@ -102,6 +105,7 @@ class PendingIdentityOutput(Output):
 
 class PendingIdentityPage(Output):
     items: list[PendingIdentityOutput]
+    pagination: Pagination
 
 
 class AccessListing(

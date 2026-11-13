@@ -1,6 +1,6 @@
 {# 完整任务页面的服务端回执视图；与侧栏相同，以工具回执而非模型文字判断执行。 #}
 <section class="card task-result">
-<h3>处理结果与实际回执</h3>
+<h2>处理结果与实际回执</h2>
 {% if task.result.explanation %}<p class="assistant-text">{{ task.result.explanation }}</p>{% endif %}
 <p class="muted">AI说明仅作辅助。以下是工具返回的实际回执，请逐项核对。</p>
 {% for receipt in task.result.receipts|default([]) %}

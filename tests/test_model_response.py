@@ -241,3 +241,41 @@ def test_invalid_or_extreme_length_does_not_read_body(length, category):
     with pytest.raises(ModelEgressError) as error:
         asyncio.run(response.aread())
     assert error.value.category == category and body.read == 0 and body.closed == 1
+
+
+def test_stream_is_not_replayed_when_sdk_drains_after_completion():
+    """SDK 收尾会再次迭代响应丢弃残余字节；重复迭代不能重放压缩流并误判为截断。"""
+
+    async def run():
+        raw = b'data: {"x":1}\n\n' * 100
+        payload = gzip.compress(raw)
+
+        class Once(httpx2.AsyncByteStream):
+            def __init__(self, chunks):
+                self.chunks = list(chunks)
+                self.closed = 0
+                self.taken = False
+
+            async def __aiter__(self):
+                if self.taken:
+                    return
+                self.taken = True
+                for data in self.chunks:
+                    yield data
+
+            async def aclose(self):
+                self.closed += 1
+
+        body = Once([payload[:20], payload[20:]])
+        response = bounded_response(
+            httpx2.Response(200, headers={"content-encoding": "gzip"}, stream=body),
+            wire_limit=1048576,
+            decoded_limit=1048576,
+        )
+        assert await response.aread() == raw
+        drained = b""
+        async for chunk in response.stream:
+            drained += chunk
+        assert drained == b"" and body.closed == 1
+
+    asyncio.run(run())

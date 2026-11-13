@@ -1,0 +1,71 @@
+/* 页面模式统一负责阶段、概览与任务分区，业务组件仍维护各自交互。 */
+.task-steps {display:flex;flex-wrap:wrap;gap:var(--space-4);list-style:none;padding:0;margin:0 0 var(--space-5)}
+.task-steps li {display:flex;align-items:center;gap:var(--space-2);font-size:13px;color:var(--muted)}
+.task-steps li > span {display:grid;place-items:center;width:26px;height:26px;border:1px solid var(--line);border-radius:50%;background:var(--surface)}
+.task-steps [aria-current=step] {font-weight:600;color:var(--accent)}
+.task-steps [aria-current=step] > span {background:var(--accent);border-color:var(--accent);color:white}
+.overview-facts {display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-4);margin:0 0 var(--space-5)}
+.overview-fact {padding:var(--space-4);border:1px solid var(--line);border-radius:var(--radius-control);background:var(--surface)}
+.overview-fact dt {color:var(--muted);font-size:13px}
+.overview-fact dd {margin:var(--space-1) 0 0;overflow-wrap:anywhere}
+.overview-fact dd:not(.muted) {font-size:22px;font-weight:600}
+.permission-distribution {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:var(--space-4);list-style:none;padding:0}
+.permission-distribution li {display:grid;grid-template-columns:1fr auto;gap:var(--space-2)}
+.permission-distribution meter {grid-column:1/-1;width:100%;height:12px;accent-color:var(--accent)}
+.account-results {margin-top:var(--space-5);border-top:1px solid var(--line);padding-top:var(--space-5)}
+.account-results > article {box-shadow:none;background:var(--surface-subtle)}
+.security-section {border-left:3px solid #b76e00}
+.account-profile {display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,3fr);gap:var(--space-3);margin:0 0 var(--space-5)}
+.account-profile dt {color:var(--muted)}
+.account-profile dd {margin:0;overflow-wrap:anywhere}
+.page-toc {display:flex;gap:var(--space-3);flex-wrap:wrap;margin:0 0 var(--space-5);font-size:13px}
+.page-toc a {padding:var(--space-2) var(--space-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-control)}
+.page-section {scroll-margin-top:var(--space-5)}
+@media (max-width:700px) {.task-steps {gap:var(--space-3)}.task-steps li {font-size:12px}.account-profile {grid-template-columns:1fr;gap:var(--space-1)}.account-profile dd {margin-bottom:var(--space-3)}}
+
+.event-time {white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* 选择控制只针对当前页；重置与保存留在同一任务操作区。 */
+.grant-bulk {display:inline-flex;align-items:center;gap:var(--space-2);font-weight:500}
+.grant-bulk[hidden] {display:none}
+[data-selection-count] {margin:0 0 var(--space-3)}
+.account-candidate-edit {border-top:1px solid var(--line);padding-top:var(--space-3)}
+.account-candidate-edit > summary {font-weight:600;color:var(--accent);cursor:pointer}
+.account-candidate-edit[open] > summary {margin-bottom:var(--space-4)}
+
+.applied-filters {display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);margin:0 0 var(--space-4)}
+.applied-filters a {display:inline-flex;align-items:center;gap:var(--space-2);max-width:100%;padding:4px 10px;border:1px solid var(--line);border-radius:var(--radius-control);font-size:12px;color:var(--ink);background:var(--surface-subtle)}
+.applied-filters a > span:first-child {overflow-wrap:anywhere;min-width:0}
+.applied-filters a:hover {background:var(--soft);border-color:var(--accent);text-decoration:none}
+[data-grant-editor] tbody tr:has(input[type=checkbox]:checked) {background:var(--soft)}
+[data-grant-editor] tbody tr:focus-within {outline:2px solid var(--focus-ring);outline-offset:-2px}
+
+/* 回执按真实状态组织；需要核实不能获得成功配色。 */
+.receipt-panel {border-top:3px solid var(--control-border)}
+.receipt-panel[data-receipt-state=succeeded] {border-top-color:#21664b}
+.receipt-panel:is([data-receipt-state=needs_attention],[data-receipt-state=needs_confirmation],[data-receipt-state=awaiting_user]) {border-top-color:#b76e00}
+.receipt-state {font-size:22px;line-height:1.5}
+.receipt-panel .actions {margin-block:var(--space-5)}
+
+/* 表单按任务分组，详情按阅读与安全职责分栏；窄容器回到单列。 */
+.form-section {display:grid;gap:var(--space-4);min-width:0;border:0;padding:0;margin:0}
+.form-section + .form-section {border-top:1px solid var(--line);padding-top:var(--space-5)}
+.form-section legend {font-weight:600;padding:0 0 var(--space-4);color:var(--ink)}
+.form-section > label:not(.check-option) {display:grid;gap:var(--space-2)}
+.form-section > p {margin:0;line-height:1.7}
+.account-detail-grid {display:grid;gap:var(--space-5);grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start}
+.account-detail-grid > .card {min-width:0}
+
+/* 概览带区分身份与数字；任务入口按阅读顺序排列，不使用等权大卡片堆叠。 */
+.dashboard-overview {display:grid;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(0,1fr));padding:0}
+.dashboard-overview > .metric-card {margin:0;border:0;border-radius:0;padding:var(--space-5) 48px var(--space-5) var(--space-5);min-width:0}
+.dashboard-overview > .metric-card + .metric-card {border-left:1px solid var(--line)}
+.dashboard-overview > .metric-card:first-child .stat {font-size:20px;line-height:1.6}
+@media (max-width:700px) {
+  .dashboard-overview {grid-template-columns:1fr}
+  .dashboard-overview > .metric-card + .metric-card {border-left:0;border-top:1px solid var(--line)}
+}
+
+/* 帮助与低频动作有稳定入口；短元信息直接阅读，不作为折叠容器。 */
+.contextual-help {margin:0 0 var(--space-4);font-size:13px;text-align:right}
+.configuration-meta {display:flex;gap:var(--space-3);flex-wrap:wrap;line-height:1.7;margin-block:var(--space-4);overflow-wrap:anywhere}

@@ -348,19 +348,12 @@ def web_router(application):
             "access.list",
             {"kind": "employees", **table_query(request, set(AccessList.model_fields) - {"kind"})},
         )
-        identity = await operate(request, "me", {})
-        pending = (
-            await operate(request, "access.identity.pending", {})
-            if "access.manage" in identity["permissions"]
-            else None
-        )
         return await render(
             request,
             "employees.html",
             items=listing["items"],
             listing=listing,
             search=q,
-            pending=pending,
             accounts_enabled=settings.identity_management is not None,
         )
 
@@ -478,32 +471,6 @@ def web_router(application):
             f"/console/links/{kind}/{quote(identifier)}/{relation}", status_code=303
         )
 
-    def provision_notice(result):
-        role = result.get("assigned_role")
-        if role:
-            return f"已开通并关联「{role['name']}」，按该角色当前配置权限生效。可在人员列表补充或撤回角色。"
-        return "身份已绑定，未授予业务角色。需要时可在人员列表授权。"
-
-    @router.post("/console/employees/new")
-    async def employee_new(request: Request):
-        form = dict(await request.form())
-        require_csrf(request, form)
-        result = await operate(
-            request,
-            "access.create",
-            {
-                "kind": "employees",
-                "body": {
-                    "name": str(form.get("name", "")),
-                    "issuer": settings.issuer,
-                    "subject": str(form.get("subject", "")),
-                    "assign_default_role": form.get("assign_default_role") == "on",
-                },
-            },
-        )
-        notify(request, provision_notice(result))
-        return RedirectResponse("/console/employees", status_code=303)
-
     @router.post("/console/roles/new")
     async def role_new(request: Request):
         form = dict(await request.form())
@@ -549,22 +516,6 @@ def web_router(application):
         notify(
             request, "人员信息已更新；停用人员将无法继续访问业务数据，重新启用后仍沿用原授权配置。"
         )
-        return RedirectResponse("/console/employees", status_code=303)
-
-    @router.post("/console/employees/claim")
-    async def employee_claim(request: Request):
-        form = dict(await request.form())
-        require_csrf(request, form)
-        result = await operate(
-            request,
-            "access.identity.claim",
-            {
-                "pending_id": str(form.get("pending_id", "")),
-                "name": str(form.get("name", "")),
-                "assign_default_role": form.get("assign_default_role") == "on",
-            },
-        )
-        notify(request, provision_notice(result))
         return RedirectResponse("/console/employees", status_code=303)
 
     @router.post("/auth/logout")

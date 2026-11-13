@@ -7,10 +7,10 @@ from pydantic import BaseModel, Field, model_validator
 from app.common.errors import DomainError
 from app.common.inputs import (
     DateRangeInput,
-    EmptyInput,
     IdentifierInput,
     Input,
     NumberedListInput,
+    PageLimit,
     Revision,
 )
 
@@ -20,7 +20,7 @@ class Named(Input):
 
 
 class NewEmployee(Named):
-    assign_default_role: bool = True
+    assign_default_role: Literal[True] = True
     issuer: str = Field(min_length=1, max_length=512)
     subject: str = Field(min_length=1, max_length=100)
 
@@ -34,13 +34,17 @@ class EmployeeUpdate(Input):
 class PendingClaim(Input):
     """认领待认领登录：同时确定业务姓名并建立身份绑定。"""
 
-    assign_default_role: bool = True
+    assign_default_role: Literal[True] = True
     pending_id: str = Field(min_length=1, max_length=36)
     name: str = Field(min_length=1, max_length=100)
 
 
-class PendingList(EmptyInput):
-    """待认领登录仅按时间顺序展示，无需分页参数。"""
+class PendingList(Input):
+    """未知身份访问记录：首屏数量不代表全部。"""
+
+    page: int = Field(default=1, ge=1, le=2147483647)
+    limit: PageLimit = 50
+    q: str = Field(default="", max_length=100)
 
 
 class Links(Input):

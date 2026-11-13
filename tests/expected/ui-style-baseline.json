@@ -1,0 +1,36 @@
+{
+  "files": {
+    "assistant.css": {
+      "border_1px": 4,
+      "color_literal": 9,
+      "off_scale_radius": 0,
+      "unguarded_hover": 4
+    },
+    "page-patterns.css": {
+      "border_1px": 9,
+      "color_literal": 4,
+      "off_scale_radius": 0,
+      "unguarded_hover": 1
+    },
+    "settings.css": {
+      "border_1px": 7,
+      "color_literal": 2,
+      "off_scale_radius": 0,
+      "unguarded_hover": 1
+    },
+    "shell.css": {
+      "border_1px": 9,
+      "color_literal": 13,
+      "off_scale_radius": 0,
+      "unguarded_hover": 4
+    },
+    "styles.css": {
+      "border_1px": 22,
+      "color_literal": 65,
+      "off_scale_radius": 0,
+      "unguarded_hover": 12
+    }
+  },
+  "note": "样式规范存量基线。数量增加即失败，减少也必须同步收紧；更新命令：uv run --frozen python scripts/check_ui_styles.py --update",
+  "version": 1
+}

@@ -1,21 +1,17 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
+{% from '_relation_summary.html' import relation_summary %}
 {% block title %}权限集 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header">
-<div>
-<p class="eyebrow">人员与授权</p>
-<h2>权限集</h2>
-<p class="muted">将经常一起使用的权限组合成可复用的集合，再关联到角色。</p>
-</div>
-{% if can_manage %}<a class="button" href="#set-create" data-open-form="set-create">新建权限集</a>{% endif %}
-</header>{% include '_access_flow.html' %}
+{% call page_header("人员与授权", "权限集", "将经常一起使用的权限组合成可复用的集合，再关联到角色。") %}{% if can_manage %}<a class="button" href="#set-create" data-open-form="set-create">新建权限集</a>{% endif %}{% endcall %}{% include '_access_flow.html' %}
 <section class="card">{% include '_search.html' %}
-<div class="table-wrap">
-<table class="management-table">
+{% include '_table_scroll_hint.html' %}
+<div class="table-wrap" role="region" aria-label="权限集列表表格区域" tabindex="0">
+<table class="management-table" aria-label="权限集列表表格">
 <thead>
 <tr>
 <th>权限集名称</th>
-<th>具体权限</th>
+<th>权限摘要</th>
 <th>使用情况</th>
 <th>操作</th>
 </tr>
@@ -25,10 +21,8 @@
 <td>
 <a class="permission-name" href="/console/access/permission-sets/{{ item.id }}">{{ item.name }}</a>
 </td>
-<td>{% if item.permission_count|default(0) %}{{ item.permission_count }} 项{% else %}
-<span class="badge neutral">待配置权限</span>{% endif %}
-</td>
-<td>{{ item.role_count|default(0) }} 个角色使用</td>
+<td>{{ relation_summary(item.permission_names|default([]), item.permission_count|default(0), '待配置权限') }}</td>
+<td>{{ relation_summary(item.role_names|default([]), item.role_count|default(0), '尚无角色使用') }}</td>
 <td>
 <div class="actions">
 <a href="/console/access/permission-sets/{{ item.id }}">查看内容与角色</a>

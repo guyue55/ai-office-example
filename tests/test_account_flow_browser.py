@@ -6,6 +6,7 @@ import threading
 import time
 from datetime import UTC, datetime
 
+import browser_errors
 import pytest
 import uvicorn
 from app.common.errors import DomainError
@@ -49,12 +50,13 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
         if name == "access.list" and payload["kind"] == "roles":
             return {
                 "items": [
+                    {"id": "employee-role", "name": "普通员工", "builtin_key": "employee"},
                     {
                         "id": "new-role",
                         "name": "新增查阅角色",
                         "permission_count": 2,
                         "employee_count": 0,
-                    }
+                    },
                 ],
                 "next": None,
                 "has_more": False,
@@ -66,6 +68,8 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
             selected[:] = payload["body"]["ids"]
             return {"id": "person", "version": 3}
         if name == "account.preview":
+            if payload["request"].get("name") == "关联失败测试":
+                raise DomainError(422, "unknown_link", "角色未登记，请重新选择")
             if payload["request"].get("username") == "taken01":
                 raise DomainError(409, "constraint_conflict", "账号信息已变更，请调整后核对")
             calls.append((name, payload))
@@ -121,10 +125,35 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                     ]
                 )
                 page = context.new_page()
-                errors = []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/accounts/new")
-                expect(page.locator('[name="default_role"]')).to_be_checked()
+                # 模拟工作区导入服务端内容：新DOM不会执行页面脚本。
+                page.locator("[data-account-role-picker]").evaluate(
+                    "node => { const copy = node.cloneNode(true); copy.querySelector('[data-role-refresh]').hidden = true; node.replaceWith(copy); }"
+                )
+                expect(page.get_by_role("button", name="刷新角色选项")).to_be_visible()
+                expect(page.locator('[name="default_role"]')).to_have_count(0)
+                expect(page.locator('[name="role_id"]')).to_have_value("")
+                page.locator('[name="role_id"]').select_option("new-role")
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.route(
+                    "**/console/accounts/role-options?*", lambda route: route.fulfill(status=503)
+                )
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色读取失败")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
+                page.route(
+                    "**/console/accounts/role-options?*",
+                    lambda route: route.fulfill(json={"items": [], "has_more": False}),
+                )
+                page.locator("[data-role-query]").fill("没有匹配")
+                page.get_by_role("button", name="搜索角色", exact=True).click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
                 page.locator('[name="name"]').fill("隔离测试人员")
                 page.locator('[name="username"]').fill("无效 账号")
                 page.get_by_role("button", name="核对开通信息").click()
@@ -135,6 +164,7 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 page.get_by_role("button", name="核对开通信息").click()
                 expect(page.get_by_role("heading", name="核对账号操作")).to_be_visible()
                 assert len(calls) == 1 and calls[0][0] == "account.preview"
+                assert calls[0][1]["request"]["role_ids"] == ["new-role"]
                 page.get_by_role("button", name="确认并提交", exact=True).click()
                 expect(page.get_by_role("heading", name="账号处理进度")).to_be_visible()
                 expect(page.locator("main")).to_contain_text("隔离操作已完成")
@@ -144,12 +174,22 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 assert calls[1][1]["request"] == calls[0][1]["request"]
                 # 关联已有账号仍先预览；不按显示姓名自动绑定。
                 page.goto(base + "/console/accounts/link?q=existing")
-                expect(page.locator('[name="default_role"]')).to_be_checked()
+                expect(page.locator('[name="default_role"]')).to_have_count(0)
                 assert len(calls) == 2
+                expect(page.get_by_role("button", name="核对关联", exact=True)).not_to_be_visible()
+                page.locator(".account-candidate-edit > summary").click()
+                page.locator('[name="role_id"]').select_option("new-role")
+                page.locator('[name="name"]').fill("关联失败测试")
+                page.get_by_role("button", name="核对关联", exact=True).click()
+                expect(page.locator("[data-server-form-error]")).to_contain_text("角色未登记")
+                expect(page.locator('[name="name"]')).to_have_value("关联失败测试")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.locator('[name="name"]').fill("待关联人员")
                 page.get_by_role("button", name="核对关联", exact=True).click()
                 expect(page.get_by_role("heading", name="核对账号操作")).to_be_visible()
                 assert calls[2][1]["request"]["kind"] == "link"
                 assert calls[2][1]["request"]["remote_id"] == "remote-person"
+                assert calls[2][1]["request"]["role_ids"] == ["new-role"]
                 page.get_by_role("button", name="确认并提交", exact=True).click()
                 expect(page.get_by_role("heading", name="账号处理进度")).to_be_visible()
                 assert calls[3][0] == "account.submit"
@@ -170,16 +210,62 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                 assert len(grants) == 1
                 assert set(grants[0]["body"]["ids"]) == {"outside", "new-role"}
                 assert grants[0]["body"]["version"] == 2
-                # 服务端拒绝预览也留在原表单，取消的默认授权选择不能被补回。
+                # 服务端拒绝预览也留在原表单，固定基础授权说明仍保留。
                 page.goto(base + "/console/accounts/new")
                 page.locator('[name="name"]').fill("保留已填姓名")
                 page.locator('[name="username"]').fill("taken01")
-                page.locator('[name="default_role"]').uncheck()
+                page.locator('[name="role_id"]').select_option("new-role")
                 page.get_by_role("button", name="核对开通信息").click()
                 expect(page.locator("[data-server-form-error]")).to_be_focused()
                 expect(page.locator('[name="name"]')).to_have_value("保留已填姓名")
                 expect(page.locator('[name="username"]')).to_have_value("taken01")
-                expect(page.locator('[name="default_role"]')).not_to_be_checked()
+                expect(page.locator('[name="default_role"]')).to_have_count(0)
+                assert len(calls) == 4
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                # 错误恢复后的原生重置仍应回到服务端恢复的角色，搜索不能改写重置基线。
+                page.route(
+                    "**/console/accounts/role-options?*",
+                    lambda route: route.fulfill(
+                        json={
+                            "items": [{"id": "new-role", "name": "新增查阅角色"}],
+                            "has_more": False,
+                        }
+                    ),
+                )
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                page.locator('[name="role_id"]').select_option("")
+                page.locator('[name="role_id"]').evaluate("node => node.form.reset()")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
+                # 原角色不在搜索结果且已切换当前选择时，也保留独立的重置基线。
+                page.route(
+                    "**/console/accounts/role-options?*",
+                    lambda route: route.fulfill(json={"items": [], "has_more": False}),
+                )
+                page.locator('[name="role_id"]').select_option("")
+                page.get_by_role("button", name="刷新角色选项").click()
+                expect(page.locator("[data-role-status]")).to_contain_text("角色选项已更新")
+                expect(page.locator('[name="role_id"]')).to_have_value("")
+                page.locator('[name="role_id"]').evaluate("node => node.form.reset()")
+                expect(page.locator('[name="role_id"]')).to_have_value("new-role")
+                page.unroute("**/console/accounts/role-options?*")
+                # 合成入口复用真实工作区拦截与加载，不依赖实例开户配置。
+                page.goto(base + "/console/employees")
+                page.evaluate(
+                    "() => { const a = document.createElement('a'); a.href = '/console/accounts/new'; a.textContent = '隔离开户入口'; document.querySelector('main').append(a); }"
+                )
+                page.get_by_role("link", name="隔离开户入口").click()
+                expect(page.locator("#workspace")).to_be_visible()
+                expect(page.locator("#workspace [data-role-refresh]")).to_be_visible()
+                page.locator('#workspace [name="role_id"]').select_option("new-role")
+                page.locator("#workspace [data-role-refresh]").click()
+                expect(page.locator("#workspace [data-role-status]")).to_contain_text(
+                    "角色选项已更新"
+                )
+                expect(page.locator('#workspace [name="role_id"]')).to_have_value("new-role")
+                page.locator('#workspace [name="role_id"]').evaluate("node => node.form.reset()")
+                expect(page.locator('#workspace [name="role_id"]')).to_have_value("")
                 assert len(calls) == 4
                 assert not errors
             finally:

@@ -51,3 +51,24 @@
 ## 内置PG的HTTP演示实例显式迁址（2026-10-27）
 
 迁址入口与边界见[维护文档](INSTANCE_RELOCATION.md)。维护／安装相关70项、临时PG迁址1项通过；全量离线597项通过，91项live排除。已实际备份并恢复两库及配置后重试成功，用户主体、角色／人员／项目／记录数量与映射摘要一致。新入口根路由与控制台跳转、健康、公开OIDC发现以及CLI匿名连接检查通过；原登录资料保留，旧会话结束。本人登录待现场确认，不混称为已验证当前员工身份。
+
+## 架构与 Web 双维度复核（2026-11-12）
+
+来源基线`304d8bb`，分支`dev`。逐页矩阵、被推翻的原判断、证据分级与未验范围见[双维度审查记录](AUDIT_2026-11-12.md)。本节只记录本轮直接证据与边界，不替代目标环境验收。
+
+- 业务码：AST全量扫描`office-data-service/app`，49种`(symbol,status)`组合中2种真缺口（`identity_claimed@409`、`invalid_request@422`）静默降级为500；按语义改抛错点符号后48种组合全部合法，`BAD combos: 0`。契约快照随之新增59行`409015`，`export_contracts.py --check`通过。
+- Web：仪表盘账号状态改为随`me.active`渲染；12处`.table-wrap`全部具备`role`/`tabindex`/`aria-label`（原3处缺失）。新增两条回归并做红-绿验证，能在旧代码上失败。
+- 门禁：非live回归761通过／147排除；Ruff检查与格式、mypy 137源文件、架构边界、能力覆盖60项、契约快照通过。浏览器目录巡视1项通过。
+- 未执行：147项live／postgres、真实OIDC与Keycloak开户、真实模型调用、Docker构建、移动真机与真人读屏器、CodeQL／gitleaks、Windows／Linux安装器、远程CI。未连接任何在用实例。
+- 复核同时推翻了原始报告的多项P0／P1定性（双表单共端点非权限旁路、无缺失Cache-Control、planned码零抛出、时区内嵌属显式策略），详见审查记录第四节。
+
+## 以 deepseek-harness 为范本的对比审查（2026-11-12）
+
+来源基线`1b6b498`，分支`dev`；DSH基线提交`e8f7b93a34`（`0.2.2-rc.2`）。对比结论与未验范围见[DSH对比审查记录](DSH_REFERENCE_2026-11-12.md)。本节只记录本轮直接证据与边界。
+
+- 新增样式规范门禁`scripts/check_ui_styles.py`，移植DSH四条不依赖渲染的规则（颜色字面量、未守卫`:hover`、非刻度圆角、`1px`中性边框），以`tests/expected/ui-style-baseline.json`实行双向锁定：新增违规失败，减少也要求同步收紧。已做两次红-绿验证（人为新增`#ff00ff`失败、清理后未收紧基线失败），现状态`UI_STYLES_OK`（101/26/38/58）。
+- 清理`styles.css`重复`:root`块：6个`--space-*`与令牌层完全重复，`--radius`全仓引用数为0，`--danger`迁入`design-tokens.css`。`var(--danger)`两处使用仍可解析，`--radius`定义已归零。
+- `.github/workflows/ci.yml`的`quality`job新增一行`check_ui_styles.py`；仅完成YAML解析验证（7个job齐全），**未推送、未触发远程CI**。
+- 门禁：`pytest tests/test_web_console.py`60通过；`ruff check`与`ruff format --check`通过；浏览器目录巡视1项通过；样式门禁通过。
+- 纠正上一轮一处判断：`capability_map.json`并非仅由检查脚本读取，`application/service.py:214`与`application/agent_tools.py:21`在运行时消费`transport_coverage()`，它是真实运行时契约。
+- 未执行：远程CI、付费模型、真实OIDC、Docker构建、移动真机与真人读屏器。未连接任何在用实例。

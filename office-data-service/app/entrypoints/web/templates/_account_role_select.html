@@ -1,0 +1,13 @@
+{% set selected_role = (form_values|default({})).get('role_id', '') %}
+<div data-account-role-picker>
+<label>初始角色<select name="role_id" data-role-select>
+<option value="" {% if not selected_role %}selected{% endif %}>普通员工（默认）</option>
+{% for role in (role_options|default({})).get('items', []) %}{% if role.builtin_key != 'employee' %}<option value="{{ role.id }}" {% if selected_role == role.id %}selected{% endif %}>{{ role.name }} · {{ role.permission_count|default(0) }} 项权限</option>{% endif %}{% endfor %}
+{% if selected_role and selected_role not in (role_options|default({})).get('items', [])|map(attribute='id')|list %}<option value="{{ selected_role }}" selected>先前选择（请搜索并核对角色）</option>{% endif %}
+</select></label>
+<p class="hint">默认关联内置普通员工角色，也可选择其他职责；所选角色替代默认角色，确认页展示实际权限。多个角色可在开通后通过授权管理调整。</p>
+<div class="actions"><a href="/console/roles#role-create" target="_blank" rel="noopener">新建并配置角色（新标签页）</a><button type="button" class="secondary" data-role-refresh hidden>刷新角色选项</button></div>
+<div data-role-search hidden><label>搜索角色<input type="search" maxlength="100" data-role-query placeholder="输入角色名称"></label><button type="button" class="secondary" data-role-search-button>搜索角色</button></div>
+<p class="muted" role="status" data-role-status>{% if (role_options|default({})).get('has_more') %}当前仅显示前100个角色，请搜索角色名称缩小范围。{% endif %}</p>
+<noscript><p class="muted">角色较多时可先使用默认角色开户，再通过授权管理搜索并调整；新建角色后重新打开本页更新选项。</p></noscript>
+</div>

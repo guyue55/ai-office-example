@@ -8,11 +8,12 @@ import threading
 import time
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import TEMPLATES
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from playwright.sync_api import expect, sync_playwright
 from ui_catalog import context
 
@@ -29,20 +30,13 @@ def ui_state():
     @app.get("/console/employees")
     async def listing(request: Request):
         value = context("employees.html")
-        value["pending"] = {
-            "items": [
-                {
-                    "id": "pending",
-                    "display_name": "合成待认领人员",
-                    "subject": "synthetic",
-                    "first_seen_at": None,
-                    "last_seen_at": None,
-                }
-            ]
-        }
+        value["pending"] = {"items": [], "pagination": {"total": 1}}
         if request.query_params.get("saved"):
             value["notice"] = "保存完成"
-        return TEMPLATES.TemplateResponse(request, "employees.html", value)
+        response = TEMPLATES.TemplateResponse(request, "employees.html", value)
+        # 通用草稿协议使用独立合成表单，避免依赖已迁出的业务队列。
+        editor = '<form method="post" action="/fixture/draft"><label>独立草稿<input class="draft-name" name="draft" value=""></label></form>'
+        return HTMLResponse(response.body.decode().replace("</main>", editor + "</main>"))
 
     @app.post("/console/employees/{identifier}/update")
     async def update(identifier: str):
@@ -58,6 +52,14 @@ def ui_state():
             await asyncio.sleep(0.01)
         value = context("links.html")
         value["assoc"]["ids"] = ["role"] if state["selected"] else []
+        if state.get("bulk_samples"):
+            value["candidates"] = [
+                {"id": "role", "name": "已选角色", "permission_count": 2, "employee_count": 1},
+                {"id": "second", "name": "候选角色", "permission_count": 1, "employee_count": 0},
+            ]
+            value["assoc"]["ids"] = ["role", "kept"]
+            value["preserved_items"] = [{"id": "kept", "name": "跨页保留角色"}]
+
         if request.query_params.get("saved"):
             value["notice"] = "保存完成"
         return TEMPLATES.TemplateResponse(
@@ -71,14 +73,44 @@ def ui_state():
         state["writes"] += 1
         return RedirectResponse("/console/links/employees/person/roles?saved=1", 303)
 
+    @app.get("/console/accounts/link")
+    async def link_account(request: Request):
+        value = context("account_link.html")
+        value["search"] = request.query_params.get("q", "")
+        value["found"] = {
+            "notice": "合成账号结果",
+            "items": [
+                {
+                    "id": "remote-one",
+                    "name": "候选人员",
+                    "username": "candidate",
+                    "email": "",
+                    "enabled": True,
+                    "linked_employee_id": None,
+                },
+            ],
+        }
+        return TEMPLATES.TemplateResponse(request, "account_link.html", value)
+
     @app.get("/console/accounts/new")
     async def new_account(request: Request):
+        if state.get("server_error"):
+            value = context("error.html")
+            value.update(
+                message="账号管理连接暂不可用，请联系管理员检查服务配置",
+                code="identity_unavailable",
+            )
+            return TEMPLATES.TemplateResponse(request, "error.html", value, status_code=503)
         return TEMPLATES.TemplateResponse(
             request,
             "account_new.html",
             context("account_new.html"),
             status_code=state.get("panel_status", 503) if state.get("panel_fail") else 200,
         )
+
+    @app.get("/console/dashboard")
+    async def dashboard(request: Request):
+        return TEMPLATES.TemplateResponse(request, "dashboard.html", context("dashboard.html"))
 
     @app.get("/console/roles")
     async def roles(request: Request):
@@ -193,6 +225,30 @@ def edit_name(page):
     page.locator("#record-dialog-content input[name=name]").fill("合成修改")
 
 
+def test_mobile_escape_closes_only_topmost_account_layer(ui_state):
+    page, state = ui_state
+    page.set_viewport_size({"width": 390, "height": 844})
+    navigation = page.locator("[data-navigation-toggle]")
+    menu = page.locator("[data-account-menu]")
+    navigation.click()
+    menu.locator("summary").click()
+    page.keyboard.press("Escape")
+    expect(menu).not_to_have_attribute("open", "")
+    expect(navigation).to_have_attribute("aria-expanded", "true")
+    expect(menu.locator("summary")).to_be_focused()
+    page.keyboard.press("Escape")
+    expect(navigation).to_have_attribute("aria-expanded", "false")
+    expect(navigation).to_be_focused()
+    navigation.click()
+    menu.locator("summary").click()
+    page.evaluate("() => { void OfficeUI.confirm('仅验证焦点',{title:'合成确认'}); }")
+    expect(page.locator("#action-confirm")).to_be_visible()
+    page.keyboard.press("Escape")
+    expect(page.locator("#action-confirm")).to_be_hidden()
+    expect(navigation).to_have_attribute("aria-expanded", "true")
+    assert state["writes"] == 0
+
+
 def test_save_preserves_shell_and_assistant_binding(ui_state):
     page, _ = ui_state
     page.evaluate(
@@ -213,32 +269,30 @@ def test_save_preserves_shell_and_assistant_binding(ui_state):
 
 def test_other_form_draft_checked_before_write(ui_state):
     page, state = ui_state
-    page.locator(".pending-queue > summary").click()
-    page.locator(".claim-name").fill("未保存的姓名")
+    page.locator(".draft-name").fill("未保存的姓名")
     page.locator("form[data-confirm-message] button[type=submit]").click()
     expect(page.locator("#confirm-title")).to_have_text("放弃未保存的修改？")
     page.locator("[data-confirm-cancel]").click()
     assert state["writes"] == 0
-    expect(page.locator(".claim-name")).to_have_value("未保存的姓名")
+    expect(page.locator(".draft-name")).to_have_value("未保存的姓名")
     page.locator("form[data-confirm-message] button[type=submit]").click()
     page.locator("[data-confirm-accept]").click()
     expect(page.locator("#confirm-description")).to_contain_text("确认停用")
     page.locator("[data-confirm-accept]").click()
-    expect(page.locator(".claim-name")).to_have_value("")
+    expect(page.locator(".draft-name")).to_have_value("")
     assert state["writes"] == 1
 
 
 def test_new_draft_during_write_defers_refresh(ui_state):
     page, state = ui_state
     state["delay"] = True
-    page.locator(".pending-queue > summary").click()
     page.locator("form[data-confirm-message] button[type=submit]").click()
     page.locator("[data-confirm-accept]").click()
     expect(page.locator("form[data-confirm-message]")).to_have_attribute("aria-busy", "true")
-    page.locator(".claim-name").fill("请求等待期间的新草稿")
+    page.locator(".draft-name").fill("请求等待期间的新草稿")
     state["release"] = True
     expect(page.locator("#ui-notifications")).to_contain_text("列表未自动刷新")
-    expect(page.locator(".claim-name")).to_have_value("请求等待期间的新草稿")
+    expect(page.locator(".draft-name")).to_have_value("请求等待期间的新草稿")
     assert state["writes"] == 1
 
 
@@ -478,8 +532,7 @@ def test_assistant_business_refresh_has_one_confirmation_per_draft(ui_state, ass
     )
     page.reload()
     expect(page.get_by_role("button", name="刷新业务页面", exact=True)).to_be_visible()
-    page.locator(".pending-queue > summary").click()
-    page.locator(".claim-name").fill("未保存的人员资料")
+    page.locator(".draft-name").fill("未保存的人员资料")
     if assistant_draft:
         page.locator("#assistant-input").fill("未发送的助手草稿")
     dialogs = []
@@ -493,7 +546,7 @@ def test_assistant_business_refresh_has_one_confirmation_per_draft(ui_state, ass
         page.locator("[data-confirm-accept]").click()
     page.wait_for_function("window.refreshProbe===undefined", timeout=3000)
     assert dialogs == []
-    expect(page.locator(".claim-name")).to_have_value("")
+    expect(page.locator(".draft-name")).to_have_value("")
 
 
 @pytest.mark.parametrize("target", ["navigation", "filter"])
@@ -664,5 +717,288 @@ def test_compact_dialog_failure_has_visible_retry(ui_state, status):
     expect(page.locator('#workspace-content input[name="username"]')).to_be_visible()
     expect(page.locator("#workspace-feedback")).to_be_empty()
     expect(retry).to_be_hidden()
+    page.get_by_role("button", name="关闭操作面板", exact=True).click()
+    assert state["writes"] == 0
+
+
+def test_compact_dialog_shows_bounded_server_reason_and_recovers(ui_state):
+    page, state = ui_state
+    state["server_error"] = True
+    page.get_by_role("link", name="新建员工", exact=True).click()
+    feedback = page.locator("#workspace-feedback")
+    expect(feedback).to_be_visible()
+    expect(feedback).to_contain_text("账号管理连接暂不可用")
+    expect(feedback).not_to_contain_text("工作台")
+    state["server_error"] = False
+    page.get_by_role("button", name="刷新配置", exact=True).click()
+    expect(page.locator('#workspace-content input[name="username"]')).to_be_visible()
+    expect(feedback).to_be_empty()
+    assert state["writes"] == 0
+
+
+def test_dashboard_cards_open_details_without_stacking_drawer(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/dashboard"))
+    permission = page.locator('[data-overview-open="my-permissions"]')
+    roles = page.locator('[data-overview-open="my-roles"]')
+    expect(page.locator("#my-permissions")).to_be_hidden()
+    expect(page.locator("#my-roles")).to_be_hidden()
+    permission.click()
+    dialog = page.locator("#record-dialog")
+    expect(dialog).to_be_visible()
+    expect(dialog.get_by_role("table")).to_be_visible()
+    expect(page.locator("dialog[open]")).to_have_count(1)
+    page.keyboard.press("Escape")
+    expect(permission).to_be_focused()
+    roles.click()
+    expect(dialog).to_be_visible()
+    link = dialog.get_by_role("link", name="查看配置", exact=True)
+    expect(link).to_be_visible()
+    expect(link).to_have_attribute("data-workspace-full", "")
+    page.wait_for_timeout(200)  # 观察增强重绘后，完整页面入口仍需可见。
+    expect(link).to_be_visible()
+    page.get_by_role("button", name="关闭详情", exact=True).click()
+    expect(roles).to_be_focused()
+    roles.click()
+    expect(dialog.get_by_role("table")).to_be_visible()
+    expect(page.locator("#workspace")).not_to_be_visible()
+    page.route(
+        "**/console/access/roles/*",
+        lambda route: route.fulfill(
+            status=200, content_type="text/html", body="<main>角色配置完整页面</main>"
+        ),
+    )
+    dialog.get_by_role("link", name="查看配置", exact=True).click()
+    expect(page).to_have_url(re.compile(r"/console/access/roles/"))
+    expect(page.locator("dialog[open]")).to_have_count(0)
+    plain = page.context.browser.new_context(java_script_enabled=False)
+    try:
+        fallback = plain.new_page()
+        fallback.goto(page.url.split("/console/")[0] + "/console/dashboard")
+        expect(fallback.locator("#my-roles table")).to_be_visible()
+        expect(fallback.locator("#my-permissions table")).to_be_visible()
+    finally:
+        plain.close()
+    assert state["writes"] == 0
+
+
+def test_long_table_dialog_keeps_close_visible_and_restores_focus(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/dashboard"))
+    trigger = page.locator('[data-overview-open="my-permissions"]')
+    for width, height in [(1440, 900), (390, 600), (844, 390)]:
+        page.set_viewport_size({"width": width, "height": height})
+        trigger.click()
+        dialog = page.locator("#record-dialog")
+        # 合成长表验证滚动容器，而非依赖当前账号恰好拥有大量权限。
+        page.locator("#record-dialog-content tbody").evaluate(
+            "body => { const row = body.firstElementChild; "
+            "while (body.children.length < 80) body.append(row.cloneNode(true)); }"
+        )
+        size = dialog.bounding_box()
+        assert size is not None
+        assert size["width"] <= width
+        assert size["height"] <= height * 0.85 + 1
+        if width == 1440:
+            assert size["width"] >= 900
+        content = page.locator("#record-dialog-content")
+        assert content.evaluate("el => el.scrollHeight > el.clientHeight")
+        content.evaluate("el => el.scrollTop = el.scrollHeight")
+        close = page.get_by_role("button", name="关闭详情", exact=True)
+        expect(close).to_be_in_viewport()
+        close.click()
+        expect(dialog).to_be_hidden()
+        expect(trigger).to_be_focused()
+    assert state["writes"] == 0
+
+
+def test_management_table_header_stays_sticky_for_long_lists(ui_state):
+    page, state = ui_state
+    page.goto(page.url)
+    table = page.locator(".management-table").first
+    expect(table).to_be_visible()
+    header = table.locator("thead th").first
+    assert header.evaluate("el => getComputedStyle(el).position") == "sticky"
+    assert header.evaluate("el => getComputedStyle(el).zIndex") == "1"
+    # 实际滚动长表，不把CSS声明当作布局行为已通过。
+    table.evaluate(
+        "table => { const body = table.tBodies[0]; "
+        "while (body.rows.length < 40) body.append(body.rows[0].cloneNode(true)); "
+        "table.parentElement.style.maxHeight = '240px'; }"
+    )
+    before = header.bounding_box()
+    table.evaluate("table => table.parentElement.scrollTop = 180")
+    after = header.bounding_box()
+    assert before is not None and after is not None
+    assert abs(before["y"] - after["y"]) <= 1
+    assert table.evaluate("table => table.parentElement.scrollTop") == 180
+    assert state["writes"] == 0
+
+
+def test_grant_page_selection_preserves_other_page_and_resets(ui_state):
+    page, state = ui_state
+    state["bulk_samples"] = True
+    page.goto(page.url.replace("/console/employees", "/console/links/employees/person/roles"))
+    bulk = page.get_by_role("checkbox", name="选择本页全部选项", exact=True)
+    expect(bulk).to_be_visible()
+    expect(bulk).to_have_js_property("indeterminate", True)
+    outside = page.locator('[name="id_kept"]')
+    expect(outside).to_be_checked()
+    bulk.check()
+    expect(page.locator('[name="id_second"]')).to_be_checked()
+    expect(page.locator("[data-selection-count]")).to_contain_text("本页已选 2 / 2 项")
+    bulk.uncheck()
+    expect(outside).to_be_checked()
+    expect(page.locator("[data-selection-count]")).to_contain_text("其他页或筛选外已选 1 项")
+    page.get_by_role("button", name="撤销本次修改", exact=True).click()
+    expect(page.locator('[name="id_role"]')).to_be_checked()
+    expect(page.locator('[name="id_second"]')).not_to_be_checked()
+    expect(bulk).to_have_js_property("indeterminate", True)
+    expect(page.locator("#grant-status")).to_have_text("当前没有未保存的修改。")
+    assert state["writes"] == 0
+
+
+def test_account_candidate_expands_only_when_selected(ui_state):
+    page, state = ui_state
+    page.goto(page.url.replace("/console/employees", "/console/accounts/link?q=candidate"))
+    editor = page.locator(".account-candidate-edit")
+    expect(editor.locator('input[name="name"]')).not_to_be_visible()
+    expect(page.get_by_text("候选人员 · candidate", exact=True)).to_be_visible()
+    editor.locator("summary").click()
+    expect(editor.locator('input[name="name"]')).to_have_value("候选人员")
+    expect(editor.locator('input[name="remote_id"]')).to_have_value("remote-one")
+    expect(editor.locator('input[name="lookup"]')).to_have_value("candidate")
+    expect(page.locator("dialog[open]")).to_have_count(0)
+    assert state["writes"] == 0
+
+
+def test_help_has_explicit_entry_and_focus(ui_state):
+    page, state = ui_state
+    help_link = page.get_by_role("link", name="授权配置帮助", exact=True)
+    help_link.click()
+    expect(page.locator("#record-dialog .flow")).to_be_visible()
+    expect(page.locator("dialog[open]")).to_have_count(1)
+    page.keyboard.press("Escape")
+    expect(help_link).to_be_focused()
+    expect(page.get_by_role("link", name="外部身份接入", exact=True)).to_have_count(0)
+    expect(page.locator('input[name="subject"]')).to_have_count(0)
+    assert state["writes"] == 0
+
+
+def test_desktop_navigation_collapse_persistence_tooltip_and_mobile(ui_state):
+    page, state = ui_state
+    errors = browser_errors.collect(page)
+    toggle = page.locator("[data-navigation-collapse]")
+    nav = page.locator(".shell-nav")
+    original_width = nav.bounding_box()["width"]
+    toggle.click()
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    assert nav.bounding_box()["width"] == 72
+    assert page.locator("main").bounding_box()["x"] == 72
+    link = nav.get_by_role("link", name="人员管理", exact=True)
+    link.focus()
+    tip = page.get_by_role("tooltip")
+    expect(tip).to_have_text("人员管理")
+    assert tip.bounding_box()["x"] >= link.bounding_box()["x"] + link.bounding_box()["width"]
+    tip.hover()
+    expect(tip).to_be_visible()
+    page.keyboard.press("Escape")
+    expect(tip).to_be_hidden()
+    menu = page.locator("[data-account-menu]")
+    menu.locator("summary").click()
+    panel = menu.locator(".account-panel")
+    expect(panel).to_be_visible()
+    assert panel.bounding_box()["x"] >= 72
+    assert panel.evaluate(
+        "n=>{const r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+20,r.y+20))}"
+    )
+    page.keyboard.press("Escape")
+    expect(menu.locator("summary")).to_be_focused()
+    page.reload()
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    assert nav.bounding_box()["width"] == 72
+    page.goto(page.url.rsplit("/console/", 1)[0] + "/console/dashboard")
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    proof = Path(__file__).resolve().parents[1] / "runtime/agent-research/navigation-ui"
+    proof.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(proof / "collapsed.png"))
+    page.set_viewport_size({"width": 390, "height": 800})
+    page.locator("[data-navigation-toggle]").click()
+    expect(link).to_be_visible()
+    assert link.locator("span").bounding_box()["width"] > 40
+    expect(toggle).to_be_hidden()
+    assert link.get_attribute("data-tooltip") is None
+    page.set_viewport_size({"width": 1440, "height": 1000})
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    toggle.click()
+    assert nav.bounding_box()["width"] == original_width
+    assert link.get_attribute("data-tooltip") is None
+    page.screenshot(path=str(proof / "expanded.png"))
+    page.locator("#assistant-launch").click()
+    expect(page.locator("#assistant-panel")).to_be_visible()
+    toggle.click()
+    assert page.locator("main").bounding_box()["x"] == 72
+    assert page.locator("html").evaluate("n=>n.scrollWidth<=innerWidth")
+    expect(page.locator("#assistant-panel")).to_be_visible()
+    assert state["writes"] == 0
+    assert not errors
+
+
+def test_navigation_storage_blocked_and_no_script_fallback(ui_state):
+    page, _ = ui_state
+    page.add_init_script(
+        "Object.defineProperty(window, 'localStorage', {get(){throw new Error('storage unavailable')}})"
+    )
+    page.reload()
+    toggle = page.locator("[data-navigation-collapse]")
+    toggle.click()
+    expect(toggle).to_have_attribute("aria-expanded", "false")
+    toggle.click()
+    expect(toggle).to_have_attribute("aria-expanded", "true")
+    plain = page.context.browser.new_context(java_script_enabled=False)
+    try:
+        fallback = plain.new_page()
+        fallback.goto(page.url)
+        expect(fallback.locator("[data-navigation-collapse]")).to_be_hidden()
+        expect(
+            fallback.locator(".shell-nav").get_by_role("link", name="人员管理", exact=True)
+        ).to_be_visible()
+    finally:
+        plain.close()
+
+
+def test_closed_panel_leaves_accessibility_tree_immediately(ui_state):
+    """关闭面板后旧内容必须立刻退出无障碍树。
+
+    退出动效让对话框在 ``close`` 事件（异步任务）跑完前继续渲染，
+    而读屏器与 role 查询读的是无障碍树。若不在关闭时同步设 ``aria-hidden``，
+    关闭与清空之间那一瞬旧内容仍可被定位到，并与背后页面出现同名元素。
+    """
+    page, state = ui_state
+    trigger = page.get_by_role("link", name="授权角色", exact=True)
+    trigger.click()
+    expect(page.locator("#workspace")).to_be_visible()
+    expect(page.locator("#workspace-content [data-grant-editor]")).to_be_visible()
+
+    # 关闭是异步函数，只让出微任务（远早于 Playwright 的下一个动作）就必须已撤出；
+    # 若等宏任务（如 close 事件）才算，就证明不了“关闭瞬间已不可见”。
+    closed = page.get_by_role("button", name="关闭操作面板", exact=True).evaluate(
+        """async node => {
+            node.click();
+            await Promise.resolve();
+            await Promise.resolve();
+            const content = document.querySelector('#workspace-content');
+            return content ? content.getAttribute('aria-hidden') : null;
+        }"""
+    )
+    assert closed == "true"
+
+    expect(page.locator("#workspace")).to_be_hidden()
+    expect(trigger).to_be_focused()
+
+    # 再次打开时必须恢复暴露，否则面板内容对读屏器永久不可见。
+    trigger.click()
+    expect(page.locator("#workspace")).to_be_visible()
+    expect(page.locator("#workspace-content")).not_to_have_attribute("aria-hidden", "true")
     page.get_by_role("button", name="关闭操作面板", exact=True).click()
     assert state["writes"] == 0

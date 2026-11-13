@@ -189,7 +189,7 @@ class Accounts:
                     require(
                         op.kind in ("create", "reset"),
                         422,
-                        "invalid_request",
+                        "invalid_input",
                         "此操作不能修改凭证方式",
                     )
                     command["mode"] = payload["mode"]

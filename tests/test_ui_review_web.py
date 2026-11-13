@@ -37,6 +37,7 @@ def test_employee_dashboard_uses_real_capabilities(web, permissions):  # noqa: F
     assert response.status_code == 200
     assert "管理我的客户端授权" in response.text
     assert ("开始使用智能助手" in response.text) == ("agent.run" in permissions)
+    assert ('class="assistant-launch-main"' in response.text) == ("agent.run" in permissions)
     assert "业务操作通过客户端技能使用" not in response.text
     assert "查看人员及角色" not in response.text
 
@@ -186,7 +187,7 @@ def test_detail_location_is_rendered_before_javascript(web, route):  # noqa: F81
     assert response.status_code == 200
     assert '<a href="/console/employees" class="active" aria-current="page">' in response.text
     title = "授权详情" if "/access/" in route else "授权关联"
-    assert f'<strong id="shell-current-page">{title}</strong>' in response.text
+    assert f'<strong id="shell-current-page" aria-current="page">{title}</strong>' in response.text
 
 
 @pytest.mark.parametrize("version,account", [(3, {"email": "old@example.invalid"}), (2, None)])
@@ -215,3 +216,33 @@ def test_update_confirmation_does_not_mix_stale_or_unknown_source(web, version, 
     )
     assert response.status_code == 409
     assert "account.submit" not in calls
+
+
+def test_applied_filters_remove_one_condition_and_reset_page():
+    import html
+    import re
+    from urllib.parse import parse_qs, urlsplit
+
+    request = Request(
+        {
+            "type": "http",
+            "scheme": "http",
+            "server": ("testserver", 80),
+            "path": "/console/client-authorizations",
+            "query_string": b"scope=all&state=disabled&since=2026-11-01&page=4&limit=20&actor=ignored",
+            "headers": [],
+        }
+    )
+    rendered = TEMPLATES.get_template("_filters.html").render(
+        request=request,
+        filter_mode="authorizations",
+        me={"permissions": ["session.read.all"]},
+    )
+    assert "移除授权状态筛选：已停用" in rendered
+    assert "移除操作者筛选" not in rendered
+    match = re.search(r'href="([^"]+)" aria-label="移除授权状态筛选', rendered)
+    assert match
+    params = parse_qs(urlsplit(html.unescape(match[1])).query)
+    assert "state" not in params and "page" not in params
+    assert params["scope"] == ["all"] and params["limit"] == ["20"]
+    assert params["since"] == ["2026-11-01"]

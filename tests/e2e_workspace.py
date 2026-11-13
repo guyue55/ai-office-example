@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from html.parser import HTMLParser
 from urllib.parse import urlencode
 
+import browser_errors
 from e2e_web_console import BASE, ROOT, login
 from playwright.sync_api import expect, sync_playwright
 
@@ -93,8 +94,7 @@ def main():
         )
         context = browser.new_context(viewport={"width": 1440, "height": 1000})
         page = context.new_page()
-        errors = []
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        errors = browser_errors.collect(page)
         login(page, "operator", password)
         # 员工已超过一页，用查询参数定位测试人员，不依赖其出现在首页
         page.goto(BASE + "/console/employees?" + urlencode({"q": "本地测试员工"}))

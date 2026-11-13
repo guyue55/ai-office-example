@@ -1,22 +1,18 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
 {% block title %}角色 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header">
-<div>
-<p class="eyebrow">人员与授权</p>
-<h2>角色</h2>
-<p class="muted">角色代表工作职责，组合已有权限集后分配给员工。同一员工可拥有多个角色。</p>
-</div>
-{% if can_manage %}<a class="button" href="#role-create" data-open-form="role-create">新建角色</a>{% endif %}
-</header>
+{% call page_header("人员与授权", "角色", "角色代表工作职责，组合已有权限集后分配给员工。同一员工可拥有多个角色。") %}{% if can_manage %}<a class="button" href="#role-create" data-open-form="role-create">新建角色</a>{% endif %}{% endcall %}
 <div class="hint">内置<a href="/console/roles?q=普通员工">普通员工角色</a>用于首次开通；<a href="/console/roles?q=人员与授权管理员">人员与授权管理员</a>需显式授予，能管理他人及自身授权，属于高信任职责。修改共享角色或权限集会影响所有关联员工，也影响之后的新员工；撤回员工角色后不会自动补回。</div>
 {% include '_access_flow.html' %}
 <section class="card">{% include '_search.html' %}
-<div class="table-wrap">
-<table class="management-table">
+{% include '_table_scroll_hint.html' %}
+<div class="table-wrap" role="region" aria-label="角色列表表格区域" tabindex="0">
+<table class="management-table" aria-label="角色列表表格">
 <thead>
 <tr>
 <th>角色名称</th>
+<th>类型</th>
 <th>权限集 / 权限</th>
 <th>关联人员</th>
 <th>操作</th>
@@ -25,8 +21,9 @@
 <tbody>{% for item in items %}
 <tr>
 <td>
-<a class="permission-name" href="/console/access/roles/{{ item.id }}">{{ item.name }}</a>{% if item.builtin_key %} <span class="badge neutral">内置{{ ' · 新员工默认' if item.builtin_key == 'employee' else '' }}</span>{% endif %}
+<a class="permission-name" href="/console/access/roles/{{ item.id }}">{{ item.name }}</a>
 </td>
+<td><span class="badge neutral">{{ '内置 · 新员工默认' if item.builtin_key == 'employee' else '内置' if item.builtin_key else '自定义' }}</span></td>
 <td>{{ item.permission_set_count|default(0) }} 个权限集 · {{ item.permission_count|default(0) }} 项权限{% if not item.permission_count|default(0) %}
 <div>
 <span class="badge neutral">尚无可用权限</span>
@@ -41,7 +38,7 @@
 </td>
 </tr>{% else %}
 <tr>
-<td colspan="4" class="empty">{% set empty_title = '暂无角色' %}{% set empty_description = '按工作职责建立角色；新建前请优先复用已有配置。' %}{% include '_list_empty.html' %}</td>
+<td colspan="5" class="empty">{% set empty_title = '暂无角色' %}{% set empty_description = '按工作职责建立角色；新建前请优先复用已有配置。' %}{% include '_list_empty.html' %}</td>
 </tr>{% endfor %}
 </tbody>
 </table>

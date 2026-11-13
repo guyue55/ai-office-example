@@ -1,0 +1,9 @@
+{# 页面任务模式：仅组织服务端已有信息，不承载业务状态或权限判断。 #}
+{% macro task_steps(labels, current) -%}
+<ol class="task-steps" aria-label="操作阶段">
+{% for label in labels %}<li{% if loop.index == current %} aria-current="step"{% endif %}><span aria-hidden="true">{{ loop.index }}</span>{{ label }}</li>{% endfor %}
+</ol>
+{%- endmacro %}
+{% macro fact(label, value, note='') -%}
+<div class="overview-fact"><dt>{{ label }}</dt><dd>{{ value }}</dd>{% if note %}<dd class="muted small">{{ note }}</dd>{% endif %}</div>
+{%- endmacro %}

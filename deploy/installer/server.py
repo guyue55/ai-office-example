@@ -126,6 +126,23 @@ def verify_phase():
             raise RuntimeError("身份服务未就绪")
         if response.json()["issuer"] != data["issuer"]:
             raise RuntimeError("身份公开地址不一致")
+        # 就绪和发现成功不能证明在线校验凭据与当前身份库配套。
+        introspection = data.get("token_introspection")
+        if not introspection:
+            raise RuntimeError("缺少在线身份校验配置，请核对身份初始化与恢复步骤")
+        secret_path = Path(introspection["client_secret_file"])
+        if not secret_path.is_absolute():
+            secret_path = ROOT / "service" / secret_path
+        probe = http.post(
+            "http://identity:8080/identity/realms/office/protocol/openid-connect/token/introspect",
+            data={
+                "token": "office-installation-invalid-token",
+                "client_id": introspection["client_id"],
+                "client_secret": secret_path.read_text().strip(),
+            },
+        )
+        if probe.status_code != 200 or probe.json().get("active") is not False:
+            raise RuntimeError("在线身份校验配置与身份库不匹配；请配套恢复数据库和秘密，未自动重置")
     context = ssl.create_default_context(
         cafile=str(ROOT / "service/ca.pem") if (ROOT / "service/ca.pem").exists() else None
     )

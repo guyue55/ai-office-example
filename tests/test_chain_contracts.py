@@ -123,3 +123,29 @@ def test_http_error_matrix_has_consistent_envelope(app, method, path, kwargs, st
                 assert "GET" in response.headers["Allow"]
 
     asyncio.run(run())
+
+
+def test_pending_http_pagination_and_query_rejection(app):
+    application = app.state.application
+    application.call.return_value = {
+        "items": [],
+        "pagination": {"page": 2, "page_size": 20, "total": 21, "pages": 2, "start": 0, "end": 0},
+    }
+
+    async def run():
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://testserver",
+            headers={"Authorization": "Bearer synthetic"},
+        ) as client:
+            response = await client.get("/api/v2/pending-identities?page=2&limit=20&q=synthetic")
+            assert response.status_code == 200
+            assert response.json()["data"]["pagination"]["total"] == 21
+            assert application.call.call_args.args[2] == {"page": 2, "limit": 20, "q": "synthetic"}
+            application.call.reset_mock()
+            for query in ("page=0", "limit=101", "q=a&q=b", "after=x"):
+                response = await client.get("/api/v2/pending-identities?" + query)
+                assert response.status_code == 422
+            application.call.assert_not_awaited()
+
+    asyncio.run(run())

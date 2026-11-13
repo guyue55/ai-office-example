@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+import browser_errors
 from e2e_web_console import BASE, login
 from playwright.sync_api import expect, sync_playwright
 
@@ -19,8 +20,7 @@ def main():
         )
         context = browser.new_context(viewport={"width": 1440, "height": 1000})
         page = context.new_page()
-        errors = []
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        errors = browser_errors.collect(page)
         # 站内操作不应触发浏览器原生确认；系统级离页提醒单独保留。
         page.on(
             "dialog",

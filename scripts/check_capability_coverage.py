@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from app.application.commands import OPERATION_INPUTS
+from app.application.contracts import OPERATION_OUTPUTS
 from app.entrypoints.mcp.validation import TOOL_INPUTS
 from app.modules.access.change_contracts import Change
 from app.modules.data.change_contracts import DataChange
@@ -19,6 +20,17 @@ def check():
     path = ROOT / "office-data-service/app/application/capability_map.json"
     rows = json.loads(path.read_text(encoding="utf-8"))
     assert set(rows) == set(OPERATION_INPUTS), set(rows) ^ set(OPERATION_INPUTS)
+    # 输出契约必须覆盖每个已登记操作，否则该操作的响应在跨协议校验时没有模型。
+    # access.list 按 payload["kind"] 动态选模型（contracts.validate_output），
+    # 故以 ACCESS_PAGES 计入，不进静态表。
+    outputs = set(OPERATION_OUTPUTS) | (
+        {"access.list"} if "access.list" in OPERATION_INPUTS else set()
+    )
+    assert outputs == set(OPERATION_INPUTS), (
+        "输出契约与输入契约不一致",
+        sorted(set(OPERATION_INPUTS) - outputs),
+        sorted(outputs - set(OPERATION_INPUTS)),
+    )
     tree = ast.parse(
         (ROOT / "office-data-service/app/entrypoints/mcp/server.py").read_text(encoding="utf-8")
     )

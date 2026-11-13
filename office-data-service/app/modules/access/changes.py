@@ -46,7 +46,12 @@ class Changes:
                 "issuer_mismatch",
                 "只能认领本实例信任的身份来源",
             )
-            before = {"pending_id": pending.id, "display_name": pending.display_name}
+            before = {
+                "pending_id": pending.id,
+                "display_name": pending.display_name,
+                "issuer": pending.issuer,
+                "subject": pending.subject,
+            }
             after = dict(payload)
             if payload["assign_default_role"]:
                 role = await default_role(self.access.db)

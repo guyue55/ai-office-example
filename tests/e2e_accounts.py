@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from uuid import uuid4
 
+import browser_errors
 import httpx
 from conftest import MemoryStore
 from e2e_web_console import BASE, ROOT, complete_login, login
@@ -28,7 +29,7 @@ def main():
         )
         admin = browser.new_context(viewport={"width": 1440, "height": 1000})
         page = admin.new_page()
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        errors = browser_errors.collect(page)
         login(page, "operator", operator_password)
         page.goto(BASE + "/console/employees")
         page.get_by_role("link", name="新建员工", exact=True).click()
@@ -71,7 +72,7 @@ def main():
         worker.locator("#password-new").fill(new_password)
         worker.locator("#password-confirm").fill(new_password)
         worker.locator("#kc-submit").click()
-        expect(worker.locator("main h2")).to_have_text("仪表盘")
+        expect(worker.locator("main h1")).to_have_text("仪表盘")
         expect(worker.locator("main")).to_contain_text("上报项目数据")
         worker.screenshot(path=str(proof / "first-login.png"))
         print("FIRST_LOGIN_OK", flush=True)
@@ -84,14 +85,14 @@ def main():
         worker.locator("#password-new").fill(changed_password)
         worker.locator("#password-confirm").fill(changed_password)
         worker.locator("#kc-submit").click()
-        expect(worker.locator("main h2")).to_have_text("账号与安全")
+        expect(worker.locator("main h1")).to_have_text("账号与安全")
         expect(worker.locator("main")).to_contain_text("不将回跳视为密码已修改的证明")
 
         # 新浏览器用新密码登录，避免SSO掩盖改密没有生效。
         probe_context = browser.new_context()
         probe = probe_context.new_page()
         login(probe, username, changed_password)
-        expect(probe.locator("main h2")).to_have_text("仪表盘")
+        expect(probe.locator("main h1")).to_have_text("仪表盘")
         probe_context.close()
         urls, token_store = Queue(), MemoryStore()
         client = OfficeClient(BASE, store=token_store, browser_open=urls.put)
@@ -142,15 +143,15 @@ def main():
                 print("OLD_ACCESS_AND_REFRESH_REJECTED", flush=True)
                 worker.goto(BASE + "/console/dashboard")
                 assert (
-                    worker.locator("main h2").count() == 0
-                    or worker.locator("main h2").inner_text() != "仪表盘"
+                    worker.locator("main h1").count() == 0
+                    or worker.locator("main h1").inner_text() != "仪表盘"
                 )
             if kind == "停用账号":
                 worker.goto(BASE + "/console/dashboard")
                 # BFF已失效或访问被停用，不能继续看到业务页面。
                 assert (
-                    worker.locator("main h2").count() == 0
-                    or worker.locator("main h2").inner_text() != "仪表盘"
+                    worker.locator("main h1").count() == 0
+                    or worker.locator("main h1").inner_text() != "仪表盘"
                 )
         page.goto(operation_url)
         expect(page.locator("main")).to_contain_text("处理完成")

@@ -1,59 +1,27 @@
 {% extends 'base.html' %}
+{% from '_page_header.html' import page_header %}
+{% from '_relation_summary.html' import relation_summary %}
 {% block title %}人员管理 · {{ product.short_name }}{% endblock %}
 {% block content %}
-<header class="page-header">
-<div>
-<p class="eyebrow">人员与授权</p>
-<h2>人员管理</h2>
-<p class="muted">统一维护员工、登录账号与角色；新建员工可一次完成开户和基础授权。</p>
+{% call page_header("人员与授权", "人员管理", "统一维护员工、登录账号与角色；新建员工可一次完成开户和基础授权。") %}
+<div class="actions">
+{% if accounts_enabled and 'identity.read' in me.permissions %}{% if 'identity.create' in me.permissions and can_manage %}<a class="button" href="/console/accounts/new">新建员工</a>{% endif %}{% if can_manage %}<a class="button secondary" href="/console/accounts/link">关联已有账号</a>{% endif %}{% endif %}
+
 </div>
-{% if accounts_enabled and 'identity.read' in me.permissions %}<div class="actions">{% if 'identity.create' in me.permissions and can_manage %}<a class="button" href="/console/accounts/new">新建员工</a>{% endif %}{% if can_manage %}<a class="button secondary" href="/console/accounts/link">关联已有账号</a>{% endif %}</div>{% endif %}
-</header>
+{% endcall %}
 {% include '_access_flow.html' %}
-{% if can_manage and pending %}
-<details class="card pending-queue">
-<summary>待认领登录 <span class="badge neutral">{{ pending["items"]|length }} 人</span><span class="pending-hint">展开认领并开通</span></summary>
-<p class="muted">以下账号已通过统一登录访问过本系统，但还没有对应的业务人员。时间为北京时间。确认姓名后点「认领并开通」。默认角色提供项目字段查阅、上报和本人数据维护；取消勾选则仅绑定身份。</p>
-<div class="table-wrap">
-<table class="management-table">
-<thead>
-<tr><th>登录显示名</th><th>登录标识</th><th>首次访问</th><th>最近访问</th><th>操作</th></tr>
-</thead>
-<tbody>
-{# dict 的 .items 会命中内建方法而非键，统一用下标取键，避免渲染期 TypeError #}
-{% for row in pending["items"] %}
-<tr>
-<td>{{ row.display_name }}</td>
-<td><span class="code small muted">{{ row.subject[:16] }}{% if row.subject|length > 16 %}…{% endif %}</span></td>
-<td>{{ row.first_seen_at|business_time if row.first_seen_at }}</td>
-<td>{{ row.last_seen_at|business_time if row.last_seen_at }}</td>
-<td>
-<form class="inline" method="post" action="/console/employees/claim">
-<input type="hidden" name="csrf" value="{{ csrf }}">
-<input type="hidden" name="pending_id" value="{{ row.id }}">
-<input class="claim-name" type="text" name="name" required maxlength="100" placeholder="业务姓名" aria-label="认领后的业务姓名">
-<label><input type="checkbox" name="assign_default_role" checked>授予普通员工角色</label>
-<button type="submit">认领并开通</button>
-</form>
-</td>
-</tr>
-{% else %}
-<tr><td colspan="5" class="empty">暂无待认领登录。新同事登录后这里会出现记录。</td></tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-</details>
-{% endif %}
+
 <section class="card">{% include '_search.html' %}
-<div class="table-wrap">
-<table class="management-table">
+{% include '_table_scroll_hint.html' %}
+<div class="table-wrap" role="region" aria-label="人员列表表格区域" tabindex="0">
+<table class="management-table" aria-label="人员列表表格">
 <thead>
 <tr>
 <th>姓名</th>
 <th>登录账号</th>
 <th>状态</th>
-<th>授权配置</th>
+<th>已关联角色</th>
+<th>账号维护</th>
 <th>操作</th>
 </tr>
 </thead>
@@ -67,9 +35,8 @@
 <td>
 <span class="badge {{ 'on' if item.active else 'off' }}">{{ item.account_status or ('启用' if item.active else '停用') }}</span>
 </td>
-<td>{% if item.role_count|default(0) %}已关联 {{ item.role_count }} 个角色{% else %}
-<span class="badge neutral">未配置角色</span>{% endif %}
-</td>
+<td>{{ relation_summary(item.role_names|default([]), item.role_count|default(0), '未配置角色') }}</td>
+<td><span class="small" tabindex="0" data-tooltip="{{ '可在本系统维护登录资料与凭证；实际操作仍须核验权限。' if item.managed else '已绑定的身份；凭证由原身份管理渠道维护。' }}">{{ '本系统维护' if item.managed else '外部绑定' }}</span></td>
 <td>
 <div class="actions">
 {% if accounts_enabled and 'identity.read' in me.permissions %}<a href="/console/accounts/employees/{{ item.id }}">账号详情</a>{% endif %}
@@ -98,32 +65,11 @@
 </td>
 </tr>{% else %}
 <tr>
-<td colspan="5" class="empty">{% set empty_title = '暂无人员' %}{% set empty_description = '开通员工后，可在这里维护账号与角色。' %}{% include '_list_empty.html' %}</td>
+<td colspan="6" class="empty">{% set empty_title = '暂无人员' %}{% set empty_description = '开通员工后，可在这里维护账号与角色。' %}{% include '_list_empty.html' %}</td>
 </tr>{% endfor %}
 </tbody>
 </table>
 </div>{% include 'pagination.html' %}
 </section>
-{% if can_manage %}
-<details class="card" data-form-dialog>
-<summary>高级：直接绑定登录标识</summary>
-<p>仅当对方还没登录过系统时才需要手动绑定：请对方先完成一次受控登录（出现「待认领登录」最简单），或从身份系统复制登录标识。</p>
-<p class="muted">这里不创建账号或设置密码。「登录标识」是身份系统提供的用户 ID，请勿填写姓名或随意编写。</p>
-<form class="form-stack" method="post" action="/console/employees/new">
-<input type="hidden" name="csrf" value="{{ csrf }}">
-<div class="field">
-<label for="employee-name">员工显示姓名</label>
-<input id="employee-name" type="text" name="name" required maxlength="100" autocomplete="off">
-</div>
-<div class="field">
-<label for="employee-subject">身份系统用户 ID（subject）</label>
-<input id="employee-subject" type="text" name="subject" required maxlength="100" autocomplete="off">
-<span class="muted">请从受信任身份系统的用户详情中复制，绑定后不可在此修改。</span>
-</div>
-<div>
-<label><input type="checkbox" name="assign_default_role" checked>授予普通员工角色（取消则仅绑定）</label>
-<button type="submit">绑定并开通</button>
-</div>
-</form>
-</details>{% endif %}
+
 {% endblock %}

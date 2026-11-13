@@ -2,9 +2,10 @@
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.common.inputs import DateRangeInput, IdentifierInput, Input, NumberedListInput
+from app.common.text import TITLE_MAX_CHARS, normalize_title
 
 RunStatus = Literal[
     "queued",
@@ -55,13 +56,35 @@ class RunCancel(IdentifierInput):
     version: int = Field(ge=1, strict=True)
 
 
+def _title(value):
+    """标题一律先清洗再校验：转义、控制符、方向符与孤立代理项不得入库。
+
+    清洗后为空则拒绝（等价于原来的"必须含非空白字符"），由调用方换成默认文案。
+    """
+    if isinstance(value, str):
+        value = normalize_title(value)
+        if not value:
+            raise ValueError("标题不能为空或仅含不可见字符")
+    return value
+
+
 class ConversationCreate(Input):
-    title: str = Field(default="新会话", min_length=1, max_length=100)
+    title: str = Field(default="新会话", min_length=1, max_length=TITLE_MAX_CHARS)
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def clean_title(cls, value):
+        return _title(value)
 
 
 class ConversationRename(IdentifierInput):
     version: int = Field(ge=1, strict=True)
-    title: str = Field(min_length=1, max_length=100, pattern=r"\S")
+    title: str = Field(min_length=1, max_length=TITLE_MAX_CHARS, pattern=r"\S")
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def clean_title(cls, value):
+        return _title(value)
 
 
 class ConversationList(NumberedListInput):

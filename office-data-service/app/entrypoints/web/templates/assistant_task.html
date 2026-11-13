@@ -1,11 +1,13 @@
 {% extends 'base.html' %}{% block title %}任务详情 · {{ product.short_name }}{% endblock %}
+{% from '_page_header.html' import page_header %}
 {% block content %}
-<header class="page-header"><div><p class="eyebrow">我的工作 · 智能助手</p><h2>任务详情</h2><p class="muted"><span class="badge {{ 'on' if task.status == 'completed' and not (task.result and task.result.outcome_unknown) else 'neutral' }}">{{ statuses['outcome_unknown'] if task.result and task.result.outcome_unknown else statuses[task.status] }}</span> · 更新于 {{ task.updated_at|business_time }}</p></div><div><a href="/console/assistant">返回任务列表</a> <a class="button secondary" href="/console/assistant/{{ task.id }}">刷新进度</a></div></header>
+{% set task_summary %}<span class="badge {{ 'on' if task.status == 'completed' and not (task.result and task.result.outcome_unknown) else 'neutral' }}">{{ statuses['outcome_unknown'] if task.result and task.result.outcome_unknown else statuses[task.status] }}</span> · 更新于 {{ task.updated_at|business_time }}{% endset %}
+{% call page_header("我的工作 · 智能助手", "任务详情", task_summary) %}<div><a href="/console/assistant">返回任务列表</a> <a class="button secondary" href="/console/assistant/{{ task.id }}">刷新进度</a></div>{% endcall %}<nav class="page-toc" aria-label="任务详情分区"><a href="#task-request">任务要求</a>{% if task.pending %}<a href="#task-decision">核对并决定</a>{% endif %}</nav>
 {% set outcome = 'outcome_unknown' if task.result and task.result.outcome_unknown else task.status %}
 <p class="{{ 'hint' if outcome in ['failed','interrupted','outcome_unknown'] else 'task-state' }}" role="status">{{ assistant_outcomes[outcome] }}</p>
-<section class="card"><h3>任务要求</h3><p class="assistant-text">{{ task.prompt }}</p><p class="muted small">任务编号：{{ task.id }}</p></section>
+<section class="card page-section" id="task-request"><h2>任务要求</h2><p class="assistant-text">{{ task.prompt }}</p><p class="muted small">任务编号：{{ task.id }}</p></section>
 {% if task.status in ['interrupted','outcome_unknown'] or (task.result and task.result.outcome_unknown) %}<p class="hint" role="alert">任务未自动恢复。请核对已有回执和数据实际状态，避免重复写入；如需继续，请在确认后发起新的任务。</p>{% endif %}
-{% if task.pending %}<section class="card"><h3>需要您确认的操作</h3><p>操作：{{ operations.get(task.pending.operation, task.pending.operation) }}</p><p class="hint">以下为服务器保存的完整预览。批准仅适用于本次操作，后续写入仍需分别确认。</p>
+{% if task.pending %}<section class="card security-section page-section" id="task-decision"><h2>需要您确认的操作</h2><p>操作：{{ operations.get(task.pending.operation, task.pending.operation) }}</p><p class="hint">以下为服务器保存的完整预览。批准仅适用于本次操作，后续写入仍需分别确认。</p>
 <div id="task-preview-summary"></div>
 <script type="application/json" id="task-preview-data">{{ task.pending|tojson }}</script>
 <details open><summary>完整服务器预览</summary><pre class="assistant-json">{{ task.pending.preview|tojson(indent=2) }}</pre></details><details><summary>查看操作参数</summary><pre class="assistant-json">{{ task.pending.arguments|tojson(indent=2) }}</pre></details>
@@ -15,7 +17,7 @@
 <label>您的决定 <select name="decision" required><option value="">请选择</option><option value="deny">拒绝本次操作</option><option value="approve">批准本次操作</option></select></label><div><button type="submit">提交决定</button></div></form>
 {% else %}<p role="status">决定已记录或停止请求已提交，等待执行器处理。</p>{% endif %}</section>{% endif %}
 {% if task.result %}{% include '_assistant_result.html' %}{% endif %}
-{% if task.status in ['queued','running','awaiting_confirmation'] and not task.cancel_requested %}<section class="card"><form method="post" action="/console/assistant/{{ task.id }}/cancel" data-native-submit data-confirm-message="停止后不会撤回已完成的操作，是否继续？"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ task.version }}"><button class="secondary" type="submit">停止任务</button></form></section>{% endif %}
+{% if task.status in ['queued','running','awaiting_confirmation'] and not task.cancel_requested %}<p class="muted small">{{ '页面每 5 秒核对一次任务进度。' if task.status in ['queued','running'] else '请核对预览后提交决定。' }}离开本页不会停止任务，结果仍会保存。</p><section class="card"><form method="post" action="/console/assistant/{{ task.id }}/cancel" data-native-submit data-confirm-message="停止后不会撤回已完成的操作，是否继续？"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ task.version }}"><button class="secondary" type="submit">停止任务</button></form></section>{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -25,4 +27,20 @@
   if(host&&data&&window.OfficeAssistant?.view)host.append(window.OfficeAssistant.view.preview(JSON.parse(data.textContent)));
 })();
 </script>
+{% if task.status in ['queued','running'] and not task.cancel_requested %}
+<script>
+// 任务详情本身不自动更新，用户会一直看到「正在处理」；按固定间隔复核一次实际状态。
+// 只在 queued/running 时输出：awaiting_confirmation 正等本人核对预览，刷新会打断阅读与决定。
+(() => {
+  let asking = false;
+  const timer = setInterval(async () => {
+    // 上一轮刷新仍在确认或导航中时不再叠加，否则会连续弹出多个确认框。
+    if (asking || document.visibilityState !== 'visible') return;
+    asking = true;
+    try {await window.OfficeUI?.reloadPage?.();} finally {asking = false;}
+  }, 5000);
+  window.addEventListener('pagehide', () => clearInterval(timer));
+})();
+</script>
+{% endif %}
 {% endblock %}

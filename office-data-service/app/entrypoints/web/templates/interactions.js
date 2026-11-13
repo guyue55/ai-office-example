@@ -45,7 +45,7 @@
   }
   // 保留原生文本作为无脚本回退；增强时同时保留读屏名称。
   function iconAction(control) {
-    if (control.hasAttribute('data-icon-action')) return;
+    if (control.hasAttribute('data-icon-action') || control.hasAttribute('data-keep-label')) return;
     if (control.tagName !== 'SUMMARY' && control.closest('details')) return;
     const label = control.textContent.trim();
     if (!label) return;
@@ -130,13 +130,22 @@
     tipTarget = null;
     if (tip.matches(':popover-open')) tip.hidePopover();
   }
+  document.addEventListener('office:navigation-resized',hideTip);
   function validTip(target) {
     return target?.dataset.tooltip && target.isConnected && !target.disabled && !dismissedTips.has(target) && !!target.getClientRects().length;
   }
   function placeTip(target) {
     const rect = target.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
-    tip.style.left = Math.max(8, Math.min(innerWidth-width-8, rect.x+rect.width/2-width/2)) + 'px';
-    tip.style.top = Math.max(8,Math.min(innerHeight-height-8,rect.top > height+12 ? rect.top-height-8 : rect.bottom+8)) + 'px';
+    let left=rect.x+rect.width/2-width/2, top=rect.top-height-8;
+    if(target.dataset.tooltipPlacement==='right'){left=rect.right+8;top=rect.top+(rect.height-height)/2;}
+    // 顶部工具栏上方不足时先放侧面，避免提示覆盖下一行按钮。
+    if(top<8){
+      if(rect.left-width-8>=8){left=rect.left-width-8;top=rect.top+(rect.height-height)/2;}
+      else if(rect.right+width+8<=innerWidth-8){left=rect.right+8;top=rect.top+(rect.height-height)/2;}
+      else top=rect.bottom+8;
+    }
+    tip.style.left=Math.max(8,Math.min(innerWidth-width-8,left))+'px';
+    tip.style.top=Math.max(8,Math.min(innerHeight-height-8,top))+'px';
   }
   function syncTip() {
     clearTimeout(tipHideTimer);
@@ -220,6 +229,8 @@
       holder.querySelectorAll('form').forEach(form => form.reset());
     }
     dialog.close();
+    // 与共用操作面板同理：关闭事件是异步任务，退出动效期间仍会渲染。
+    holder.setAttribute('aria-hidden', 'true');
   }
   dialog.querySelector('[data-record-close]').addEventListener('click', closeRecord);
   dialog.addEventListener('cancel', event => { event.preventDefault(); closeRecord(); });
@@ -235,12 +246,15 @@
     hideTip();
     const action = event.target.closest('[data-focus-key]');
     if (action) lastFocusKey = action.dataset.focusKey;
-    const summary = event.target.closest('details > summary');
-    if (!summary || !(summary.closest('tbody') || (summary.closest('#workspace') && summary.parentElement.hasAttribute('data-form-dialog')))) return;
+    const overview = event.target.closest('[data-overview-open]');
+    if(overview&&(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey))return;
+    const sourceDetail = overview && document.getElementById(overview.dataset.overviewOpen);
+    const summary = sourceDetail?.matches('details[data-overview-detail]') ? sourceDetail.querySelector(':scope > summary') : event.target.closest('details > summary');
+    if (!summary || !(summary.parentElement.hasAttribute('data-overview-detail') || summary.closest('tbody') || (summary.closest('#workspace') && summary.parentElement.hasAttribute('data-form-dialog')))) return;
     if (dialog.open) return;
     event.preventDefault(); event.stopImmediatePropagation();
     const source = summary.parentElement;
-    local = {source, trigger:summary};
+    local = {source, trigger:overview || summary};
     lastFocusKey = summary.dataset.focusKey;
     heading.textContent = summary.getAttribute('aria-label') || summary.textContent.trim();
     holder.replaceChildren(...Array.from(source.childNodes).filter(node => node !== summary));
@@ -248,6 +262,7 @@
       window.OfficeForms.remember(form);
       if ((form.getAttribute('action') || '').includes('/client-authorizations/')) form.dataset.asyncDialog = '';
     });
+    holder.removeAttribute('aria-hidden');
     dialog.showModal(); document.body.classList.add('record-open'); heading.focus();
   }, true);
   const restoreFocus = () => {
@@ -261,9 +276,14 @@
     const previous=document.activeElement;
     heading.textContent=title;holder.replaceChildren(content);
     dialog.addEventListener('close',()=>{holder.replaceChildren();previous?.isConnected&&previous.focus({preventScroll:true});},{once:true});
+    holder.removeAttribute('aria-hidden');
     dialog.showModal();heading.focus();return true;
   }
   window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present, icon, decorateIcon, iconButton, pickerOpen};
+  document.querySelectorAll('[data-overview-open]').forEach(control=>{
+    control.setAttribute('aria-haspopup','dialog');
+    control.setAttribute('aria-controls','record-dialog');
+  });
   enhance(document);
   let pending = false;
   new MutationObserver(records => {

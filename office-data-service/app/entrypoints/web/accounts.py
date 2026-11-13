@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 from fastapi import Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import ValidationError
 
 from app.common.errors import DomainError, log_rejection, require, validation_error
@@ -34,6 +34,16 @@ def register_accounts(
             "当前职责没有此操作权限",
         )
         return me
+
+    async def role_options(request, q=""):
+        # 复用受控列表与分页预算；默认角色由领域层按内置键解析。
+        return await operate(request, "access.list", {"kind": "roles", "limit": 100, "q": q})
+
+    @router.get("/console/accounts/role-options")
+    async def refresh_roles(request: Request, q: str = ""):
+        await permission(request, "access.manage", "identity.read")
+        require(len(q) <= 100, 422, "invalid_input", "角色搜索词不能超过100字")
+        return JSONResponse(await role_options(request, q), headers={"Cache-Control": "no-store"})
 
     async def preview(request, command, key=None, target=None):
         result = await operate(request, "account.preview", {"request": command})
@@ -66,7 +76,13 @@ def register_accounts(
         await permission(request, "identity.create", "access.manage", "identity.read")
         capability = await operate(request, "account.capabilities")
         require(capability["enabled"], 503, "identity_unavailable", "账号管理尚未配置")
-        return await render(request, "account_new.html", capability=capability, key=uuid4().hex)
+        return await render(
+            request,
+            "account_new.html",
+            capability=capability,
+            key=uuid4().hex,
+            role_options=await role_options(request),
+        )
 
     @router.post("/console/accounts/new")
     async def create_preview(request: Request):
@@ -80,7 +96,7 @@ def register_accounts(
                     "name": str(form.get("name", "")),
                     "username": str(form.get("username", "")),
                     "email": str(form.get("email", "")),
-                    "role_ids": None if form.get("default_role") == "on" else [],
+                    "role_ids": [str(form["role_id"])] if form.get("role_id") else None,
                     "mode": str(form.get("mode", "temporary")),
                 },
                 str(form.get("key", "")),
@@ -95,9 +111,14 @@ def register_accounts(
             require(capability["enabled"], 503, "identity_unavailable", "账号管理尚未配置")
             values: dict[str, str | bool] = {
                 key: str(form.get(key, ""))[:limit]
-                for key, limit in (("name", 100), ("username", 64), ("email", 254), ("mode", 20))
+                for key, limit in (
+                    ("name", 100),
+                    ("username", 64),
+                    ("email", 254),
+                    ("mode", 20),
+                    ("role_id", 100),
+                )
             }
-            values["default_role"] = form.get("default_role") == "on"
             response = await render(
                 request,
                 "account_new.html",
@@ -105,6 +126,7 @@ def register_accounts(
                 key=str(form.get("key", ""))[:128] or uuid4().hex,
                 form_values=values,
                 form_error=error.message,
+                role_options=await role_options(request),
             )
             response.status_code = error.status
             response.headers["Cache-Control"] = "no-store"
@@ -115,7 +137,13 @@ def register_accounts(
     async def link_accounts(request: Request, q: str = ""):
         await permission(request, "access.manage", "identity.read")
         found = await operate(request, "account.search", {"q": q}) if q else None
-        return await render(request, "account_link.html", found=found, search=q)
+        return await render(
+            request,
+            "account_link.html",
+            found=found,
+            search=q,
+            role_options=await role_options(request),
+        )
 
     @router.post("/console/accounts/link")
     async def link_preview(request: Request):
@@ -136,16 +164,39 @@ def register_accounts(
             "constraint_conflict",
             "账号已关联人员，请刷新核对",
         )
-        return await preview(
-            request,
-            {
-                "kind": "link",
-                "remote_id": str(form.get("remote_id", "")),
-                "name": str(form.get("name", "")),
-                "role_ids": None if form.get("default_role") == "on" else [],
-            },
-            target=target,
-        )
+        try:
+            return await preview(
+                request,
+                {
+                    "kind": "link",
+                    "remote_id": str(form.get("remote_id", "")),
+                    "name": str(form.get("name", "")),
+                    "role_ids": [str(form["role_id"])] if form.get("role_id") else None,
+                },
+                target=target,
+            )
+        except (DomainError, ValidationError) as caught:
+            error = validation_error(caught) if isinstance(caught, ValidationError) else caught
+            if error.status not in {409, 422}:
+                raise
+            # 只恢复未执行的关联预览，不吞掉权限错误。
+            await permission(request, "access.manage", "identity.read")
+            response = await render(
+                request,
+                "account_link.html",
+                found=found,
+                search=lookup,
+                restore_id=target["id"],
+                restore_values={
+                    "name": str(form.get("name", ""))[:100],
+                    "role_id": str(form.get("role_id", ""))[:100],
+                },
+                form_error=error.message,
+                role_options=await role_options(request),
+            )
+            response.status_code = error.status
+            response.headers["Cache-Control"] = "no-store"
+            return response
 
     @router.get("/console/accounts/employees/{identifier}")
     async def employee_account(request: Request, identifier: str):

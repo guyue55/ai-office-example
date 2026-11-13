@@ -18,6 +18,7 @@ from app.infrastructure.config import Settings
 from app.infrastructure.database import async_sessions, sessions
 from app.modules.access.authentication import Principal
 from app.modules.access.service import bootstrap
+from pg_image import image
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = pytest.mark.live
@@ -59,7 +60,7 @@ def isolated_query_db(tmp_path_factory, request):
             f"{folder}:/run/secrets:ro",
             "-p",
             "127.0.0.1::5432",
-            "pgvector/pgvector:0.8.7-pg18-trixie@sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0",
+            image(),
         )
         for _ in range(40):
             try:
