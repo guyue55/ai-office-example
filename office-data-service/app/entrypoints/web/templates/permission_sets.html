@@ -6,8 +6,8 @@
 {% call page_header("人员与授权", "权限集", "将经常一起使用的权限组合成可复用的集合，再关联到角色。") %}{% if can_manage %}<a class="button" href="#set-create" data-open-form="set-create">新建权限集</a>{% endif %}{% endcall %}{% include '_access_flow.html' %}
 <section class="card">{% include '_search.html' %}
 {% include '_table_scroll_hint.html' %}
-<div class="table-wrap" role="region" aria-label="权限集列表表格" tabindex="0">
-<table class="management-table">
+<div class="table-wrap" role="region" aria-label="权限集列表表格区域" tabindex="0">
+<table class="management-table" aria-label="权限集列表表格">
 <thead>
 <tr>
 <th>权限集名称</th>

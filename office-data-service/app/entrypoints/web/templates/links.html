@@ -35,7 +35,7 @@
 <input type="hidden" name="version" value="{{ assoc.version }}">
 
 {% include '_table_scroll_hint.html' %}
-<div class="table-wrap" role="region" aria-label="关联选项表格" tabindex="0"><table class="management-table">
+<div class="table-wrap" role="region" aria-label="关联选项表格区域" tabindex="0"><table class="management-table" aria-label="关联选项表格">
 <thead>
 <tr>
 <th>{% if can_manage %}<label class="grant-bulk" hidden><input type="checkbox" data-select-page aria-label="选择本页全部选项"> 本页</label>{% else %}选择{% endif %}</th>

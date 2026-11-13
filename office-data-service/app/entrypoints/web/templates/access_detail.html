@@ -40,8 +40,8 @@
 {% if kind != 'employees' %}{% set parent_kind = 'employees' if kind == 'roles' else 'roles' %}
 <section class="card">
 <h2>使用此{{ access_labels[kind] }}的{{ access_labels[parent_kind] }}</h2>
-<div class="table-wrap" role="region" aria-label="使用此{{ access_labels[kind] }}的{{ access_labels[parent_kind] }}列表" tabindex="0">
-<table>
+<div class="table-wrap" role="region" aria-label="使用此{{ access_labels[kind] }}的{{ access_labels[parent_kind] }}列表区域" tabindex="0">
+<table aria-label="使用此{{ access_labels[kind] }}的{{ access_labels[parent_kind] }}列表">
 <thead>
 <tr>
 <th>名称</th>
