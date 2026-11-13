@@ -6,6 +6,7 @@ import threading
 import time
 from datetime import UTC, datetime
 
+import browser_errors
 import pytest
 import uvicorn
 from app.common.errors import DomainError
@@ -124,8 +125,7 @@ def test_new_employee_validation_preview_and_confirm(web):  # noqa: F811
                     ]
                 )
                 page = context.new_page()
-                errors = []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/accounts/new")
                 # 模拟工作区导入服务端内容：新DOM不会执行页面脚本。
                 page.locator("[data-account-role-picker]").evaluate(

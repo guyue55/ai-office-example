@@ -6,6 +6,7 @@ import threading
 import time
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import instance_cookie
@@ -90,8 +91,7 @@ def test_rendered_contrast_focus_and_long_employee_list(web):  # noqa: F811
                     ]
                 )
                 page = context.new_page()
-                errors = []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/employees")
                 expect(page.locator(".pending-queue")).to_have_count(0)
                 expect(page.get_by_role("link", name="核对并处理")).to_have_count(0)

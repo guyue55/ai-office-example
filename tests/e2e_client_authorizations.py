@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+import browser_errors
 from e2e_web_console import BASE, login
 from playwright.sync_api import expect, sync_playwright
 
@@ -20,8 +21,7 @@ def main():
         admin = browser.new_context(viewport={"width": 1440, "height": 1000})
         employee = browser.new_context(viewport={"width": 1440, "height": 1000})
         page, other = admin.new_page(), employee.new_page()
-        errors = []
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        errors = browser_errors.collect(page)
         login(page, "operator", (ROOT / "runtime/secrets/operator_password").read_text().strip())
         login(other, "employee", (ROOT / "runtime/secrets/employee_password").read_text().strip())
         other.goto(BASE + "/console/client-authorizations")

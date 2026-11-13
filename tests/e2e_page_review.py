@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
 from uuid import uuid4
 
+import browser_errors
 from e2e_web_console import BASE, login
 from playwright.sync_api import expect, sync_playwright
 
@@ -31,8 +32,7 @@ def main():
         )
         ctx = browser.new_context(viewport={"width": 1440, "height": 1000})
         page = ctx.new_page()
-        errors = []
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        errors = browser_errors.collect(page)
         page.on(
             "dialog", lambda dialog: (errors.append("原生弹窗:" + dialog.type), dialog.dismiss())
         )

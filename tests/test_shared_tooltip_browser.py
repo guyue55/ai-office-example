@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+import browser_errors
 import pytest
 from playwright.sync_api import expect, sync_playwright
 
@@ -17,8 +18,7 @@ def test_tooltip_focus_hover_ownership_and_dismissal():
         browser = p.chromium.launch(channel=os.environ.get("OFFICE_TEST_BROWSER_CHANNEL") or None)
         try:
             page = browser.new_page(viewport={"width": 1000, "height": 700})
-            errors = []
-            page.on("pageerror", lambda error: errors.append(str(error)))
+            errors = browser_errors.collect(page)
             page.set_content("""<button id="a" data-tooltip="提示A">A</button>
                 <button id="b" data-tooltip="提示B">B</button><button id="outside">普通操作</button>
                 <dialog id="record-dialog"><h2 id="record-dialog-title" tabindex="-1"></h2>

@@ -8,6 +8,7 @@ import threading
 import time
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import TEMPLATES
@@ -886,8 +887,7 @@ def test_help_has_explicit_entry_and_focus(ui_state):
 
 def test_desktop_navigation_collapse_persistence_tooltip_and_mobile(ui_state):
     page, state = ui_state
-    errors = []
-    page.on("pageerror", lambda error: errors.append(str(error)))
+    errors = browser_errors.collect(page)
     toggle = page.locator("[data-navigation-collapse]")
     nav = page.locator(".shell-nav")
     original_width = nav.bounding_box()["width"]

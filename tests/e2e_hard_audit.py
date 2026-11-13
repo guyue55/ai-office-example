@@ -14,6 +14,7 @@ import os
 import pathlib
 import sys
 
+import browser_errors
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get("OFFICE_TEST_URL", "http://127.0.0.1:18890")
@@ -94,8 +95,7 @@ def main() -> int:
         browser = pw.chromium.launch()
         context = browser.new_context(viewport={"width": 1440, "height": 1000})
         page = context.new_page()
-        errors = []
-        page.on("pageerror", lambda exc: errors.append(str(exc)))
+        errors = browser_errors.collect(page)
         page.goto(f"{BASE}/console", wait_until="domcontentloaded")
         page.fill("#username", "operator")
         page.fill("#password", password)

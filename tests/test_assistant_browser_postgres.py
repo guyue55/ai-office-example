@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest.mock import AsyncMock
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import instance_cookie
@@ -173,8 +174,7 @@ def test_browser_approval_commits_one_candidate_with_agent_audit(
                     ]
                 )
                 page = context.new_page()
-                browser_errors = []
-                page.on("pageerror", lambda error: browser_errors.append(str(error)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/assistant/workspace")
                 field = page.locator("#assistant-input")
                 expect(field).to_be_enabled(timeout=15000)
@@ -211,7 +211,7 @@ def test_browser_approval_commits_one_candidate_with_agent_audit(
                 evidence = Path("runtime/agent-research/browser")
                 evidence.mkdir(parents=True, exist_ok=True)
                 page.screenshot(path=str(evidence / "assistant-real-database.png"), full_page=True)
-                assert not browser_errors
+                assert not errors
             finally:
                 browser.close()
     finally:

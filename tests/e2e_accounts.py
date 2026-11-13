@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from uuid import uuid4
 
+import browser_errors
 import httpx
 from conftest import MemoryStore
 from e2e_web_console import BASE, ROOT, complete_login, login
@@ -28,7 +29,7 @@ def main():
         )
         admin = browser.new_context(viewport={"width": 1440, "height": 1000})
         page = admin.new_page()
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        errors = browser_errors.collect(page)
         login(page, "operator", operator_password)
         page.goto(BASE + "/console/employees")
         page.get_by_role("link", name="新建员工", exact=True).click()

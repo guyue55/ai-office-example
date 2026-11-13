@@ -5,6 +5,7 @@ import socket
 import threading
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import instance_cookie
@@ -56,8 +57,7 @@ def test_progress_updates_in_place_and_does_not_resubmit(web):  # noqa: F811
                 ]
             )
             page = context.new_page()
-            errors = []
-            page.on("pageerror", lambda error: errors.append(str(error)))
+            errors = browser_errors.collect(page)
             page.goto(f"http://127.0.0.1:{port}/console/assistant/workspace")
             page.get_by_role("button", name="历史会话", exact=True).click()
             page.locator(f'[data-conversation="{conversation["id"]}"]').click()

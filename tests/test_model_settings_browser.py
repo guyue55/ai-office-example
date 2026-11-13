@@ -7,6 +7,7 @@ import threading
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
+import browser_errors
 import httpx2
 import pytest
 import uvicorn
@@ -147,8 +148,7 @@ def test_browser_model_settings_end_to_end(request, tmp_path, monkeypatch):
                     ]
                 )
                 page = context.new_page()
-                errors = []
-                page.on("pageerror", lambda e: errors.append(str(e)))
+                errors = browser_errors.collect(page)
                 page.goto(base + "/console/model-settings")
                 expect(page.get_by_role("heading", name="智能助手配置", exact=True)).to_be_visible()
                 page.locator("#model-api").focus()

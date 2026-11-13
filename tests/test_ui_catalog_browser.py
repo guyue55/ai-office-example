@@ -8,6 +8,7 @@ import threading
 import time
 from pathlib import Path
 
+import browser_errors
 import pytest
 import uvicorn
 from app.entrypoints.web.responses import TEMPLATES
@@ -74,8 +75,8 @@ def test_all_page_templates_at_desktop_and_narrow_widths():
             )
             try:
                 page = browser.new_page(viewport={"width": 1440, "height": 1000})
-                errors, visited = [], []
-                page.on("pageerror", lambda error: errors.append(str(error)))
+                visited = []
+                errors = browser_errors.collect(page)
                 # 普通页面与完整助手共享位置栏基线，避免切换时跳动。
                 for width in (1440, 1024, 768, 390, 320):
                     page.set_viewport_size({"width": width, "height": 1000})

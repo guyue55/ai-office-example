@@ -11,6 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
+import browser_errors
 import httpx
 import pytest
 import uvicorn
@@ -157,8 +158,7 @@ def test_oidc_create_credential_first_login_and_disable(oidc_accounts):
         try:
             admin = browser.new_context(viewport={"width": 1440, "height": 1000})
             page = admin.new_page()
-            errors = []
-            page.on("pageerror", lambda error: errors.append(str(error)))
+            errors = browser_errors.collect(page)
             page.goto(base + "/console")
             expect(page.locator("#username")).to_be_visible(timeout=15000)
             assert (
