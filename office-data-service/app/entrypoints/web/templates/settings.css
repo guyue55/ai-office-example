@@ -78,13 +78,6 @@
 .model-combobox > input {padding-right:36px;}
 .model-combobox-toggle {position:absolute;right:4px;top:4px;bottom:4px;padding:4px 6px;min-height:0!important;border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;}
 
-/* 模型配置分三步：连接、选择测试、保存启用；每步一个带序号的段落，避免长表单无落点。 */
-.model-progress {margin:0 0 4px;}
-.model-progress .task-steps {margin:0;}
-.model-step {border-top:0;padding-top:0;margin:0 0 28px;}
-.model-step:last-of-type {margin-bottom:20px;}
-.model-step > legend {display:flex;align-items:center;gap:10px;padding:0;margin:0 0 18px;font-size:15px;font-weight:600;color:var(--ink);}
-.model-step-mark {display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--soft);color:var(--accent);font-size:12px;font-weight:600;flex:0 0 auto;}
 .model-banner {border:0.5px solid var(--line);border-radius:var(--radius-surface);background:var(--surface-subtle);padding:14px 16px;margin:0 0 20px;max-width:880px;margin-inline:auto;}
 .model-banner p {margin:0;font-size:13px;line-height:1.7;color:var(--ink);}
 .model-banner ul {margin:8px 0 0;}
