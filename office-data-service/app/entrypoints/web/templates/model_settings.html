@@ -12,7 +12,7 @@
 <div class="model-progress">{{ task_steps(['连接服务', '选择并测试', '保存并启用'], step) }}</div>
 <section class="card settings-editor page-section" id="connection-editor" aria-labelledby="model-editor-title">
 {% if 'agent.config.manage' in me.permissions %}
-<form id="model-settings-form" method="post" action="/console/model-settings/save" data-native-submit data-confirm-message="保存当前模型配置？不会立即切换运行配置或调用模型。">
+<form id="model-settings-form" method="post" action="/console/model-settings/save" data-native-submit>
 <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ configuration.version }}"><input type="hidden" name="request_key" value="{{ trace_id }}">
 <fieldset class="settings-section model-step"><legend><span class="model-step-mark" aria-hidden="true">1</span>连接服务</legend>
 <div class="settings-fields">
@@ -28,7 +28,7 @@
 </details>
 <fieldset class="settings-section model-step"><legend><span class="model-step-mark" aria-hidden="true">3</span>保存并启用</legend>
 <div class="settings-consent"><label class="check-option"><input type="checkbox" name="approved_model_data" {% if draft.get('approved_model_data') %}checked{% endif %}><span>已确认该模型端点获准处理助手任务数据（启用必需）</span></label></div>
-<div class="settings-footer"><button type="submit" data-pending-label="正在保存…">保存</button>{% if 'agent.config.apply' in me.permissions %}<button type="submit" formaction="/console/model-settings/save-apply" data-confirm-message="保存并启用当前配置？新任务将使用此模型，当前运行任务需要先结束。" data-pending-label="正在保存并启用…">保存并启用</button>{% endif %}<button type="reset" class="secondary" id="model-reset" hidden>还原修改</button><span class="muted settings-footer-note">保存不会自动启用，也不会调用模型。</span></div>
+<div class="settings-footer"><button type="submit" class="secondary" data-pending-label="正在保存…">仅保存草稿</button>{% if 'agent.config.apply' in me.permissions %}<button type="submit" formaction="/console/model-settings/save-apply" data-confirm-message="保存并立即启用？新任务将改用此模型；有运行中任务时需先结束。" data-pending-label="正在保存并启用…">保存并启用</button>{% endif %}<button type="reset" class="secondary" id="model-reset" hidden>还原修改</button><span class="muted settings-footer-note">{% if 'agent.config.apply' in me.permissions %}保存并启用是常用操作；仅保存草稿不会切换正在使用的模型。{% else %}保存后需由有启用权限的同事应用此配置。{% endif %}</span></div>
 </fieldset>
 <details class="settings-disclosure" id="model-advanced"><summary>高级设置 <span class="muted">鉴权、网关参数与预算</span></summary>
 <fieldset class="settings-section"><legend>鉴权方式</legend><div class="settings-fields"><div class="field settings-field"><label for="model-auth-mode">凭证模式</label><select id="model-auth-mode" name="auth_mode"><option value="api-key" {% if draft.get('auth_mode','api-key') == 'api-key' %}selected{% endif %}>协议默认（Bearer / Anthropic x-api-key）</option><option value="none" {% if draft.get('auth_mode') == 'none' %}selected{% endif %}>无密钥（仅用于已确认无需鉴权的模型）</option><option value="custom-header" {% if draft.get('auth_mode') == 'custom-header' %}selected{% endif %}>自定义密钥请求头</option></select></div><div class="field settings-field"><label for="model-auth-header">自定义密钥头名称</label><input type="text" id="model-auth-header" name="auth_header" value="{{ draft.get('auth_header','x-api-key') }}" maxlength="100" required><small class="muted">仅自定义模式使用；密钥值仍在上方独立填写和加密。</small></div></div></fieldset>
