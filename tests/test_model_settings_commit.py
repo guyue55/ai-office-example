@@ -66,3 +66,29 @@ def test_without_apply_permission_only_draft_save_is_offered() -> None:
     block = footer()
     apply_part = block[block.index("{% if 'agent.config.apply' in me.permissions %}") :]
     assert "{% else %}保存后需由有启用权限的同事应用此配置。{% endif %}" in apply_part
+
+
+SCRIPT = (ROOT / "office-data-service/app/entrypoints/web/templates/model-settings.js").read_text(
+    encoding="utf-8"
+)
+
+
+def test_submit_guards_saving_when_secret_is_reused_at_a_new_url() -> None:
+    """改地址后沿用原密钥，保存路径必须自己拦下，而不是交给服务端 422。
+
+    服务端会以 422001 拒绝，但那时是一次整页错误响应，用户刚填的地址、模型、
+    协议全部丢失。勾选框只在界面上出现不构成保护，提交路径也得检查。
+    """
+    submit = SCRIPT[SCRIPT.index("editor.addEventListener('submit'") :]
+    assert "field('key-consent').hidden" in submit
+    assert "reuse_secret_at_new_url.checked" in submit
+    assert "event.preventDefault(); event.stopImmediatePropagation();" in submit
+
+
+def test_inspect_path_returns_before_the_save_guard() -> None:
+    """获取模型与测试连接走自己的分支，不能被保存的拦截逻辑二次触发。"""
+    listener = SCRIPT[SCRIPT.index("editor.addEventListener('submit'") :]
+    branch = listener[
+        listener.index("endsWith('/models')") : listener.index("field('key-consent').hidden")
+    ]
+    assert "return;" in branch

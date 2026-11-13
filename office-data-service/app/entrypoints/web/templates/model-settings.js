@@ -99,6 +99,15 @@
     if (target.endsWith('/models') || target.endsWith('/probe')) {
       event.preventDefault(); event.stopImmediatePropagation();
       void inspect(target.endsWith('/models') ? 'models' : 'probe');
+      return;
+    }
+    // 保存路径同样需要这项确认：仅保存草稿也会把新地址写进草稿修订，
+    // 若不在这里拦下，用户填写的全部内容会随整页报错一起丢失。
+    if (!field('key-consent').hidden && !editor.elements.reuse_secret_at_new_url.checked) {
+      event.preventDefault(); event.stopImmediatePropagation();
+      result('服务地址已改变，请确认沿用原密钥或填写新密钥。', 'error');
+      field('key-consent').scrollIntoView({block: 'center'});
+      editor.elements.reuse_secret_at_new_url.focus();
     }
   }, true);
   field('probe')?.addEventListener('click', event => {event.preventDefault(); event.stopImmediatePropagation(); void inspect('probe');}, true);
