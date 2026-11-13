@@ -54,6 +54,7 @@
       link.href = new URL(link.getAttribute('href'), url).href;
     });
     content.replaceChildren(...Array.from(main.childNodes));
+    content.removeAttribute('aria-hidden');
     content.querySelector('.page-header h1')?.setAttribute('class', 'workspace-section-title');
     panel.classList.toggle('is-compact', new URL(url).pathname === '/console/accounts/new');
     back.hidden = !trail.length;
@@ -168,6 +169,9 @@
     if (local) local.holder.querySelectorAll('form').forEach(form => form.reset());
     controller?.abort();
     panel.close();
+    // 关闭事件是异步任务，而退出动效会让面板继续渲染；此处同步摘掉无障碍暴露，
+    // 否则关闭瞬间旧内容仍能被读屏器与自动化定位到，与背后页面重名。
+    content.setAttribute('aria-hidden', 'true');
   }
   panel.querySelector('[data-workspace-close]').addEventListener('click', closePanel);
   panel.addEventListener('cancel', event => { event.preventDefault(); closePanel(); });

@@ -965,3 +965,40 @@ def test_navigation_storage_blocked_and_no_script_fallback(ui_state):
         ).to_be_visible()
     finally:
         plain.close()
+
+
+def test_closed_panel_leaves_accessibility_tree_immediately(ui_state):
+    """关闭面板后旧内容必须立刻退出无障碍树。
+
+    退出动效让对话框在 ``close`` 事件（异步任务）跑完前继续渲染，
+    而读屏器与 role 查询读的是无障碍树。若不在关闭时同步设 ``aria-hidden``，
+    关闭与清空之间那一瞬旧内容仍可被定位到，并与背后页面出现同名元素。
+    """
+    page, state = ui_state
+    trigger = page.get_by_role("link", name="授权角色", exact=True)
+    trigger.click()
+    expect(page.locator("#workspace")).to_be_visible()
+    expect(page.locator("#workspace-content [data-grant-editor]")).to_be_visible()
+
+    # 关闭是异步函数，只让出微任务（远早于 Playwright 的下一个动作）就必须已撤出；
+    # 若等宏任务（如 close 事件）才算，就证明不了“关闭瞬间已不可见”。
+    closed = page.get_by_role("button", name="关闭操作面板", exact=True).evaluate(
+        """async node => {
+            node.click();
+            await Promise.resolve();
+            await Promise.resolve();
+            const content = document.querySelector('#workspace-content');
+            return content ? content.getAttribute('aria-hidden') : null;
+        }"""
+    )
+    assert closed == "true"
+
+    expect(page.locator("#workspace")).to_be_hidden()
+    expect(trigger).to_be_focused()
+
+    # 再次打开时必须恢复暴露，否则面板内容对读屏器永久不可见。
+    trigger.click()
+    expect(page.locator("#workspace")).to_be_visible()
+    expect(page.locator("#workspace-content")).not_to_have_attribute("aria-hidden", "true")
+    page.get_by_role("button", name="关闭操作面板", exact=True).click()
+    assert state["writes"] == 0

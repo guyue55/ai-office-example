@@ -229,6 +229,8 @@
       holder.querySelectorAll('form').forEach(form => form.reset());
     }
     dialog.close();
+    // 与共用操作面板同理：关闭事件是异步任务，退出动效期间仍会渲染。
+    holder.setAttribute('aria-hidden', 'true');
   }
   dialog.querySelector('[data-record-close]').addEventListener('click', closeRecord);
   dialog.addEventListener('cancel', event => { event.preventDefault(); closeRecord(); });
@@ -260,6 +262,7 @@
       window.OfficeForms.remember(form);
       if ((form.getAttribute('action') || '').includes('/client-authorizations/')) form.dataset.asyncDialog = '';
     });
+    holder.removeAttribute('aria-hidden');
     dialog.showModal(); document.body.classList.add('record-open'); heading.focus();
   }, true);
   const restoreFocus = () => {
@@ -273,6 +276,7 @@
     const previous=document.activeElement;
     heading.textContent=title;holder.replaceChildren(content);
     dialog.addEventListener('close',()=>{holder.replaceChildren();previous?.isConnected&&previous.focus({preventScroll:true});},{once:true});
+    holder.removeAttribute('aria-hidden');
     dialog.showModal();heading.focus();return true;
   }
   window.OfficeUI = {enhance, notify, confirm, closeRecord, restoreFocus, present, icon, decorateIcon, iconButton, pickerOpen};
